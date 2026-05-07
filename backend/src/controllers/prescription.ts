@@ -1,0 +1,115 @@
+import type { Request, Response } from "express";
+import Prescription from "../models/prescription";
+import Medicine from "../models/medicine";
+import { logActivity } from "../lib/activity";
+import mongoose from "mongoose";
+
+export const getMedicines = async (req: Request, res: Response) => {
+  try {
+    const medicines = await Medicine.find().sort({ name: 1 });
+    res.json(medicines);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi lấy danh sách thuốc" });
+  }
+};
+
+export const createPrescription = async (req: Request, res: Response) => {
+  try {
+    const { patientId, diagnosis, items, notes } = req.body;
+    const doctorId = (req as any).user.id;
+
+    if (!patientId || !items || items.length === 0) {
+      return res.status(400).json({ message: "Thông tin bệnh nhân và thuốc là bắt buộc" });
+    }
+
+    const newPrescription = new Prescription({
+      patientId,
+      doctorId,
+      diagnosis,
+      items,
+      notes,
+      status: "pending"
+    });
+
+    await newPrescription.save();
+
+    await logActivity(
+      doctorId,
+      "Kê đơn thuốc",
+      `Đã kê đơn thuốc cho bệnh nhân ID: ${patientId}`
+    );
+
+    res.status(201).json(newPrescription);
+  } catch (error) {
+    console.error("Error creating prescription:", error);
+    res.status(500).json({ message: "Lỗi khi tạo đơn thuốc" });
+  }
+};
+
+export const getPrescriptions = async (req: Request, res: Response) => {
+  try {
+    const { patientId, doctorId } = req.query;
+    const filter: any = {};
+    if (patientId) filter.patientId = patientId;
+    if (doctorId) filter.doctorId = doctorId;
+
+    const prescriptions = await Prescription.find(filter).sort({ createdAt: -1 }).lean();
+    
+    const userCollection = mongoose.connection.collection("user");
+    
+    const detailedPrescriptions = await Promise.all(
+      prescriptions.map(async (p) => {
+        // Safe ID handling for patient
+        let patientQueryId: any = p.patientId;
+        if (mongoose.Types.ObjectId.isValid(p.patientId)) patientQueryId = new mongoose.Types.ObjectId(p.patientId);
+        
+        // Safe ID handling for doctor
+        let doctorQueryId: any = p.doctorId;
+        if (mongoose.Types.ObjectId.isValid(p.doctorId)) doctorQueryId = new mongoose.Types.ObjectId(p.doctorId);
+
+        const patient = await userCollection.findOne(
+          { _id: patientQueryId },
+          { projection: { name: 1 } }
+        );
+        const doctor = await userCollection.findOne(
+          { _id: doctorQueryId },
+          { projection: { name: 1 } }
+        );
+        return { 
+          ...p, 
+          patientName: patient?.name || "N/A",
+          doctorName: doctor?.name || "N/A"
+        };
+      })
+    );
+
+    res.json(detailedPrescriptions);
+  } catch (error) {
+    console.error("Error fetching prescriptions:", error);
+    res.status(500).json({ message: "Lỗi khi lấy danh sách đơn thuốc" });
+  }
+};
+
+export const getPrescriptionById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const prescription = await Prescription.findById(id).lean();
+    if (!prescription) return res.status(404).json({ message: "Không tìm thấy đơn thuốc" });
+
+    const userCollection = mongoose.connection.collection("user");
+    
+    let patientQueryId: any = prescription.patientId;
+    if (mongoose.Types.ObjectId.isValid(prescription.patientId)) patientQueryId = new mongoose.Types.ObjectId(prescription.patientId);
+    
+    let doctorQueryId: any = prescription.doctorId;
+    if (mongoose.Types.ObjectId.isValid(prescription.doctorId)) doctorQueryId = new mongoose.Types.ObjectId(prescription.doctorId);
+
+    const patient = await userCollection.findOne({ _id: patientQueryId });
+    const doctor = await userCollection.findOne({ _id: doctorQueryId });
+
+    res.json({ ...prescription, patient, doctor });
+  } catch (error) {
+    console.error("Error fetching prescription by ID:", error);
+    res.status(500).json({ message: "Lỗi hệ thống" });
+  }
+};

@@ -1,0 +1,123 @@
+import {
+  isRouteErrorResponse,
+  Links,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+} from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+import type { Route } from "./+types/root";
+import "./app.css";
+import { TooltipProvider } from "./components/ui/tooltip";
+import { ThemeProvider } from "./components/provider/theme";
+import ToastProvider from "./components/provider/toast";
+
+export const links: Route.LinksFunction = () => [
+  { rel: "preconnect", href: "https://fonts.googleapis.com" },
+  {
+    rel: "preconnect",
+    href: "https://fonts.gstatic.com",
+    crossOrigin: "anonymous",
+  },
+  {
+    rel: "stylesheet",
+    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+  },
+];
+
+export function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <Meta />
+        <Links />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var storageKey = "medflow-theme";
+                  var defaultTheme = "system";
+                  var theme = localStorage.getItem(storageKey) || defaultTheme;
+                  var supportDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
+                  
+                  var root = document.documentElement;
+                  root.classList.remove("light", "dark");
+                  
+                  if (theme === "dark" || (theme === "system" && supportDarkMode)) {
+                    root.classList.add("dark");
+                  } else {
+                    root.classList.add("light");
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body>
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+          <TooltipProvider>{children}</TooltipProvider>
+          <ToastProvider />
+        </ThemeProvider>
+        <ScrollRestoration />
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+
+// Create QueryClient ONCE outside the component to avoid re-creation on every render
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Prevent refetch just because user clicked the window
+      refetchOnWindowFocus: false,
+      // Retry once on failure, not 3 times
+      retry: 1,
+      // Keep data fresh for 30 seconds before marking as stale
+      staleTime: 30_000,
+    },
+  },
+});
+
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Outlet />
+    </QueryClientProvider>
+  );
+}
+
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  let message = "Oops!";
+  let details = "An unexpected error occurred.";
+  let stack: string | undefined;
+
+  if (isRouteErrorResponse(error)) {
+    message = error.status === 404 ? "404" : "Error";
+    details =
+      error.status === 404
+        ? "The requested page could not be found."
+        : error.statusText || details;
+  } else if (import.meta.env.DEV && error && error instanceof Error) {
+    details = error.message;
+    stack = error.stack;
+  }
+
+  return (
+    <main className="pt-16 p-4 container mx-auto">
+      <h1>{message}</h1>
+      <p>{details}</p>
+      {stack && (
+        <pre className="w-full p-4 overflow-x-auto">
+          <code>{stack}</code>
+        </pre>
+      )}
+    </main>
+  );
+}
