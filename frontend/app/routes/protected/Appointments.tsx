@@ -1,284 +1,410 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getTelemedicineSessions } from "@/lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getMyAppointments, getDoctorAppointments, updateAppointmentStatus, createMedicalRecord } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
-  Calendar,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  CalendarDays,
   Clock,
   Video,
   User,
   Stethoscope,
   CheckCircle2,
   XCircle,
-  CalendarDays,
   Plus,
-  Filter,
-  ChevronLeft,
-  ChevronRight,
+  MessageSquare,
+  FileText,
+  MoreVertical,
+  MapPin,
+  AlertCircle
 } from "lucide-react";
-import { format, addDays, startOfWeek, isSameDay, isToday } from "date-fns";
+import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import Loader from "@/components/global/Loader";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function meta() {
-  return [{ title: "Lịch hẹn | MedFlow AI" }];
+  return [{ title: "Quản lý lịch hẹn | MedFlow AI" }];
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  scheduled: { label: "Đã lên lịch", color: "bg-blue-50 text-blue-700 border-blue-200", icon: CalendarDays },
-  confirmed: { label: "Đã xác nhận", color: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: CheckCircle2 },
-  completed: { label: "Hoàn thành", color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: CheckCircle2 },
-  cancelled: { label: "Đã hủy", color: "bg-red-50 text-red-700 border-red-200", icon: XCircle },
-  "in-progress": { label: "Đang diễn ra", color: "bg-amber-50 text-amber-700 border-amber-200", icon: Clock },
+const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
+  pending: { label: "Chờ xác nhận", color: "bg-amber-500/10 text-amber-600 border-amber-500/20", icon: Clock },
+  confirmed: { label: "Đã xác nhận", color: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20", icon: CheckCircle2 },
+  completed: { label: "Hoàn thành", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20", icon: CheckCircle2 },
+  cancelled: { label: "Đã hủy", color: "bg-rose-500/10 text-rose-600 border-rose-500/20", icon: XCircle },
 };
-
-// Generate week days for the mini calendar
-function getWeekDays(base: Date) {
-  const start = startOfWeek(base, { weekStartsOn: 1 });
-  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
-}
-
-const WEEKDAY_LABELS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
 export default function AppointmentsPage() {
   const navigate = useNavigate();
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [weekBase, setWeekBase] = useState(new Date());
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
+  const user = session?.user;
+  const isDoctor = user?.role === "doctor" || user?.role === "admin";
 
-  const { data: sessions = [], isLoading } = useQuery<any[]>({
-    queryKey: ["telemedicine-sessions"],
-    queryFn: getTelemedicineSessions,
+  const { data: appointments = [], isLoading } = useQuery({
+    queryKey: ["appointments", user?.role],
+    queryFn: () => (isDoctor ? getDoctorAppointments() : getMyAppointments()),
+    enabled: !!user,
   });
 
-  const weekDays = getWeekDays(weekBase);
-
-  // Filter by status
-  const filtered = sessions.filter((s) => {
-    if (filterStatus !== "all" && s.status !== filterStatus) return false;
-    return true;
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status, meetingLink, billing }: { id: string; status: string; meetingLink?: string; billing?: any }) => 
+      updateAppointmentStatus(id, { status, meetingLink, billing }),
+    onSuccess: () => {
+      toast.success("Cập nhật trạng thái thành công");
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    }
   });
 
-  // Appointments for selected date (mock by index since we don't have date on session directly)
-  const todaySessions = filtered;
-  const todayCount = sessions.filter((s) => s.status !== "cancelled").length;
-  const completedCount = sessions.filter((s) => s.status === "completed").length;
-  const pendingCount = sessions.filter((s) => s.status === "scheduled" || s.status === "confirmed").length;
-  const inProgressCount = sessions.filter((s) => s.status === "in-progress").length;
+  if (isLoading) return <div className="h-[60vh] flex items-center justify-center"><Loader label="Đang tải lịch hẹn..." /></div>;
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <Loader label="Đang tải lịch hẹn..." />
-      </div>
-    );
-  }
+  const upcoming = appointments.filter(a => a.status === "pending" || a.status === "confirmed");
+  const completed = appointments.filter(a => a.status === "completed");
+  const cancelled = appointments.filter(a => a.status === "cancelled");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-10">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight">Lịch hẹn & Tư vấn</h1>
-          <p className="text-muted-foreground">Quản lý lịch khám và phiên tư vấn từ xa.</p>
+          <h1 className="text-4xl font-black tracking-tight">Lịch hẹn của bạn</h1>
+          <p className="text-muted-foreground text-lg">
+            {isDoctor 
+              ? "Quản lý các ca khám bệnh và tư vấn trực tuyến của bạn." 
+              : "Theo dõi và quản lý các cuộc hẹn khám bệnh với bác sĩ."}
+          </p>
         </div>
-        <Button
-          onClick={() => navigate("/telemedicine/sessions/book")}
-          className="gap-2 bg-indigo-600 hover:bg-indigo-700"
-        >
-          <Plus className="w-4 h-4" />
-          Đặt lịch mới
-        </Button>
+        {!isDoctor && (
+          <Button
+            onClick={() => navigate("/appointments/book")}
+            className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 h-12 px-6 font-bold"
+          >
+            <Plus className="w-5 h-5" />
+            Đặt lịch mới
+          </Button>
+        )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Tổng lịch hẹn", value: todayCount, icon: CalendarDays, color: "text-indigo-600", bg: "bg-indigo-50 dark:bg-indigo-950/30" },
-          { label: "Hoàn thành", value: completedCount, icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
-          { label: "Chờ xác nhận", value: pendingCount, icon: Clock, color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-950/30" },
-          { label: "Đang diễn ra", value: inProgressCount, icon: Video, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },
-        ].map((stat) => (
-          <Card key={stat.label} className="card shadow-sm">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-xl ${stat.bg}`}>
-                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                </div>
-                <div>
-                  <p className="text-2xl font-black">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <Tabs defaultValue="upcoming" className="w-full">
+        <TabsList className="bg-muted/50 p-1 rounded-xl h-12">
+          <TabsTrigger value="upcoming" className="rounded-lg px-6 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm"> Sắp tới ({upcoming.length})</TabsTrigger>
+          <TabsTrigger value="completed" className="rounded-lg px-6 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">Hoàn thành ({completed.length})</TabsTrigger>
+          <TabsTrigger value="cancelled" className="rounded-lg px-6 font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">Đã hủy ({cancelled.length})</TabsTrigger>
+        </TabsList>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Week Calendar */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card className="card shadow-sm">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">
-                  {format(weekBase, "MMMM yyyy", { locale: vi })}
-                </CardTitle>
-                <div className="flex gap-1">
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setWeekBase((d) => addDays(d, -7))}>
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setWeekBase((d) => addDays(d, 7))}>
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {WEEKDAY_LABELS.map((d) => (
-                  <div key={d} className="text-center text-[10px] font-bold text-muted-foreground uppercase">{d}</div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {weekDays.map((day) => {
-                  const sel = isSameDay(day, selectedDate);
-                  const tod = isToday(day);
-                  return (
-                    <button
-                      key={day.toISOString()}
-                      onClick={() => setSelectedDate(day)}
-                      className={`
-                        flex flex-col items-center justify-center rounded-xl h-10 text-sm font-bold transition-all
-                        ${sel ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/25" : "hover:bg-muted"}
-                        ${tod && !sel ? "ring-2 ring-indigo-400 ring-offset-1" : ""}
-                      `}
-                    >
-                      {format(day, "d")}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="mt-4 pt-4 border-t">
-                <p className="text-xs font-bold text-muted-foreground mb-2">Hôm nay: {format(new Date(), "EEEE, dd/MM", { locale: vi })}</p>
-                <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => { setSelectedDate(new Date()); setWeekBase(new Date()); }}>
-                  Về hôm nay
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="upcoming" className="pt-6">
+          <div className="grid gap-6">
+            {upcoming.length > 0 ? (
+              upcoming.map((appt) => (
+                <AppointmentCard 
+                  key={appt._id} 
+                  appointment={appt} 
+                  isDoctor={isDoctor} 
+                  onStatusUpdate={(status, link, billing) => statusMutation.mutate({ id: appt._id, status, meetingLink: link, billing })}
+                />
+              ))
+            ) : (
+              <EmptyState title="Không có lịch hẹn sắp tới" />
+            )}
+          </div>
+        </TabsContent>
 
-          {/* Filter */}
-          <Card className="card shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Filter className="w-4 h-4" /> Lọc trạng thái
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {[{ value: "all", label: "Tất cả" }, ...Object.entries(STATUS_CONFIG).map(([k, v]) => ({ value: k, label: v.label }))].map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setFilterStatus(opt.value)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filterStatus === opt.value ? "bg-indigo-600 text-white" : "hover:bg-muted"}`}
-                >
-                  {opt.label}
-                </button>
+        <TabsContent value="completed" className="pt-6">
+          <div className="grid gap-6">
+             {completed.map((appt) => (
+                <AppointmentCard key={appt._id} appointment={appt} isDoctor={isDoctor} />
               ))}
-            </CardContent>
-          </Card>
-        </div>
+          </div>
+        </TabsContent>
 
-        {/* Right: Sessions List */}
-        <div className="lg:col-span-2">
-          <Card className="card shadow-sm h-full">
-            <CardHeader>
-              <CardTitle>Danh sách phiên tư vấn</CardTitle>
-              <CardDescription>
-                {format(selectedDate, "EEEE, dd MMMM yyyy", { locale: vi })}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {todaySessions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <CalendarDays className="w-12 h-12 text-muted-foreground/30 mb-4" />
-                  <p className="text-muted-foreground font-medium">Không có lịch hẹn nào.</p>
-                  <Button
-                    className="mt-4 gap-2"
-                    variant="outline"
-                    onClick={() => navigate("/telemedicine/sessions/book")}
-                  >
-                    <Plus className="w-4 h-4" /> Đặt lịch mới
+        <TabsContent value="cancelled" className="pt-6">
+          <div className="grid gap-6">
+             {cancelled.map((appt) => (
+                <AppointmentCard key={appt._id} appointment={appt} isDoctor={isDoctor} />
+              ))}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function AppointmentCard({ appointment, isDoctor, onStatusUpdate }: { appointment: any, isDoctor: boolean, onStatusUpdate?: (status: string, link?: string, billing?: any) => void }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [diagnosisModalOpen, setDiagnosisModalOpen] = useState(false);
+  const [diagnosisData, setDiagnosisData] = useState({
+    diagnosis: "",
+    treatmentPlan: "",
+    notes: "",
+    consultationFee: appointment.doctor?.consultationFee || 200000,
+    labFee: 0,
+    prescriptionFee: 0
+  });
+
+  const status = STATUS_MAP[appointment.status];
+  const person = isDoctor ? appointment.patient : appointment.doctor;
+  const isOnline = appointment.type === "online";
+
+  const medicalRecordMutation = useMutation({
+    mutationFn: (data: any) => createMedicalRecord(data),
+    onSuccess: () => {
+      toast.success("Đã lưu chuẩn đoán và bệnh án!");
+      setDiagnosisModalOpen(false);
+      onStatusUpdate?.("completed", undefined, {
+        consultationFee: Number(diagnosisData.consultationFee),
+        labFee: Number(diagnosisData.labFee),
+        prescriptionFee: Number(diagnosisData.prescriptionFee)
+      });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    },
+    onError: () => toast.error("Lỗi khi lưu bệnh án")
+  });
+
+  const handleSaveDiagnosis = (e: React.FormEvent) => {
+    e.preventDefault();
+    medicalRecordMutation.mutate({
+      patient: appointment.patientId,
+      doctor: appointment.doctorId,
+      symptoms: appointment.symptoms,
+      ...diagnosisData
+    });
+  };
+
+  return (
+    <Card className="overflow-hidden border-none shadow-xl bg-card/40 backdrop-blur-md hover:bg-card/60 transition-all group relative">
+      <div className={`absolute top-0 left-0 w-1.5 h-full ${isOnline ? "bg-indigo-500" : "bg-emerald-500"}`} />
+      <CardContent className="p-6">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Left: Info */}
+          <div className="flex-1 flex gap-4">
+            <Avatar className="w-16 h-16 border-2 border-primary/10 shadow-sm">
+              <AvatarImage src={person?.image || ""} />
+              <AvatarFallback className="bg-primary/10 font-bold text-primary">
+                {person?.name?.[0] || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-black">{person?.name}</h3>
+                <Badge className={status.color}>
+                  <status.icon className="w-3 h-3 mr-1" />
+                  {status.label}
+                </Badge>
+              </div>
+              <p className="text-sm font-bold text-indigo-600">{person?.specialization || (isDoctor ? "Bệnh nhân" : "Bác sĩ")}</p>
+              <div className="flex flex-wrap gap-4 pt-2 text-sm text-muted-foreground font-medium">
+                <span className="flex items-center gap-1.5"><CalendarDays className="w-4 h-4" /> {format(new Date(appointment.date), "dd/MM/yyyy")}</span>
+                <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {appointment.timeSlot}</span>
+                <span className="flex items-center gap-1.5">
+                  {isOnline ? <Video className="w-4 h-4 text-indigo-500" /> : <MapPin className="w-4 h-4 text-emerald-500" />}
+                  {isOnline ? "Tư vấn trực tuyến" : "Tại bệnh viện"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Center: Symptoms (Desktop) */}
+          <div className="hidden md:block flex-1 border-l pl-6">
+             <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Triệu chứng & Ghi chú</h4>
+             <p className="text-sm font-medium line-clamp-3 leading-relaxed">{appointment.symptoms}</p>
+             {appointment.patientType === "family" && (
+                <Badge variant="outline" className="mt-2 bg-indigo-50 text-indigo-700 border-indigo-200">Khám cho: {appointment.patientName}</Badge>
+             )}
+          </div>
+
+          {/* Right: Actions */}
+          <div className="flex flex-col justify-center gap-2 min-w-[160px]">
+            {appointment.status === "pending" && isDoctor && (
+              <>
+                <Button onClick={() => onStatusUpdate?.("confirmed")} className="bg-indigo-600 hover:bg-indigo-700 font-bold">Chấp nhận</Button>
+                <Button variant="outline" onClick={() => onStatusUpdate?.("cancelled")} className="text-rose-600 border-rose-200 hover:bg-rose-50">Từ chối</Button>
+              </>
+            )}
+            
+            {appointment.status === "confirmed" && (
+              <>
+                {isOnline && (
+                  <Button onClick={() => navigate(`/telemedicine/sessions/${appointment._id}/chat`)} className="gap-2 bg-indigo-600 font-bold">
+                    <Video className="w-4 h-4" /> Vào phòng họp
                   </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {todaySessions.map((appt: any, idx: number) => {
-                    const conf = STATUS_CONFIG[appt.status] || STATUS_CONFIG["scheduled"];
-                    const StatusIcon = conf.icon;
-                    return (
-                      <div
-                        key={appt._id}
-                        className="group flex items-center gap-4 p-4 rounded-xl border border-border/60 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-muted/30 transition-all cursor-pointer"
-                        onClick={() => navigate(`/telemedicine/sessions/${appt._id}/chat`)}
-                      >
-                        {/* Time col */}
-                        <div className="flex flex-col items-center w-14 shrink-0">
-                          <span className="text-xs font-bold text-muted-foreground">
-                            {String(9 + idx).padStart(2, "0")}:00
-                          </span>
-                          <div className="w-px h-6 bg-border mt-1" />
-                        </div>
+                )}
+                {isDoctor && (
+                  <Button onClick={() => setDiagnosisModalOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 font-bold">
+                    <FileText className="w-4 h-4" /> Ghi chuẩn đoán
+                  </Button>
+                )}
+                <Button 
+                  variant="ghost" 
+                  className="gap-2 font-bold text-muted-foreground"
+                  onClick={() => navigate(`/telemedicine/sessions/${appointment._id}/chat`)}
+                >
+                  <MessageSquare className="w-4 h-4" /> Nhắn tin
+                </Button>
+              </>
+            )}
 
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge className={`text-[10px] border ${conf.color}`}>
-                              <StatusIcon className="w-3 h-3 mr-1" />
-                              {conf.label}
-                            </Badge>
-                            {appt.isVirtual && (
-                              <Badge variant="secondary" className="text-[10px]">
-                                <Video className="w-3 h-3 mr-1" /> Trực tuyến
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="font-bold text-sm truncate">{appt.reason || "Tư vấn định kỳ"}</p>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <User className="w-3 h-3" /> Bệnh nhân
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Stethoscope className="w-3 h-3" /> Bác sĩ phụ trách
-                            </span>
-                          </div>
-                        </div>
+            {appointment.status === "completed" && (
+              <>
+                <Button
+                  variant="outline"
+                  className="gap-2 font-bold"
+                  onClick={() => navigate("/patient/prescriptions")}
+                >
+                  <FileText className="w-4 h-4" /> Xem đơn thuốc
+                </Button>
+                <Button
+                  variant="outline"
+                  className="gap-2 font-bold"
+                  onClick={() => navigate("/patient/test-results")}
+                >
+                  <FileText className="w-4 h-4" /> Kết quả khám
+                </Button>
+              </>
+            )}
 
-                        {/* Action */}
-                        <Button size="sm" variant="ghost" className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                          Vào phòng <ChevronRight className="w-4 h-4 ml-1" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {appointment.status !== "cancelled" && appointment.status !== "completed" && (
+                  <DropdownMenuItem
+                    className="text-rose-600 font-medium"
+                    onClick={() => onStatusUpdate?.("cancelled")}
+                  >
+                    Hủy lịch hẹn
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem className="font-medium" onClick={() => navigate(`/patient/medical-records`)}>Xem chi tiết bệnh án</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+      </CardContent>
+
+      {/* Diagnosis Modal */}
+      <Dialog open={diagnosisModalOpen} onOpenChange={setDiagnosisModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black">Ghi chuẩn đoán & Điều trị</DialogTitle>
+            <DialogDescription>
+              Bệnh nhân: <span className="font-bold text-primary">{person?.name}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSaveDiagnosis} className="space-y-6 py-4">
+            <div className="space-y-2">
+              <Label>Chuẩn đoán bệnh</Label>
+              <Input 
+                placeholder="Ví dụ: Viêm họng cấp, Suy nhược cơ thể..." 
+                className="bg-muted/50"
+                required
+                value={diagnosisData.diagnosis}
+                onChange={(e) => setDiagnosisData({...diagnosisData, diagnosis: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Phác đồ điều trị</Label>
+              <Textarea 
+                placeholder="Mô tả các bước điều trị, thuốc cần dùng..." 
+                className="bg-muted/50 min-h-[120px]"
+                required
+                value={diagnosisData.treatmentPlan}
+                onChange={(e) => setDiagnosisData({...diagnosisData, treatmentPlan: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Lời khuyên & Ghi chú</Label>
+              <Textarea 
+                placeholder="Dặn dò bệnh nhân về chế độ ăn uống, sinh hoạt..." 
+                className="bg-muted/50"
+                value={diagnosisData.notes}
+                onChange={(e) => setDiagnosisData({...diagnosisData, notes: e.target.value})}
+              />
+            </div>
+
+            <div className="pt-4 border-t space-y-4">
+               <h4 className="font-bold text-sm uppercase tracking-wider text-indigo-600">Thông tin viện phí</h4>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Phí khám (VNĐ)</Label>
+                    <Input 
+                      type="number"
+                      value={diagnosisData.consultationFee}
+                      onChange={(e) => setDiagnosisData({...diagnosisData, consultationFee: e.target.value})}
+                      className="bg-muted/50 font-bold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Phí xét nghiệm (VNĐ)</Label>
+                    <Input 
+                      type="number"
+                      value={diagnosisData.labFee}
+                      onChange={(e) => setDiagnosisData({...diagnosisData, labFee: e.target.value})}
+                      className="bg-muted/50 font-bold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Tiền thuốc (VNĐ)</Label>
+                    <Input 
+                      type="number"
+                      value={diagnosisData.prescriptionFee}
+                      onChange={(e) => setDiagnosisData({...diagnosisData, prescriptionFee: e.target.value})}
+                      className="bg-muted/50 font-bold"
+                    />
+                  </div>
+               </div>
+               <div className="flex justify-between items-center p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                  <span className="text-sm font-bold text-indigo-700">Tổng cộng ước tính:</span>
+                  <span className="text-lg font-black text-indigo-700">
+                    {(Number(diagnosisData.consultationFee) + Number(diagnosisData.labFee) + Number(diagnosisData.prescriptionFee)).toLocaleString()} VNĐ
+                  </span>
+               </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setDiagnosisModalOpen(false)}>Hủy</Button>
+              <Button type="submit" className="bg-indigo-600 font-bold px-8" disabled={medicalRecordMutation.isPending}>
+                {medicalRecordMutation.isPending ? "Đang lưu..." : "Lưu & Hoàn thành khám"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+function EmptyState({ title }: { title: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-muted/20 rounded-3xl border border-dashed">
+      <div className="p-6 bg-muted rounded-full opacity-40">
+        <CalendarDays className="w-12 h-12" />
       </div>
+      <h3 className="text-xl font-bold text-muted-foreground">{title}</h3>
+      <p className="text-muted-foreground max-w-sm">Mọi lịch hẹn của bạn sẽ xuất hiện tại đây để bạn dễ dàng theo dõi.</p>
     </div>
   );
 }

@@ -106,15 +106,15 @@ export default function ReportsPage() {
           const d = new Date(inv.createdAt || "");
           return d.getMonth() === monthIdx;
         })
-        .reduce((s, inv) => s + (inv.totalAmount || 0) / 100, 0);
+        .reduce((s, inv) => s + (inv.totalAmount || 0), 0);
       const pending = invoices
         .filter((inv) => {
           if (inv.status !== "pending_payment") return false;
           const d = new Date(inv.createdAt || "");
           return d.getMonth() === monthIdx;
         })
-        .reduce((s, inv) => s + (inv.totalAmount || 0) / 100, 0);
-      return { name: label, "Đã thu": Math.round(paid), "Chờ thu": Math.round(pending) };
+        .reduce((s, inv) => s + (inv.totalAmount || 0), 0);
+      return { name: label, "Đã thu": paid, "Chờ thu": pending };
     });
   }, [invoices, timeRange]);
 
@@ -122,7 +122,8 @@ export default function ReportsPage() {
   const patientStatusData = useMemo(() => {
     const counts: Record<string, number> = {};
     patients.forEach((p: User) => {
-      counts[p.status] = (counts[p.status] || 0) + 1;
+      const status = p.status || "active";
+      counts[status] = (counts[status] || 0) + 1;
     });
     return Object.entries(counts).map(([status, count]) => ({
       name: status === "admitted" ? "Nhập viện"
@@ -156,8 +157,8 @@ export default function ReportsPage() {
   }, [doctors]);
 
   // Summary numbers
-  const totalRevenue = invoices.reduce((s, i) => s + (i.status === "paid" ? i.totalAmount / 100 : 0), 0);
-  const pendingRevenue = invoices.reduce((s, i) => s + (i.status === "pending_payment" ? i.totalAmount / 100 : 0), 0);
+  const totalRevenue = invoices.reduce((s, i) => s + (i.status === "paid" ? i.totalAmount : 0), 0);
+  const pendingRevenue = invoices.reduce((s, i) => s + (i.status === "pending_payment" ? i.totalAmount : 0), 0);
   const totalPatients = patients.length;
   const admittedPatients = patients.filter((p: User) => p.status === "admitted").length;
 
@@ -200,7 +201,7 @@ export default function ReportsPage() {
         {[
           {
             label: "Tổng doanh thu",
-            value: `$${totalRevenue.toLocaleString()}`,
+            value: `${totalRevenue.toLocaleString()} VNĐ`,
             sub: "Đã thu được",
             icon: DollarSign,
             color: "text-emerald-600",
@@ -210,7 +211,7 @@ export default function ReportsPage() {
           },
           {
             label: "Chờ thu",
-            value: `$${pendingRevenue.toLocaleString()}`,
+            value: `${pendingRevenue.toLocaleString()} VNĐ`,
             sub: "Chưa thanh toán",
             icon: FileText,
             color: "text-amber-600",
@@ -286,10 +287,10 @@ export default function ReportsPage() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                   <XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)" }} />
-                  <YAxis fontSize={11} tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)" }} tickFormatter={(v) => `$${v}`} />
+                  <YAxis fontSize={11} tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)" }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                   <Tooltip
                     contentStyle={{ borderRadius: "10px", border: "1px solid var(--border)", background: "var(--card)", color: "var(--card-foreground)" }}
-                    formatter={(v: number) => [`$${v.toFixed(0)}`, ""]}
+                    formatter={(v: number) => [`${v.toLocaleString()} VNĐ`, ""]}
                   />
                   <Legend />
                   <Area type="monotone" dataKey="Đã thu" stroke="#6366f1" strokeWidth={2} fill="url(#gradPaid)" />

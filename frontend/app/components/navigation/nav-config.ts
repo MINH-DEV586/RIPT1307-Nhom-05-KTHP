@@ -39,7 +39,7 @@ export const navConfig: {
       allowedRoles: ["admin", "doctor", "nurse", "pharmacist", "lab_tech"],
       items: [
         { title: "Tổng quan", url: "/dashboard" },
-        { title: "Nhật ký hoạt động", url: "/activities-log" },
+        { title: "Nhật ký hoạt động", url: "/activities-log", allowedRoles: ["admin"] },
       ],
     },
     {
@@ -66,8 +66,9 @@ export const navConfig: {
       allowedRoles: ["admin", "doctor", "nurse", "patient"],
       items: [
         { title: "Lịch hẹn tổng quan", url: "/appointments" },
+        { title: "Đặt lịch mới", url: "/appointments/book", allowedRoles: ["patient"] },
+        { title: "Cài đặt lịch làm việc", url: "/appointments/schedule-setup", allowedRoles: ["doctor"] },
         { title: "Khám từ xa", url: "/telemedicine/sessions" },
-        { title: "Đặt lịch mới", url: "/telemedicine/sessions/book" },
       ],
     },
     {
@@ -113,6 +114,18 @@ export const navConfig: {
       items: [
         { title: "Lịch sử hóa đơn", url: "/financial-history" },
         { title: "Báo cáo & Phân tích", url: "/reports" },
+      ],
+    },
+    {
+      title: "Hồ sơ sức khỏe",
+      url: "/patient/medical-records",
+      icon: ClipboardPlus,
+      allowedRoles: ["patient"],
+      items: [
+        { title: "Hồ sơ bệnh án", url: "/patient/medical-records" },
+        { title: "Đơn thuốc điện tử", url: "/patient/prescriptions" },
+        { title: "Kết quả xét nghiệm", url: "/patient/test-results" },
+        { title: "Thanh toán viện phí", url: "/patient/invoices" },
       ],
     },
   ],

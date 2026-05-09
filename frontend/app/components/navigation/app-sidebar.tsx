@@ -40,13 +40,13 @@ interface NavItem {
 }
 
 const roleTranslations: Record<Role, string> = {
+  all: "Người dùng",
   admin: "Quản trị viên",
   doctor: "Bác sĩ",
   nurse: "Điều dưỡng",
   pharmacist: "Dược sĩ",
   lab_tech: "Kỹ thuật viên",
   patient: "Bệnh nhân",
-  superadmin: "Siêu quản trị",
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -127,7 +127,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <SidebarMenuSub>
-                          {item.items?.map((subItem) => {
+                          {item.items
+                            ?.filter((sub) => !sub.allowedRoles || sub.allowedRoles.includes(userRole))
+                            .map((subItem) => {
                             const isChildActive = pathname === subItem.url;
                             return (
                               <SidebarMenuSubItem key={subItem.title}>
@@ -183,7 +185,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <SidebarMenuSub>
-                          {item.items?.map((subItem) => {
+                          {item.items
+                            ?.filter((sub) => !sub.allowedRoles || sub.allowedRoles.includes(userRole))
+                            .map((subItem) => {
                             const isChildActive = pathname === subItem.url;
                             return (
                               <SidebarMenuSubItem key={subItem.title}>

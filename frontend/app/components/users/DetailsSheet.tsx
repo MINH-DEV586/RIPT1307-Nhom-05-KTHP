@@ -9,6 +9,8 @@ import {
   ShieldCheck,
   FlaskConical,
   Pill,
+  Zap,
+  ExternalLink,
 } from "lucide-react";
 import type { User as UserType, Role } from "@/types";
 import {
@@ -24,7 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { STATUS_CONFIG } from "./statusBadge";
 import { useNavigate } from "react-router";
-import { ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 interface DetailsSheetProps {
   user: UserType | null;
@@ -111,6 +113,36 @@ export function DetailsSheet({ user, isOpen, onClose }: DetailsSheetProps) {
             {user.role === "patient" ? (
               <div className="grid grid-cols-1 gap-4">
                 <InfoItem label="Nhóm máu" value={user.bloodgroup || "Không rõ"} isBadge={!!user.bloodgroup} />
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-50 to-white dark:from-amber-950/20 dark:to-background rounded-2xl border border-amber-200 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-100 rounded-lg">
+                      <Zap size={18} className="text-amber-600 fill-amber-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-amber-800 dark:text-amber-400 uppercase tracking-widest">Hạng thành viên</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{user.membership === 'pro' ? 'Hội viên PRO' : 'Hội viên Thường'}</p>
+                    </div>
+                  </div>
+                  {user.membership !== 'pro' && (
+                    <Button 
+                      size="sm" 
+                      className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl h-8 text-[10px] font-black"
+                      onClick={async () => {
+                        const { updateUser } = await import("@/lib/api");
+                        try {
+                          await updateUser({ userId: user._id, userData: { membership: 'pro' } });
+                          toast.success(`Đã nâng cấp ${user.name} lên hạng PRO!`);
+                          onClose();
+                          // Mutation invalidation will happen via socket or parent refetch
+                        } catch (e) {
+                          toast.error("Nâng cấp thất bại");
+                        }
+                      }}
+                    >
+                      NÂNG CẤP
+                    </Button>
+                  )}
+                </div>
                 <InfoItem label="Tiền sử bệnh lý" value={user.medicalHistory || "Không có hồ sơ trước đó."} />
                 {user.triageReasoning && (
                   <div className="p-3 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800">

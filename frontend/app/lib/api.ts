@@ -99,6 +99,15 @@ export const getPatientLabResults = async (
   return res.json();
 };
 
+export const explainLabResult = async (id: string): Promise<{ explanation: string }> => {
+  const res = await fetch(`${API_URL}/lab-results/${id}/explain`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("AI explanation failed");
+  return res.json();
+};
+
 export const getAllLabResultsList = async (): Promise<any[]> => {
   const res = await fetch(`${API_URL}/lab-results`, {
     credentials: "include",
@@ -224,9 +233,9 @@ export const getAllInvoices = async (data?: {
   page?: number;
   limit?: number;
 }): Promise<PaginatedResponse<invoice>> => {
-  const res = await fetch(`${API_URL}/invoices`, {
+  const query = data ? `?${new URLSearchParams(data as any).toString()}` : "";
+  const res = await fetch(`${API_URL}/invoices${query}`, {
     credentials: "include",
-    body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Failed to fetch invoices");
   return res.json();
@@ -302,8 +311,9 @@ export const createPrescription = async (data: any): Promise<any> => {
   return res.json();
 };
 
-export const getAllPrescriptionsList = async (): Promise<any[]> => {
-  const res = await fetch(`${API_URL}/prescriptions`, {
+export const getAllPrescriptionsList = async (params?: { patientId?: string; doctorId?: string }): Promise<any[]> => {
+  const query = params ? `?${new URLSearchParams(params as any).toString()}` : "";
+  const res = await fetch(`${API_URL}/prescriptions${query}`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("Failed to fetch prescriptions");
@@ -464,5 +474,109 @@ export const getMedicalRecordById = async (id: string) => {
     credentials: "include",
   });
   if (!res.ok) throw new Error("Failed to fetch medical record");
+  return res.json();
+};
+
+// --- APPOINTMENT SYSTEM ---
+
+export const getAvailableDoctors = async (params?: { specialization?: string; feeMax?: number }) => {
+  const filteredParams = params ? Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined)) : {};
+  const query = Object.keys(filteredParams).length > 0 ? `?${new URLSearchParams(filteredParams as any).toString()}` : "";
+  const res = await fetch(`${API_URL}/appointments/doctors${query}`, { credentials: "include" });
+  if (!res.ok) throw new Error("Failed to fetch doctors");
+  return res.json();
+};
+
+export const bookAppointment = async (data: any) => {
+  const res = await fetch(`${API_URL}/appointments/book`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to book appointment");
+  return res.json();
+};
+
+export const getMyAppointments = async (params?: { status?: string }) => {
+  const query = params ? `?${new URLSearchParams(params as any).toString()}` : "";
+  const res = await fetch(`${API_URL}/appointments/my${query}`, { credentials: "include" });
+  if (!res.ok) throw new Error("Failed to fetch appointments");
+  return res.json();
+};
+
+export const getDoctorAppointments = async (params?: { status?: string; date?: string }) => {
+  const query = params ? `?${new URLSearchParams(params as any).toString()}` : "";
+  const res = await fetch(`${API_URL}/appointments/doctor-list${query}`, { credentials: "include" });
+  if (!res.ok) throw new Error("Failed to fetch doctor appointments");
+  return res.json();
+};
+
+export const updateAppointmentStatus = async (id: string, data: { status: string; meetingLink?: string; billing?: any }) => {
+  const res = await fetch(`${API_URL}/appointments/${id}/status`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to update appointment status");
+  return res.json();
+};
+
+export const updateDoctorSchedule = async (data: any) => {
+  const res = await fetch(`${API_URL}/appointments/schedule`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to update schedule");
+  return res.json();
+};
+
+export const getDoctorSchedule = async (doctorId: string) => {
+  const res = await fetch(`${API_URL}/appointments/schedule/${doctorId}`, { credentials: "include" });
+  if (!res.ok) throw new Error("Failed to fetch schedule");
+  return res.json();
+};
+
+// --- BED MANAGEMENT SYSTEM ---
+
+export const getAllBeds = async (params?: { department?: string; type?: string; status?: string }) => {
+  const cleanParams = params ? Object.fromEntries(Object.entries(params).filter(([_, v]) => v != null)) : {};
+  const query = Object.keys(cleanParams).length > 0 ? `?${new URLSearchParams(cleanParams as any).toString()}` : "";
+  const res = await fetch(`${API_URL}/beds${query}`, { credentials: "include" });
+  if (!res.ok) throw new Error("Failed to fetch beds");
+  return res.json();
+};
+
+export const admitPatientToBed = async (data: { patientId: string; bedId: string; admissionReason: string }) => {
+  const res = await fetch(`${API_URL}/beds/admit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to admit patient to bed");
+  return res.json();
+};
+
+export const dischargePatientFromBed = async (patientId: string) => {
+  const res = await fetch(`${API_URL}/beds/discharge/${patientId}`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to discharge patient");
+  return res.json();
+};
+
+export const createBed = async (data: any) => {
+  const res = await fetch(`${API_URL}/beds`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to create bed");
   return res.json();
 };

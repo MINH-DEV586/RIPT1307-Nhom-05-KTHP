@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import MedicalRecord from "../models/medicalRecord";
 import { auth } from "../lib/auth";
 import { fromNodeHeaders } from "better-auth/node";
+import mongoose from "mongoose";
 
 // @desc    Create a new medical record
 // @route   POST /api/medical-records
@@ -18,9 +19,10 @@ export const createMedicalRecord = async (req: Request, res: Response) => {
 
     const { patient, symptoms, diagnosis, treatmentPlan, notes, attachments } = req.body;
 
+    // patient is a string ID (Better Auth format), store as-is
     const newRecord = new MedicalRecord({
-      patient,
-      doctor: session.user.id,
+      patient,          // string ID
+      doctor: session.user.id, // string ID
       symptoms,
       diagnosis,
       treatmentPlan,
@@ -35,18 +37,40 @@ export const createMedicalRecord = async (req: Request, res: Response) => {
   }
 };
 
+// Helper: lookup user from Better Auth "user" collection
+const lookupUser = async (userId: string, projection = { name: 1, specialization: 1, image: 1 }) => {
+  try {
+    const userCollection = mongoose.connection.collection("user");
+    // Better Auth IDs are strings; try as string _id first
+    return await userCollection.findOne({ _id: userId as any }, { projection });
+  } catch {
+    return null;
+  }
+};
+
 // @desc    Get all medical records for a specific patient
 // @route   GET /api/medical-records/patient/:patientId
 // @access  Private
 export const getPatientMedicalRecords = async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
-    const records = await MedicalRecord.find({ patient: patientId })
-      .populate("doctor", "name specialization")
-      .sort({ date: -1 });
 
-    res.status(200).json(records);
+    // Query by string patientId (Better Auth format)
+    const records = await MedicalRecord.find({ patient: patientId })
+      .sort({ date: -1 })
+      .lean();
+
+    // Manual lookup for doctor info since Better Auth uses "user" collection with string IDs
+    const enriched = await Promise.all(
+      records.map(async (record) => {
+        const doctor = await lookupUser(record.doctor as string, { name: 1, specialization: 1, image: 1 });
+        return { ...record, doctor };
+      })
+    );
+
+    res.status(200).json(enriched);
   } catch (error) {
+    console.error("Error fetching medical records:", error);
     res.status(500).json({ message: (error as Error).message });
   }
 };
@@ -56,16 +80,22 @@ export const getPatientMedicalRecords = async (req: Request, res: Response) => {
 // @access  Private
 export const getMedicalRecordById = async (req: Request, res: Response) => {
   try {
-    const record = await MedicalRecord.findById(req.params.id)
-      .populate("patient", "name gender age bloodgroup")
-      .populate("doctor", "name specialization department");
+    const record = await MedicalRecord.findById(req.params.id).lean();
 
     if (!record) {
       return res.status(404).json({ message: "Medical record not found" });
     }
 
-    res.status(200).json(record);
+    // Manual lookup for patient and doctor
+    const [patient, doctor] = await Promise.all([
+      lookupUser(record.patient as string, { name: 1, gender: 1, age: 1, bloodgroup: 1 }),
+      lookupUser(record.doctor as string, { name: 1, specialization: 1, department: 1 }),
+    ]);
+
+    res.status(200).json({ ...record, patient, doctor });
   } catch (error) {
+    console.error("Error fetching medical record by ID:", error);
     res.status(500).json({ message: (error as Error).message });
   }
 };
+

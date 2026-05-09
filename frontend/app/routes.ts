@@ -8,6 +8,7 @@ import {
 export default [
   index("routes/home.tsx"),
   route("login", "routes/Login.tsx"),
+  route("register", "routes/Register.tsx"),
   route("*", "routes/not-found.tsx"),
   // you can use index or layout for nested routes
   layout("routes/protected/layout.tsx", [
@@ -20,6 +21,8 @@ export default [
     route("profile/:id", "routes/protected/Profile.tsx"),
     route("financial-history", "routes/protected/FinancialHistory.tsx"),
     route("appointments", "routes/protected/Appointments.tsx"),
+    route("appointments/book", "routes/protected/appointments/Book.tsx"),
+    route("appointments/schedule-setup", "routes/protected/appointments/ScheduleSetup.tsx"),
     route("bed-management", "routes/protected/BedManagement.tsx"),
     route("reports", "routes/protected/Reports.tsx"),
     route("pharmacy", "routes/protected/pharmacy/layout.tsx", [
@@ -40,5 +43,9 @@ export default [
       route("sessions/book", "routes/protected/telemedicine/BookNewConsult.tsx"),
       route("sessions/:id/chat", "routes/protected/telemedicine/LiveChat.tsx"),
     ]),
+    route("patient/medical-records", "routes/protected/patient/MedicalRecords.tsx"),
+    route("patient/prescriptions", "routes/protected/patient/Prescriptions.tsx"),
+    route("patient/test-results", "routes/protected/patient/TestResults.tsx"),
+    route("patient/invoices", "routes/protected/patient/Invoices.tsx"),
   ]),
 ] satisfies RouteConfig;

@@ -66,7 +66,7 @@ const FinancialHistory = () => {
   const pagination = data?.pagination;
 
   const filteredInvoices = invoices.filter((inv) =>
-    inv.user?.name.toLowerCase().includes(search.toLowerCase()),
+    (inv.user?.name || "").toLowerCase().includes(search.toLowerCase()),
   );
 
   const getStatusBadge = (status: string) => {
@@ -109,23 +109,19 @@ const FinancialHistory = () => {
         <Card className="card shadow-sm rounded-xl">
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
-              <div className="p-2 bg-white/20 rounded-xl">
-                <DollarSign size={20} />
+              <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
+                <DollarSign size={20} className="text-indigo-600" />
               </div>
-              <Badge className="bg-white/20 text-white border-none">
-                +12.5%
-              </Badge>
             </div>
             <div className="mt-4">
-              <p className="text-blue-100 text-sm font-medium">Tổng hóa đơn</p>
-              <h3 className="text-2xl font-black mt-1">
-                $
-                {(
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Tổng hóa đơn</p>
+              <h3 className="text-2xl font-black mt-1 text-slate-900 dark:text-white">
+                {
                   invoices.reduce(
                     (sum: number, inv: any) => sum + (inv.totalAmount || 0),
                     0,
-                  ) / 100
-                ).toLocaleString()}
+                  ).toLocaleString()
+                } VNĐ
               </h3>
             </div>
           </CardContent>
@@ -241,7 +237,7 @@ const FinancialHistory = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-center font-black text-slate-900 dark:text-white">
-                        ${(inv.totalAmount / 100).toFixed(2)}
+                        {inv.totalAmount.toLocaleString()} VNĐ
                       </TableCell>
                       <TableCell className="text-center">
                         {getStatusBadge(inv.status)}

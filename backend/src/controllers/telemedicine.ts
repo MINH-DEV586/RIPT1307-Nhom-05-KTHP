@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { TelemedicineSession, Message } from "../models/telemedicine";
+import Appointment from "../models/appointment";
 import { logActivity } from "../lib/activity";
 import mongoose from "mongoose";
 
@@ -33,12 +34,26 @@ export const getSessions = async (req: Request, res: Response) => {
     const role = (req as any).user.role;
 
     const filter = role === "doctor" ? { doctorId: userId } : { patientId: userId };
+    
+    // 1. Fetch from TelemedicineSession
     const sessions = await TelemedicineSession.find(filter).sort({ startTime: 1 }).lean();
+    
+    // 2. Fetch from Appointment (Confirmed only)
+    const appointments = await Appointment.find({ ...filter, status: "confirmed" }).lean();
+    const mappedAppointments = appointments.map(a => ({
+      ...a,
+      startTime: a.date,
+      notes: a.symptoms,
+      isAppointment: true
+    }));
+
+    // Combine both
+    const combined = [...sessions, ...mappedAppointments];
 
     const userCollection = mongoose.connection.collection("user");
 
     const detailedSessions = await Promise.all(
-      sessions.map(async (s) => {
+      combined.map(async (s: any) => {
         const otherId = role === "doctor" ? s.patientId : s.doctorId;
         let queryId: any = otherId;
         try {

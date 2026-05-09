@@ -21,6 +21,15 @@ import {
   Users, Stethoscope, HeartPulse, TrendingUp,
 } from "lucide-react";
 import { Link } from "react-router";
+import { 
+  getPatientLabResults, 
+  getPatientMedicalRecords, 
+  getTelemedicineSessions, 
+  getAllPrescriptionsList 
+} from "@/lib/api";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
+import { FlaskConical, ClipboardList, Pill, Video, FileText, CheckCircle2, User } from "lucide-react";
 
 export function meta() {
   return [{ title: "Bảng điều khiển | MedFlow AI" }];
@@ -35,15 +44,222 @@ const PATIENT_STATUS_COLORS: Record<string, { color: string; label: string }> = 
   active: { color: "#22c55e", label: "Hoạt động" },
 };
 
+function PatientDashboardView({ user }: { user: any }) {
+  const { data: medicalRecords, isLoading: recordsLoading } = useQuery({
+    queryKey: ["patient-medical-records", user.id],
+    queryFn: () => getPatientMedicalRecords(user.id),
+  });
+
+  const { data: labResults, isLoading: labLoading } = useQuery({
+    queryKey: ["patient-lab-results", user.id],
+    queryFn: () => getPatientLabResults(user.id),
+  });
+
+  const { data: sessions, isLoading: sessionsLoading } = useQuery({
+    queryKey: ["patient-sessions", user.id],
+    queryFn: () => getTelemedicineSessions(),
+  });
+
+  const { data: prescriptions, isLoading: prescriptionsLoading } = useQuery({
+    queryKey: ["patient-prescriptions", user.id],
+    queryFn: () => getAllPrescriptionsList({ patientId: user.id }),
+  });
+
+  const upcomingSession = useMemo(() => {
+    if (!sessions) return null;
+    return sessions
+      .filter((s: any) => s.status === "scheduled" && new Date(s.startTime) > new Date())
+      .sort((a: any, b: any) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0];
+  }, [sessions]);
+
+  if (recordsLoading || labLoading || sessionsLoading || prescriptionsLoading) {
+    return <div className="h-[60vh] flex items-center justify-center"><Loader label="Đang tải dữ liệu của bạn..." /></div>;
+  }
+
+  return (
+    <div className="space-y-8 pb-10">
+      {/* Welcome Header */}
+      <div className="flex flex-col gap-2">
+        <h1 className="text-4xl font-black tracking-tight text-primary">
+          Chào mừng trở lại, {user.name} 👋
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          Dưới đây là tóm tắt tình trạng sức khỏe và lịch trình khám bệnh của bạn.
+        </p>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="card shadow-md border-l-4 border-l-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/10">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-indigo-500/10 rounded-2xl">
+                <CalendarDays className="w-6 h-6 text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-xs text-indigo-600/80 font-bold uppercase tracking-wider">Lịch hẹn sắp tới</p>
+                <p className="text-lg font-black">
+                  {upcomingSession 
+                    ? format(new Date(upcomingSession.startTime), "HH:mm, dd/MM", { locale: vi })
+                    : "Chưa có lịch hẹn"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="card shadow-md border-l-4 border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/10">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-emerald-500/10 rounded-2xl">
+                <Pill className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xs text-emerald-600/80 font-bold uppercase tracking-wider">Đơn thuốc</p>
+                <p className="text-lg font-black">{prescriptions?.length || 0} đơn thuốc</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="card shadow-md border-l-4 border-l-blue-500 bg-blue-50/30 dark:bg-blue-950/10">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-500/10 rounded-2xl">
+                <FlaskConical className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs text-blue-600/80 font-bold uppercase tracking-wider">Kết quả xét nghiệm</p>
+                <p className="text-lg font-black">{labResults?.length || 0} kết quả mới</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Recent Medical Records */}
+        <Card className="card shadow-xl overflow-hidden border-none bg-card/50 backdrop-blur-md">
+          <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/20">
+            <div>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <ClipboardList className="w-5 h-5 text-indigo-500" />
+                Lịch sử khám gần đây
+              </CardTitle>
+            </div>
+            <Button asChild variant="ghost" size="sm" className="gap-1 text-indigo-600 font-bold hover:bg-indigo-500/10">
+              <Link to="/patient/medical-records">Xem tất cả <ArrowRight className="w-4 h-4" /></Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="p-0">
+            {medicalRecords && medicalRecords.length > 0 ? (
+              <div className="divide-y divide-border/50">
+                {medicalRecords.slice(0, 3).map((record: any) => (
+                  <div key={record._id} className="p-4 hover:bg-muted/30 transition-colors group">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-bold text-lg group-hover:text-primary transition-colors">{record.diagnosis}</h4>
+                      <Badge variant="outline" className="text-[10px] uppercase font-bold">{format(new Date(record.date), "dd/MM/yyyy")}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{record.symptoms}</p>
+                    <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Stethoscope className="w-3.5 h-3.5 text-primary" />
+                      </div>
+                      <span>Bác sĩ: {record.doctor?.name || "Bác sĩ hệ thống"}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 flex flex-col items-center justify-center text-muted-foreground gap-3">
+                <FileText className="w-10 h-10 opacity-20" />
+                <p>Chưa có lịch sử khám bệnh.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Lab Results */}
+        <Card className="card shadow-xl overflow-hidden border-none bg-card/50 backdrop-blur-md">
+          <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/20">
+            <div>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <FlaskConical className="w-5 h-5 text-emerald-500" />
+                Kết quả xét nghiệm mới nhất
+              </CardTitle>
+            </div>
+            <Button asChild variant="ghost" size="sm" className="gap-1 text-emerald-600 font-bold hover:bg-emerald-500/10">
+              <Link to="/patient/test-results">Xem tất cả <ArrowRight className="w-4 h-4" /></Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="p-0">
+            {labResults && labResults.length > 0 ? (
+              <div className="divide-y divide-border/50">
+                {labResults.slice(0, 3).map((result: any) => (
+                  <div key={result._id} className="p-4 hover:bg-muted/30 transition-colors group">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-bold text-lg group-hover:text-primary transition-colors">{result.testType}</h4>
+                      <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold">Hoàn thành</Badge>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground font-medium">
+                      <span className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" /> {format(new Date(result.createdAt), "dd/MM/yyyy")}</span>
+                      {result.bodyPart && <span className="flex items-center gap-1"><Activity className="w-3.5 h-3.5" /> {result.bodyPart}</span>}
+                    </div>
+                    {result.aiAnalysis && (
+                      <div className="mt-3 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10 flex items-start gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-indigo-600 mt-0.5 shrink-0" />
+                        <p className="text-[11px] text-muted-foreground italic line-clamp-2 leading-relaxed">{result.aiAnalysis}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 flex flex-col items-center justify-center text-muted-foreground gap-3">
+                <FlaskConical className="w-10 h-10 opacity-20" />
+                <p>Chưa có kết quả xét nghiệm.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Actions */}
+      <Card className="card shadow-2xl bg-linear-to-r from-primary/10 via-background to-background border-primary/20 overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+        <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+          <div className="space-y-2 text-center md:text-left">
+            <h3 className="text-2xl font-black">Cần tư vấn từ bác sĩ?</h3>
+            <p className="text-muted-foreground">Đặt lịch khám trực tuyến với các bác sĩ chuyên khoa ngay bây giờ.</p>
+          </div>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Button size="lg" className="gap-2 shadow-lg shadow-primary/20 font-bold" asChild>
+              <Link to="/telemedicine/sessions/book">
+                <Video className="w-5 h-5" />
+                Đặt lịch khám mới
+              </Link>
+            </Button>
+            <Button variant="outline" size="lg" className="gap-2 font-bold bg-background/50 backdrop-blur-sm" asChild>
+              <Link to="/profile">
+                <User className="w-5 h-5" />
+                Hồ sơ sức khỏe
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
 export default function HMSDashboard() {
   const { data: session, isPending: isAuthLoading } = authClient.useSession();
   const navigate = useNavigate();
   const user = session?.user;
 
   useEffect(() => {
-    if (!isAuthLoading && user?.role === "patient") {
-      navigate(`/profile/${user.id}`, { replace: true });
-    }
+    // No longer redirecting patients, they get their own dashboard view
   }, [isAuthLoading, user, navigate]);
 
   const { data: patientData, isLoading: patientLoading } = useQuery({
@@ -95,6 +311,10 @@ export default function HMSDashboard() {
         <Loader label="Đang chuẩn bị bảng điều khiển..." />
       </div>
     );
+  }
+
+  if (user?.role === "patient") {
+    return <PatientDashboardView user={user} />;
   }
 
   return (

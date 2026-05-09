@@ -57,13 +57,17 @@ export default function ConsultationChat() {
       setLoading(true);
       // 1. Fetch consultation details to know receiver
       const allSessions = await getTelemedicineSessions();
-      const current = allSessions.find((s: any) => s._id === sessionId);
+      // Try matching by _id first, then by appointmentId field (when navigating from Appointments page)
+      const current = allSessions.find(
+        (s: any) => s._id === sessionId || String(s._id) === sessionId
+      );
       if (!current) {
-        toast.error("Không tìm thấy phiên khám");
-        navigate("/telemedicine/sessions");
-        return;
+        toast.error("Không tìm thấy phiên khám. Đây có thể là phiên từ lịch hẹn trực tiếp.");
+        // Still allow chat room to load with basic session info
+        setConsultation({ _id: sessionId, patientId: null, doctorId: null, otherUser: null, startTime: new Date() });
+      } else {
+        setConsultation(current);
       }
-      setConsultation(current);
 
       // 2. Fetch history
       const history = await getChatHistory(sessionId!);

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createActivityLog, getUsers } from "@/lib/api";
 import { useNavigate } from "react-router";
+import { Zap } from "lucide-react";
 import Loader from "@/components/global/Loader";
 import {
   Card,
@@ -206,6 +207,7 @@ const UserManagement = ({ role, title, description }: UserManagementProps) => {
                       <TableHead>Tuổi</TableHead>
                       <TableHead>Giới tính</TableHead>
                       <TableHead>Nhóm máu</TableHead>
+                      <TableHead>Thành viên</TableHead>
                     </>
                   )}
                   <TableHead>Trạng thái</TableHead>
@@ -272,6 +274,15 @@ const UserManagement = ({ role, title, description }: UserManagementProps) => {
                               </Badge>
                             ) : (
                               "N/A"
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {user.membership === "pro" ? (
+                              <Badge className="bg-amber-100 text-amber-700 border-amber-200 gap-1">
+                                <Zap size={10} className="fill-amber-500" /> PRO
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-slate-500">Thường</Badge>
                             )}
                           </TableCell>
                         </>

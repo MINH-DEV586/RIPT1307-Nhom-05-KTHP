@@ -140,7 +140,7 @@ export default function Home() {
               <Link to="/login">Đăng nhập</Link>
             </Button>
             <Button asChild className="font-semibold bg-indigo-600 hover:bg-indigo-700 text-white">
-              <Link to="/dashboard">Truy cập hệ thống <ArrowRight className="ml-1 w-4 h-4" /></Link>
+              <Link to="/register">Đăng ký miễn phí <ArrowRight className="ml-1 w-4 h-4" /></Link>
             </Button>
           </div>
         </div>
@@ -172,8 +172,8 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
             <Button asChild size="lg" className="font-bold text-base bg-indigo-600 hover:bg-indigo-700 text-white h-13 px-8 shadow-lg shadow-indigo-500/25">
-              <Link to="/dashboard">
-                Vào Bảng điều khiển <ArrowRight className="ml-2 w-5 h-5" />
+              <Link to="/register">
+                Đăng ký bệnh nhân miễn phí <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="font-bold text-base h-13 px-8">
@@ -303,8 +303,8 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild size="lg" className="font-bold text-base bg-white text-indigo-700 hover:bg-indigo-50 h-13 px-8 shadow-xl shadow-indigo-900/30">
-              <Link to="/dashboard">
-                Truy cập hệ thống ngay <ArrowRight className="ml-2 w-5 h-5" />
+              <Link to="/register">
+                Đăng ký miễn phí ngay <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="font-bold text-base h-13 px-8 border-indigo-300 text-white hover:bg-white/10">
@@ -327,6 +327,7 @@ export default function Home() {
             © 2026 MedFlow AI. Hệ thống quản lý bệnh viện thông minh.
           </p>
           <div className="flex gap-6 text-sm text-slate-500">
+            <Link to="/register" className="hover:text-white transition-colors">Đăng ký</Link>
             <Link to="/login" className="hover:text-white transition-colors">Đăng nhập</Link>
             <Link to="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
           </div>

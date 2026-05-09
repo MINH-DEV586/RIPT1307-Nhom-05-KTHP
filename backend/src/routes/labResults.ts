@@ -6,6 +6,7 @@ import {
   getPatientLabResults,
   updateLabResult,
   getAllLabResults,
+  explainLabResult,
 } from "../controllers/labResults";
 
 const labResultsRouter = Router();
@@ -26,12 +27,19 @@ labResultsRouter.post(
   createLabResult,
 );
 
-// GET: Fetch all X-Rays for a patient (Allowed for Medical Staff)
+// GET: Fetch all X-Rays for a patient (Allowed for Medical Staff & The Patient)
 labResultsRouter.get(
   "/patient/:patientId",
   requireAuth,
-  checkRole(["admin", "doctor", "nurse", "lab_tech"]),
+  checkRole(["admin", "doctor", "nurse", "lab_tech", "patient"]),
   getPatientLabResults,
+);
+
+// GET: Explain a lab result using AI (Allowed for Patients and Staff)
+labResultsRouter.get(
+  "/:id/explain",
+  requireAuth,
+  explainLabResult,
 );
 
 // PUT: Update X-Ray with AI Analysis or Doctor Notes

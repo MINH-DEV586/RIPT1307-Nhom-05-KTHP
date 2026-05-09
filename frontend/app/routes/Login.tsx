@@ -10,7 +10,7 @@ import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
-import { useNavigate, Navigate } from "react-router";
+import { Link, useNavigate, Navigate } from "react-router";
 import { loginSchema } from "@/components/auth/login.schema";
 import Loader from "@/components/global/Loader";
 
@@ -72,7 +72,7 @@ const Login = () => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       <Card className="rounded-lg shadow-2xl card backdrop-blur-xl">
         <CardContent className="p-10 min-w-100 md:min-w-140.5">
-          <div className="flex flex-col items-center mb-10">
+          <div className="flex flex-col items-center mb-8">
             <div className="bg-linear-to-tr from-blue-600 to-indigo-600 p-3 rounded-2xl shadow-lg shadow-blue-500/30 mb-4">
               <Activity className="text-white w-8 h-8" />
             </div>
@@ -150,6 +150,16 @@ const Login = () => {
               )}
             </Button>
           </form>
+
+          <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-6">
+            Bệnh nhân mới?{" "}
+            <Link
+              to="/register"
+              className="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+            >
+              Tạo tài khoản miễn phí
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>

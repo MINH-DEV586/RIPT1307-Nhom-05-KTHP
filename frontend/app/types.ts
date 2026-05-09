@@ -63,6 +63,20 @@ export interface User {
   triageReasoning?: string;
   assignedDoctorName?: string;
   assignedNurseName?: string;
+  membership?: "standard" | "pro";
+  assignedBedId?: string;
+  patientType?: "inpatient" | "outpatient";
+}
+
+export interface Bed {
+  _id: string;
+  bedNumber: string;
+  type: "normal" | "emergency" | "rehab" | "disability" | "vip";
+  status: "available" | "occupied" | "maintenance";
+  patientId?: string;
+  department: string;
+  floor: string;
+  createdAt: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -117,18 +131,40 @@ export interface invoice {
   createdAt: Date;
 }
 
-export interface appointment {
+export interface Appointment {
   _id: string;
   patientId: string;
   doctorId: string;
-  nurseId?: string;
-  date: Date;
-  time: string;
-  reason: string;
-  status: "scheduled" | "confirmed" | "completed" | "cancelled" | "in-progress";
-  isVirtual: boolean;
-  meetingId: string; // Used as the LiveKit Room Name
-  createdAt: Date;
+  patientType: "self" | "family";
+  patientName?: string;
+  date: string;
+  timeSlot: string;
+  type: "online" | "offline";
+  symptoms: string;
+  notes?: string;
+  files?: string[];
+  status: "pending" | "confirmed" | "cancelled" | "completed";
+  meetingLink?: string;
+  createdAt: string;
+  updatedAt: string;
+  doctor?: User;
+  patient?: User;
+}
+
+export interface DoctorSchedule {
+  _id: string;
+  doctorId: string;
+  workingDays: string[];
+  workingHours: {
+    start: string;
+    end: string;
+  };
+  breakTime: {
+    start: string;
+    end: string;
+  };
+  maxPatientsPerDay: number;
+  slotDuration: number;
 }
 
 export interface PrescriptionItem {

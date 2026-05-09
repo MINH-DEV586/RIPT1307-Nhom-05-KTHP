@@ -60,6 +60,38 @@ export const auth = betterAuth({
       appointments: {
         type: "string[]",
       },
+      experience: {
+        type: "string",
+        required: false,
+      },
+      consultationFee: {
+        type: "number",
+        required: false,
+      },
+      rating: {
+        type: "number",
+        required: false,
+        defaultValue: 0,
+      },
+      isOnline: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+      },
+      membership: {
+        type: "string", // "standard" | "pro"
+        required: false,
+        defaultValue: "standard",
+      },
+      assignedBedId: {
+        type: "string",
+        required: false,
+      },
+      patientType: {
+        type: "string", // "inpatient" (nội trú) | "outpatient" (ngoại trú)
+        required: false,
+        defaultValue: "outpatient",
+      },
     },
   },
 });

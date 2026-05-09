@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IMedicalRecord extends Document {
-  patient: mongoose.Types.ObjectId;
-  doctor: mongoose.Types.ObjectId;
+  patient: string; // Better Auth uses string IDs
+  doctor: string;  // Better Auth uses string IDs
   date: Date;
   symptoms: string;
   diagnosis: string;
@@ -13,8 +13,9 @@ export interface IMedicalRecord extends Document {
 
 const MedicalRecordSchema: Schema = new Schema(
   {
-    patient: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    doctor: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    // Store as String since Better Auth user IDs are strings, not ObjectIds
+    patient: { type: String, required: true },
+    doctor: { type: String, required: true },
     date: { type: Date, default: Date.now },
     symptoms: { type: String, required: true },
     diagnosis: { type: String, required: true },

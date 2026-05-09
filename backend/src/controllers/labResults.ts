@@ -141,3 +141,46 @@ export const updateLabResult = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Lỗi hệ thống" });
   }
 };
+export const explainLabResult = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = await labResults.findById(id).lean();
+
+    if (!result) {
+      return res.status(404).json({ message: "Không tìm thấy kết quả xét nghiệm" });
+    }
+
+    const { GoogleGenerativeAI } = await import("@google/generative-ai");
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY!);
+    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+
+    const dataStr = `
+      Loại xét nghiệm: ${result.testType}
+      Vị trí: ${result.bodyPart || "N/A"}
+      Các chỉ số: ${JSON.stringify(result.indicators || [])}
+      Ghi chú của bác sĩ: ${result.doctorNotes || "Không có"}
+      Phân tích AI trước đó: ${result.aiAnalysis || "Không có"}
+    `;
+
+    const prompt = `
+      Bạn là một trợ lý y tế AI thân thiện. Hãy giải thích kết quả xét nghiệm này cho bệnh nhân một cách dễ hiểu nhất.
+      DỮ LIỆU: ${dataStr}
+      
+      Yêu cầu:
+      1. Tránh sử dụng quá nhiều thuật ngữ chuyên môn, hoặc nếu có hãy giải thích chúng.
+      2. Cho biết các chỉ số này có ý nghĩa gì đối với sức khỏe của họ (có bình thường không?).
+      3. Đưa ra lời khuyên nhẹ nhàng về các bước tiếp theo (ví dụ: cần trao đổi thêm với bác sĩ nào).
+      4. Tuyệt đối không đưa ra chẩn đoán khẳng định hoặc đơn thuốc.
+      5. Luôn nhắc nhở bệnh nhân rằng đây chỉ là thông tin tham khảo từ AI.
+      6. Trình bày bằng tiếng Việt, súc tích, chia thành các đoạn ngắn.
+    `;
+
+    const aiResponse = await model.generateContent(prompt);
+    const explanation = aiResponse.response.text();
+
+    res.json({ explanation });
+  } catch (error) {
+    console.error("AI Explanation Error:", error);
+    res.status(500).json({ message: "Không thể kết nối với AI để giải thích lúc này." });
+  }
+};

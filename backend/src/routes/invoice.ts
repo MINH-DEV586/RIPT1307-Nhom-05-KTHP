@@ -17,7 +17,7 @@ invoiceRouter.get(
   checkRole(["patient", "admin", "doctor", "nurse"]),
   getMyActiveInvoice,
 );
-invoiceRouter.get("/", requireAuth, checkRole(["admin"]), getAllInvoices);
+invoiceRouter.get("/", requireAuth, checkRole(["admin", "doctor"]), getAllInvoices);
 invoiceRouter.get("/history/:id", requireAuth, getBillingHistory);
 invoiceRouter.post("/:id/checkout", requireAuth, createCheckoutSession);
 

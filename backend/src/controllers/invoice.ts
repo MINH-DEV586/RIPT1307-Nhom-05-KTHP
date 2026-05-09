@@ -7,7 +7,7 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
     const inv = await invoice
-      .findOne({ patientId, status: "draft" })
+      .findOne({ patientId, status: { $in: ["draft", "pending_payment"] } })
       .sort({ createdAt: -1 });
 
     if (!inv) {
@@ -22,7 +22,7 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
 
 export const getBillingHistory = async (req: Request, res: Response) => {
   try {
-    const { patientId } = req.params;
+    const { id: patientId } = req.params; // route is /history/:id
     const history = await invoice
       .find({ patientId, status: "paid" })
       .sort({ updatedAt: -1 });
@@ -52,11 +52,23 @@ export const getAllInvoices = async (req: Request, res: Response) => {
 
     const invoicesWithUser = await Promise.all(
       invoices.map(async (inv) => {
-        const user = await collection.findOne(
-          { _id: new mongoose.Types.ObjectId(inv.patientId) },
-          { projection: { password: 0, emailVerified: 0 } },
-        );
-        return { ...inv, user };
+        try {
+          // Better Auth IDs are usually strings. 
+          // But they might be stored as ObjectIds in the 'user' collection.
+          let queryId: any = inv.patientId;
+          if (mongoose.Types.ObjectId.isValid(inv.patientId)) {
+            queryId = new mongoose.Types.ObjectId(inv.patientId);
+          }
+
+          const user = await collection.findOne(
+            { $or: [{ _id: queryId }, { _id: inv.patientId as any }] },
+            { projection: { password: 0, emailVerified: 0 } },
+          );
+          return { ...inv, user };
+        } catch (err) {
+          console.error(`Error looking up user ${inv.patientId}:`, err);
+          return { ...inv, user: null };
+        }
       }),
     );
 
@@ -77,8 +89,8 @@ export const getAllInvoices = async (req: Request, res: Response) => {
 
 export const createCheckoutSession = async (req: Request, res: Response) => {
   try {
-    const { invoiceId } = req.body;
-    const inv = await invoice.findById(invoiceId);
+    const { id } = req.params; // ✅ read from /:id/checkout route params
+    const inv = await invoice.findById(id);
 
     if (!inv) {
       return res.status(404).json({ message: "Không tìm thấy hóa đơn" });
@@ -90,7 +102,7 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
     await logActivity(
       (req as any).user.id,
       "Thanh toán hóa đơn",
-      `Hóa đơn ${invoiceId} đã được đánh dấu là đã thanh toán`,
+      `Hóa đơn ${id} đã được đánh dấu là đã thanh toán`,
     );
 
     res.json({

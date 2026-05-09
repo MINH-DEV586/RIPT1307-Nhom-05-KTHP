@@ -34,6 +34,8 @@ import medicineRouter from "./routes/medicine";
 import labRequestRouter from "./routes/labRequest";
 import medicalRecordRouter from "./routes/medicalRecord";
 import telemedicineRouter from "./routes/telemedicine";
+import appointmentRouter from "./routes/appointment";
+import bedRouter from "./routes/bed";
 
 // Initialize Express application
 const app: Application = express();
@@ -102,6 +104,8 @@ app.use("/api/medicines", medicineRouter);
 app.use("/api/lab-requests", labRequestRouter);
 app.use("/api/medical-records", medicalRecordRouter);
 app.use("/api/telemedicine", telemedicineRouter);
+app.use("/api/appointments", appointmentRouter);
+app.use("/api/beds", bedRouter);
 // inngest API route
 app.use(
   "/api/inngest",
