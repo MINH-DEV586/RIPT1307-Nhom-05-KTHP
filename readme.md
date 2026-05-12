@@ -31,7 +31,7 @@ Follow these steps to get the project up and running on your local machine.
    PORT=5000
    MONGO_URI=your_mongodb_uri
    BETTER_AUTH_SECRET=your_secret
-   BETTER_AUTH_URL=http://localhost:5000
+   BETTER_AUTH_URL=http://localhost:5001
    FRONTEND_URL=http://localhost:5173
    GEMINI_KEY=your_google_ai_key
    ```
@@ -46,7 +46,7 @@ Follow these steps to get the project up and running on your local machine.
    ```bash
    npm run dev
    ```
-   The backend will run on `http://localhost:5000`.
+   The backend will run on `http://localhost:5001`.
 
 ---
 
@@ -65,8 +65,8 @@ Follow these steps to get the project up and running on your local machine.
 3. **Configure Environment Variables:**
    Create a `.env` file in the `frontend` folder.
    ```env
-   VITE_API_URL=http://localhost:5000
-   VITE_SOCKET_URL=http://localhost:5000
+   VITE_API_URL=http://localhost:5001
+   VITE_SOCKET_URL=http://localhost:5001
    ```
 
 4. **Start the development server:**
