@@ -141,3 +141,4 @@ connectDB()
       `Failed to connect to the database: ${(error as Error).message}`,
     );
   });
+ 

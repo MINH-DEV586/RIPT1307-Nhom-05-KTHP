@@ -3,6 +3,7 @@ import Appointment from "../models/appointment";
 import DoctorSchedule from "../models/doctorSchedule";
 import mongoose from "mongoose";
 import { logActivity } from "../lib/activity";
+import { format, parseISO } from "date-fns";
 
 // --- PATIENT ACTIONS ---
 
@@ -20,9 +21,13 @@ export const getDoctors = async (req: Request, res: Response) => {
 
     const doctors = await userCollection.find(filter).toArray();
     
-    // Bổ sung thông tin schedule nếu cần (ví dụ: filter theo ngày trống)
-    // Để đơn giản, trả về danh sách bác sĩ trước
-    res.json(doctors);
+    // Bổ sung thông tin schedule cho từng bác sĩ
+    const detailedDoctors = await Promise.all(doctors.map(async (doc) => {
+      const schedule = await DoctorSchedule.findOne({ doctorId: doc._id.toString() });
+      return { ...doc, schedule };
+    }));
+
+    res.json(detailedDoctors);
   } catch (error) {
     res.status(500).json({ message: "Lỗi khi lấy danh sách bác sĩ" });
   }
@@ -70,11 +75,19 @@ export const getMyAppointments = async (req: Request, res: Response) => {
     
     const userCollection = mongoose.connection.collection("user");
     const detailed = await Promise.all(appointments.map(async (app) => {
-      const doctor = await userCollection.findOne(
-        { _id: app.doctorId as any }, 
-        { projection: { name: 1, specialization: 1, image: 1 } }
-      );
-      return { ...app, doctor };
+      // Tìm kiếm bác sĩ
+      let doctor = await userCollection.findOne({ _id: app.doctorId as any });
+      if (!doctor && mongoose.Types.ObjectId.isValid(app.doctorId)) {
+        doctor = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(app.doctorId) });
+      }
+
+      // Tìm kiếm bệnh nhân (nếu cần)
+      let patient = await userCollection.findOne({ _id: app.patientId as any });
+      if (!patient && mongoose.Types.ObjectId.isValid(app.patientId)) {
+        patient = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(app.patientId) });
+      }
+
+      return { ...app, doctor, patient };
     }));
 
     res.json(detailed);
@@ -88,10 +101,23 @@ export const getMyAppointments = async (req: Request, res: Response) => {
 // Lấy danh sách lịch khám của bác sĩ
 export const getDoctorAppointments = async (req: Request, res: Response) => {
   try {
-    const doctorId = (req as any).user.id;
-    const { status, date } = req.query;
+    const user = (req as any).user;
+    const { status, date, doctorId: queryDoctorId } = req.query;
 
-    const filter: any = { doctorId };
+    const filter: any = {};
+    
+    // Nếu là bác sĩ, chỉ cho phép xem lịch của chính mình
+    // Nếu là admin, có thể xem tất cả hoặc xem theo doctorId cụ thể nếu truyền vào
+    if (user.role === "doctor") {
+      filter.doctorId = user.id;
+    } else if (user.role === "admin") {
+      if (queryDoctorId) {
+        filter.doctorId = queryDoctorId;
+      }
+    } else {
+      return res.status(403).json({ message: "Không có quyền truy cập" });
+    }
+
     if (status) filter.status = status;
     if (date) {
       const start = new Date(date as string);
@@ -105,11 +131,19 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
     
     const userCollection = mongoose.connection.collection("user");
     const detailed = await Promise.all(appointments.map(async (app) => {
-      const patient = await userCollection.findOne(
-        { _id: app.patientId as any }, 
-        { projection: { name: 1, image: 1, gender: 1, age: 1 } }
-      );
-      return { ...app, patient };
+      // Tìm kiếm bệnh nhân
+      let patient = await userCollection.findOne({ _id: app.patientId as any });
+      if (!patient && mongoose.Types.ObjectId.isValid(app.patientId)) {
+        patient = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(app.patientId) });
+      }
+
+      // Tìm kiếm bác sĩ
+      let doctor = await userCollection.findOne({ _id: app.doctorId as any });
+      if (!doctor && mongoose.Types.ObjectId.isValid(app.doctorId)) {
+        doctor = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(app.doctorId) });
+      }
+
+      return { ...app, patient, doctor };
     }));
 
     res.json(detailed);
@@ -124,7 +158,7 @@ import Invoice from "../models/invoice";
 export const updateAppointmentStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { status, meetingLink, billing } = req.body;
+    const { status, meetingLink, billing, rejectionReason } = req.body;
     const userId = (req as any).user.id;
 
     const appointment = await Appointment.findById(id);
@@ -133,6 +167,7 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     const oldStatus = appointment.status;
     appointment.status = status;
     if (meetingLink) appointment.meetingLink = meetingLink;
+    if (rejectionReason) appointment.rejectionReason = rejectionReason;
     
     await appointment.save();
 
@@ -223,3 +258,108 @@ export const getDoctorSchedule = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Lỗi khi lấy lịch làm việc" });
   }
 };
+
+// Lấy tất cả lịch làm việc (Admin)
+export const getAllSchedules = async (req: Request, res: Response) => {
+  try {
+    const schedules = await DoctorSchedule.find().lean();
+    
+    // Bổ sung thông tin bác sĩ từ collection user
+    const userCollection = mongoose.connection.collection("user");
+    const detailed = await Promise.all(schedules.map(async (s) => {
+      // Tìm kiếm bằng cả string ID và ObjectId để đảm bảo không sót
+      let doctor = await userCollection.findOne({ _id: s.doctorId as any });
+      
+      if (!doctor && mongoose.Types.ObjectId.isValid(s.doctorId)) {
+        doctor = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(s.doctorId) });
+      }
+
+      return { ...s, doctor };
+    }));
+
+    res.json(detailed);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi lấy danh sách lịch làm việc" });
+  }
+};
+
+// Tính toán khung giờ còn trống cho bệnh nhân
+export const getAvailableSlots = async (req: Request, res: Response) => {
+  try {
+    const { doctorId } = req.params;
+    const { date } = req.query; // Định dạng YYYY-MM-DD
+
+    if (!date) return res.status(400).json({ message: "Thiếu thông tin ngày khám" });
+
+    const schedule = await DoctorSchedule.findOne({ doctorId });
+    if (!schedule) return res.status(404).json({ message: "Bác sĩ chưa thiết lập lịch làm việc" });
+
+    // Sử dụng parseISO để tránh lỗi múi giờ
+    const dateObj = parseISO(date as string);
+    const dayOfWeek = format(dateObj, "EEEE"); // e.g., "Monday"
+    
+    if (!schedule.workingDays.includes(dayOfWeek)) {
+      return res.json({ available: false, message: "Bác sĩ không làm việc vào ngày này", slots: [] });
+    }
+
+    // 2. Tạo tất cả các slot dựa trên workingHours và slotDuration
+    const slots: string[] = [];
+    let current = parseTime(schedule.workingHours.start);
+    const end = parseTime(schedule.workingHours.end);
+    const breakStart = parseTime(schedule.breakTime.start);
+    const breakEnd = parseTime(schedule.breakTime.end);
+
+    while (current < end) {
+      const slotStart = formatTime(current);
+      const next = new Date(current.getTime() + schedule.slotDuration * 60000);
+      const slotEnd = formatTime(next);
+      const slotLabel = `${slotStart} - ${slotEnd}`;
+
+      // Loại bỏ slot nếu nằm trong giờ nghỉ
+      const isBreak = current >= breakStart && current < breakEnd;
+      
+      if (!isBreak && next <= end) {
+        slots.push(slotLabel);
+      }
+      current = next;
+    }
+
+    // 3. Loại bỏ các slot đã được đặt
+    const startOfDay = new Date(date as string);
+    startOfDay.setHours(0,0,0,0);
+    const endOfDay = new Date(date as string);
+    endOfDay.setHours(23,59,59,999);
+
+    const bookedAppointments = await Appointment.find({
+      doctorId,
+      date: { $gte: startOfDay, $lte: endOfDay },
+      status: { $ne: "cancelled" }
+    }).select("timeSlot");
+
+    const bookedSlots = bookedAppointments.map(a => a.timeSlot);
+    const availableSlots = slots.filter(s => !bookedSlots.includes(s));
+
+    res.json({
+      available: true,
+      slots: availableSlots,
+      workingHours: schedule.workingHours,
+      breakTime: schedule.breakTime
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi khi tính toán khung giờ trống" });
+  }
+};
+
+// Helper functions for time parsing
+function parseTime(timeStr: string): Date {
+  const [hours, minutes] = timeStr.split(":").map(Number);
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  return date;
+}
+
+function formatTime(date: Date): string {
+  return date.toTimeString().substring(0, 5);
+}

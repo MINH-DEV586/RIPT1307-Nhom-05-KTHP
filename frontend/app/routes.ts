@@ -22,6 +22,7 @@ export default [
     route("financial-history", "routes/protected/FinancialHistory.tsx"),
     route("appointments", "routes/protected/Appointments.tsx"),
     route("appointments/book", "routes/protected/appointments/Book.tsx"),
+    route("appointments/all-schedules", "routes/protected/appointments/AllSchedules.tsx"),
     route("appointments/schedule-setup", "routes/protected/appointments/ScheduleSetup.tsx"),
     route("bed-management", "routes/protected/BedManagement.tsx"),
     route("reports", "routes/protected/Reports.tsx"),

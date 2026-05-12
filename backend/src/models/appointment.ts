@@ -13,6 +13,7 @@ export interface IAppointment extends Document {
   files?: string[];
   status: "pending" | "confirmed" | "cancelled" | "completed";
   meetingLink?: string;
+  rejectionReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +36,7 @@ const AppointmentSchema: Schema = new Schema(
       default: "pending",
     },
     meetingLink: { type: String },
+    rejectionReason: { type: String },
   },
   { timestamps: true }
 );

@@ -540,6 +540,18 @@ export const getDoctorSchedule = async (doctorId: string) => {
   return res.json();
 };
 
+export const getAllDoctorSchedules = async () => {
+  const res = await fetch(`${API_URL}/appointments/schedule/all`, { credentials: "include" });
+  if (!res.ok) throw new Error("Failed to fetch all schedules");
+  return res.json();
+};
+
+export const getAvailableSlots = async (doctorId: string, date: string) => {
+  const res = await fetch(`${API_URL}/appointments/available-slots/${doctorId}?date=${date}`, { credentials: "include" });
+  if (!res.ok) throw new Error("Failed to fetch available slots");
+  return res.json();
+};
+
 // --- BED MANAGEMENT SYSTEM ---
 
 export const getAllBeds = async (params?: { department?: string; type?: string; status?: string }) => {

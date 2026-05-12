@@ -29,7 +29,9 @@ import {
 } from "@/lib/api";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { FlaskConical, ClipboardList, Pill, Video, FileText, CheckCircle2, User } from "lucide-react";
+import { FlaskConical, ClipboardList, Pill, Video, FileText, CheckCircle2, User as UserIcon } from "lucide-react";
+import { getDoctorSchedule } from "@/lib/api";
+import { ScheduleOverview } from "@/components/appointments/ScheduleOverview";
 
 export function meta() {
   return [{ title: "Bảng điều khiển | MedFlow AI" }];
@@ -241,7 +243,7 @@ function PatientDashboardView({ user }: { user: any }) {
             </Button>
             <Button variant="outline" size="lg" className="gap-2 font-bold bg-background/50 backdrop-blur-sm" asChild>
               <Link to="/profile">
-                <User className="w-5 h-5" />
+                <UserIcon className="w-5 h-5" />
                 Hồ sơ sức khỏe
               </Link>
             </Button>
@@ -277,6 +279,12 @@ export default function HMSDashboard() {
     queryKey: ["nurses-dashboard"],
     queryFn: () => getUsers({ role: "nurse", limit: 100 }),
     enabled: user?.role === "admin",
+  });
+
+  const { data: doctorSchedule } = useQuery({
+    queryKey: ["doctor-schedule", user?.id],
+    queryFn: () => getDoctorSchedule(user!.id),
+    enabled: user?.role === "doctor",
   });
 
   const patients = patientData?.res || [];
@@ -333,8 +341,20 @@ export default function HMSDashboard() {
         <QuickActions role={user?.role as Role} />
       </div>
 
-      {/* 2. Top Level Stats */}
-      <StatsCards data={patients} />
+      {/* Doctor Schedule Overview */}
+      {user?.role === "doctor" && doctorSchedule && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
+             <StatsCards data={patients} />
+          </div>
+          <div className="md:col-span-1">
+            <ScheduleOverview schedule={doctorSchedule} title="Lịch làm việc của tôi" />
+          </div>
+        </div>
+      )}
+
+      {/* 2. Top Level Stats (Non-doctors or fallback) */}
+      {user?.role !== "doctor" && <StatsCards data={patients} />}
 
       {/* 3. Admin: Quick summary row */}
       {isAdmin && (

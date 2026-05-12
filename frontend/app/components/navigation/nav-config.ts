@@ -67,6 +67,7 @@ export const navConfig: {
       items: [
         { title: "Lịch hẹn tổng quan", url: "/appointments" },
         { title: "Đặt lịch mới", url: "/appointments/book", allowedRoles: ["patient"] },
+        { title: "Tất cả lịch bác sĩ", url: "/appointments/all-schedules", allowedRoles: ["admin"] },
         { title: "Cài đặt lịch làm việc", url: "/appointments/schedule-setup", allowedRoles: ["doctor"] },
         { title: "Khám từ xa", url: "/telemedicine/sessions" },
       ],

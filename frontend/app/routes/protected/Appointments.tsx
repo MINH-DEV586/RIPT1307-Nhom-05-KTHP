@@ -61,17 +61,19 @@ export default function AppointmentsPage() {
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const user = session?.user;
-  const isDoctor = user?.role === "doctor" || user?.role === "admin";
+  const isAdmin = user?.role === "admin";
+  const isDoctor = user?.role === "doctor";
+  const isDoctorOrAdmin = isDoctor || isAdmin;
 
   const { data: appointments = [], isLoading } = useQuery({
     queryKey: ["appointments", user?.role],
-    queryFn: () => (isDoctor ? getDoctorAppointments() : getMyAppointments()),
+    queryFn: () => (isDoctorOrAdmin ? getDoctorAppointments() : getMyAppointments()),
     enabled: !!user,
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status, meetingLink, billing }: { id: string; status: string; meetingLink?: string; billing?: any }) => 
-      updateAppointmentStatus(id, { status, meetingLink, billing }),
+    mutationFn: ({ id, status, meetingLink, billing, rejectionReason }: { id: string; status: string; meetingLink?: string; billing?: any; rejectionReason?: string }) => 
+      updateAppointmentStatus(id, { status, meetingLink, billing, rejectionReason }),
     onSuccess: () => {
       toast.success("Cập nhật trạng thái thành công");
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
@@ -89,14 +91,18 @@ export default function AppointmentsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black tracking-tight">Lịch hẹn của bạn</h1>
+          <h1 className="text-4xl font-black tracking-tight">
+            {isAdmin ? "Quản lý toàn bộ lịch hẹn" : "Lịch hẹn của bạn"}
+          </h1>
           <p className="text-muted-foreground text-lg">
-            {isDoctor 
-              ? "Quản lý các ca khám bệnh và tư vấn trực tuyến của bạn." 
-              : "Theo dõi và quản lý các cuộc hẹn khám bệnh với bác sĩ."}
+            {isAdmin 
+              ? "Theo dõi và giám sát tất cả các cuộc hẹn trong hệ thống."
+              : isDoctor 
+                ? "Quản lý các ca khám bệnh và tư vấn trực tuyến của bạn." 
+                : "Theo dõi và quản lý các cuộc hẹn khám bệnh với bác sĩ."}
           </p>
         </div>
-        {!isDoctor && (
+        {!isDoctorOrAdmin && (
           <Button
             onClick={() => navigate("/appointments/book")}
             className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 h-12 px-6 font-bold"
@@ -121,8 +127,9 @@ export default function AppointmentsPage() {
                 <AppointmentCard 
                   key={appt._id} 
                   appointment={appt} 
-                  isDoctor={isDoctor} 
-                  onStatusUpdate={(status, link, billing) => statusMutation.mutate({ id: appt._id, status, meetingLink: link, billing })}
+                  isDoctor={isDoctorOrAdmin} 
+                  isAdmin={isAdmin}
+                  onStatusUpdate={(status, link, billing, reason) => statusMutation.mutate({ id: appt._id, status, meetingLink: link, billing, rejectionReason: reason })}
                 />
               ))
             ) : (
@@ -151,10 +158,22 @@ export default function AppointmentsPage() {
   );
 }
 
-function AppointmentCard({ appointment, isDoctor, onStatusUpdate }: { appointment: any, isDoctor: boolean, onStatusUpdate?: (status: string, link?: string, billing?: any) => void }) {
+function AppointmentCard({ 
+  appointment, 
+  isDoctor, 
+  isAdmin, 
+  onStatusUpdate 
+}: { 
+  appointment: any, 
+  isDoctor: boolean, 
+  isAdmin?: boolean, 
+  onStatusUpdate?: (status: string, link?: string, billing?: any, reason?: string) => void 
+}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [diagnosisModalOpen, setDiagnosisModalOpen] = useState(false);
+  const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
   const [diagnosisData, setDiagnosisData] = useState({
     diagnosis: "",
     treatmentPlan: "",
@@ -206,15 +225,35 @@ function AppointmentCard({ appointment, isDoctor, onStatusUpdate }: { appointmen
                 {person?.name?.[0] || "U"}
               </AvatarFallback>
             </Avatar>
-            <div className="space-y-1">
+            <div className="space-y-1.5 flex-1">
               <div className="flex items-center gap-2">
-                <h3 className="text-xl font-black">{person?.name}</h3>
+                <h3 className="text-xl font-black text-foreground">
+                  {appointment.patient?.name || "Bệnh nhân"}
+                </h3>
                 <Badge className={status.color}>
                   <status.icon className="w-3 h-3 mr-1" />
                   {status.label}
                 </Badge>
               </div>
-              <p className="text-sm font-bold text-indigo-600">{person?.specialization || (isDoctor ? "Bệnh nhân" : "Bác sĩ")}</p>
+
+              {/* Loại bệnh nhân */}
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-bold">
+                  {appointment.patientType === "family" ? `Khám cho người thân: ${appointment.patientName}` : "Khám cho bản thân"}
+                </Badge>
+              </div>
+
+              {/* Bác sĩ & Khoa */}
+              <div className="flex flex-col gap-0.5 pt-1">
+                <div className="flex items-center gap-2 text-sm font-bold text-emerald-600">
+                  <Stethoscope className="w-4 h-4" />
+                  <span>Bác sĩ: {appointment.doctor?.name || "Chưa xác định"}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 ml-6">
+                  <span>Khoa: {appointment.doctor?.specialization || "Bác sĩ chuyên khoa"}</span>
+                </div>
+              </div>
+
               <div className="flex flex-wrap gap-4 pt-2 text-sm text-muted-foreground font-medium">
                 <span className="flex items-center gap-1.5"><CalendarDays className="w-4 h-4" /> {format(new Date(appointment.date), "dd/MM/yyyy")}</span>
                 <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {appointment.timeSlot}</span>
@@ -226,21 +265,23 @@ function AppointmentCard({ appointment, isDoctor, onStatusUpdate }: { appointmen
             </div>
           </div>
 
-          {/* Center: Symptoms (Desktop) */}
-          <div className="hidden md:block flex-1 border-l pl-6">
-             <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Triệu chứng & Ghi chú</h4>
-             <p className="text-sm font-medium line-clamp-3 leading-relaxed">{appointment.symptoms}</p>
-             {appointment.patientType === "family" && (
-                <Badge variant="outline" className="mt-2 bg-indigo-50 text-indigo-700 border-indigo-200">Khám cho: {appointment.patientName}</Badge>
-             )}
-          </div>
+              <div className="hidden md:block flex-1 border-l pl-6">
+                 <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Triệu chứng & Ghi chú</h4>
+                 <p className="text-sm font-medium line-clamp-2 leading-relaxed">{appointment.symptoms}</p>
+                 {appointment.rejectionReason && (
+                    <div className="mt-2 p-2 bg-rose-50 rounded-lg border border-rose-100">
+                      <p className="text-[10px] font-black uppercase text-rose-600 mb-1">Lý do từ chối:</p>
+                      <p className="text-xs font-bold text-rose-700">{appointment.rejectionReason}</p>
+                    </div>
+                 )}
+              </div>
 
           {/* Right: Actions */}
           <div className="flex flex-col justify-center gap-2 min-w-[160px]">
-            {appointment.status === "pending" && isDoctor && (
+            {appointment.status === "pending" && isDoctor && !isAdmin && (
               <>
                 <Button onClick={() => onStatusUpdate?.("confirmed")} className="bg-indigo-600 hover:bg-indigo-700 font-bold">Chấp nhận</Button>
-                <Button variant="outline" onClick={() => onStatusUpdate?.("cancelled")} className="text-rose-600 border-rose-200 hover:bg-rose-50">Từ chối</Button>
+                <Button variant="outline" onClick={() => setRejectionModalOpen(true)} className="text-rose-600 border-rose-200 hover:bg-rose-50 font-bold">Từ chối</Button>
               </>
             )}
             
@@ -251,7 +292,7 @@ function AppointmentCard({ appointment, isDoctor, onStatusUpdate }: { appointmen
                     <Video className="w-4 h-4" /> Vào phòng họp
                   </Button>
                 )}
-                {isDoctor && (
+                {isDoctor && !isAdmin && (
                   <Button onClick={() => setDiagnosisModalOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 font-bold">
                     <FileText className="w-4 h-4" /> Ghi chuẩn đoán
                   </Button>
@@ -292,7 +333,7 @@ function AppointmentCard({ appointment, isDoctor, onStatusUpdate }: { appointmen
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {appointment.status !== "cancelled" && appointment.status !== "completed" && (
+                {appointment.status !== "cancelled" && appointment.status !== "completed" && !isAdmin && (
                   <DropdownMenuItem
                     className="text-rose-600 font-medium"
                     onClick={() => onStatusUpdate?.("cancelled")}
@@ -392,6 +433,44 @@ function AppointmentCard({ appointment, isDoctor, onStatusUpdate }: { appointmen
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rejection Modal */}
+      <Dialog open={rejectionModalOpen} onOpenChange={setRejectionModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-rose-600">Từ chối lịch hẹn</DialogTitle>
+            <DialogDescription>
+              Vui lòng cho biết lý do bạn từ chối lịch hẹn này để bệnh nhân được rõ.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="reason" className="text-sm font-bold">Lý do từ chối</Label>
+            <Textarea 
+              id="reason" 
+              placeholder="Ví dụ: Bác sĩ có ca phẫu thuật đột xuất, vui lòng chọn giờ khác..." 
+              className="mt-2 bg-muted/50"
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRejectionModalOpen(false)}>Quay lại</Button>
+            <Button 
+              className="bg-rose-600 hover:bg-rose-700 font-bold" 
+              onClick={() => {
+                if (!rejectionReason) {
+                  toast.error("Vui lòng nhập lý do từ chối");
+                  return;
+                }
+                onStatusUpdate?.("cancelled", undefined, undefined, rejectionReason);
+                setRejectionModalOpen(false);
+              }}
+            >
+              Xác nhận từ chối
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>

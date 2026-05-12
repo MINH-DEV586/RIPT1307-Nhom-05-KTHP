@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAvailableDoctors, bookAppointment } from "@/lib/api";
+import { getAvailableDoctors, bookAppointment, getAvailableSlots } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
+import { ScheduleOverview } from "@/components/appointments/ScheduleOverview";
 import { DoctorSearchCard } from "@/components/appointments/DoctorSearchCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,12 @@ export default function BookAppointment() {
     queryFn: () => getAvailableDoctors({ specialization: selectedSpec === "all" ? undefined : selectedSpec }),
   });
 
+  const { data: slotsData, isLoading: slotsLoading } = useQuery({
+    queryKey: ["available-slots", selectedDoctor?._id, formData.date],
+    queryFn: () => getAvailableSlots(selectedDoctor._id, formData.date),
+    enabled: !!selectedDoctor?._id && !!formData.date,
+  });
+
   const bookingMutation = useMutation({
     mutationFn: bookAppointment,
     onSuccess: () => {
@@ -74,7 +81,15 @@ export default function BookAppointment() {
     (doc.specialization?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const specs = ["all", "Nội khoa", "Nhi khoa", "Ngoại khoa", "Tim mạch", "Sản phụ khoa", "Da liễu"];
+  const specs = [
+    { value: "all", label: "Tất cả chuyên khoa" },
+    { value: "General", label: "Nội khoa / Tổng quát" },
+    { value: "Pediatrics", label: "Nhi khoa" },
+    { value: "Surgery", label: "Ngoại khoa" },
+    { value: "Cardiology", label: "Tim mạch" },
+    { value: "Obstetrics", label: "Sản phụ khoa" },
+    { value: "Dermatology", label: "Da liễu" }
+  ];
 
   const handleBook = (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,8 +155,8 @@ export default function BookAppointment() {
               </div>
             </SelectTrigger>
             <SelectContent>
-              {specs.map(s => (
-                <SelectItem key={s} value={s}>{s === "all" ? "Tất cả chuyên khoa" : s}</SelectItem>
+              {specs.map((s: any) => (
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -241,8 +256,11 @@ export default function BookAppointment() {
                   <Input 
                     type="date" 
                     className="pl-10 bg-background/50"
+                    min={new Date().toISOString().split("T")[0]}
                     value={formData.date}
-                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, date: e.target.value, timeSlot: ""});
+                    }}
                   />
                 </div>
               </div>
@@ -251,23 +269,32 @@ export default function BookAppointment() {
                 <Select 
                   value={formData.timeSlot} 
                   onValueChange={(v) => setFormData({...formData, timeSlot: v})}
+                  disabled={!formData.date || slotsLoading || !slotsData?.available}
                 >
                   <SelectTrigger className="bg-background/50">
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-indigo-500" />
-                      <SelectValue placeholder="Chọn giờ" />
+                      <SelectValue placeholder={slotsLoading ? "Đang tải..." : (formData.date ? (slotsData?.available ? "Chọn giờ" : "Không có lịch") : "Chọn ngày trước")} />
                     </div>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="08:00 - 08:30">08:00 - 08:30</SelectItem>
-                    <SelectItem value="09:00 - 09:30">09:00 - 09:30</SelectItem>
-                    <SelectItem value="10:00 - 10:30">10:00 - 10:30</SelectItem>
-                    <SelectItem value="14:00 - 14:30">14:00 - 14:30</SelectItem>
-                    <SelectItem value="15:00 - 15:30">15:00 - 15:30</SelectItem>
+                    {slotsData?.slots?.map((s: string) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                    {slotsData?.available && slotsData?.slots?.length === 0 && (
+                      <div className="p-2 text-xs text-center text-muted-foreground">Đã hết chỗ</div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
             </div>
+
+            {/* Doctor Schedule Reference */}
+            {selectedDoctor && (
+              <div className="mt-4">
+                <ScheduleOverview schedule={selectedDoctor.schedule} title="Lịch làm việc chung của bác sĩ" showBreak={false} />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Triệu chứng / Lý do khám</Label>

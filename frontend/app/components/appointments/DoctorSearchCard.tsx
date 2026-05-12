@@ -47,21 +47,31 @@ export function DoctorSearchCard({ doctor, onSelect }: DoctorSearchCardProps) {
             </div>
             <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
               <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
-              <span>{doctor.consultationFee?.toLocaleString()} VNĐ</span>
+              <span>{doctor.consultationFee?.toLocaleString() || "200.000"} VNĐ</span>
             </div>
             <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
               <Clock className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Sẵn sàng: 08:00 - 17:00</span>
+              <span>Sẵn sàng: {doctor.schedule?.workingHours?.start || "08:00"} - {doctor.schedule?.workingHours?.end || "17:00"}</span>
             </div>
           </div>
 
           <div className="pt-2">
             <div className="flex gap-1 flex-wrap">
-              {["T2", "T3", "T4", "T5", "T6"].map(day => (
-                <Badge key={day} variant="outline" className="text-[10px] px-1.5 py-0 bg-muted/50">
-                  {day}
-                </Badge>
-              ))}
+              {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(day => {
+                const isActive = doctor.schedule?.workingDays?.includes(day);
+                const labels: Record<string, string> = {
+                  Monday: "T2", Tuesday: "T3", Wednesday: "T4", Thursday: "T5", Friday: "T6", Saturday: "T7", Sunday: "CN"
+                };
+                return (
+                  <Badge 
+                    key={day} 
+                    variant={isActive ? "default" : "outline"} 
+                    className={`text-[10px] px-1.5 py-0 ${isActive ? "bg-indigo-600 hover:bg-indigo-600" : "bg-muted/30 text-muted-foreground opacity-50"}`}
+                  >
+                    {labels[day]}
+                  </Badge>
+                );
+              })}
             </div>
           </div>
         </div>
