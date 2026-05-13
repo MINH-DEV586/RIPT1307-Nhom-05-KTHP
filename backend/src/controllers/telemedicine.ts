@@ -3,6 +3,7 @@ import { TelemedicineSession, Message } from "../models/telemedicine";
 import Appointment from "../models/appointment";
 import { logActivity } from "../lib/activity";
 import mongoose from "mongoose";
+import { sendMail } from "../lib/mailer";
 
 // Đặt lịch khám online
 export const bookSession = async (req: Request, res: Response) => {
@@ -20,6 +21,54 @@ export const bookSession = async (req: Request, res: Response) => {
     await session.save();
 
     await logActivity(patientId, "Đặt lịch khám từ xa", `Đặt lịch với bác sĩ ID: ${doctorId}`);
+
+    try {
+      const userCollection = mongoose.connection.collection("user");
+      let patientObj = await userCollection.findOne({ _id: patientId as any });
+      if (!patientObj && mongoose.Types.ObjectId.isValid(patientId)) {
+        patientObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(patientId) });
+      }
+
+      let doctorObj = await userCollection.findOne({ _id: doctorId as any });
+      if (!doctorObj && mongoose.Types.ObjectId.isValid(doctorId)) {
+        doctorObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(doctorId) });
+      }
+
+      if (patientObj && patientObj.email) {
+        const formattedDate = new Date(startTime).toLocaleString('vi-VN');
+        const htmlContent = `
+          <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 20px; border-radius: 12px;">
+            <div style="background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid #4f46e5;">
+              <h2 style="color: #1f2937; margin-top: 0; font-size: 24px;">Xác nhận lịch khám từ xa</h2>
+              <p style="color: #4b5563; font-size: 16px; line-height: 1.5;">Xin chào <strong style="color: #111827;">${patientObj.name}</strong>,</p>
+              <p style="color: #4b5563; font-size: 16px; line-height: 1.5;">Cảm ơn bạn đã tin tưởng dịch vụ của MedFlow. Lịch khám từ xa (Telemedicine) của bạn đã được ghi nhận thành công. Dưới đây là thông tin chi tiết:</p>
+              
+              <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                <p style="margin: 0 0 10px 0; color: #374151; font-size: 15px;"><strong>👨‍⚕️ Bác sĩ:</strong> ${doctorObj?.name || 'Bác sĩ chuyên khoa'}</p>
+                <p style="margin: 0 0 10px 0; color: #374151; font-size: 15px;"><strong>⏰ Thời gian:</strong> ${formattedDate}</p>
+                <p style="margin: 0; color: #374151; font-size: 15px;"><strong>📝 Ghi chú:</strong> ${notes || 'Không có'}</p>
+              </div>
+
+              <p style="color: #4b5563; font-size: 15px; line-height: 1.6;">Vui lòng đăng nhập vào hệ thống và chuẩn bị sẵn sàng trước <strong>5 phút</strong> để đảm bảo kết nối video call với bác sĩ diễn ra tốt nhất.</p>
+              
+              <div style="margin-top: 30px; text-align: center;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/telemedicine" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Truy cập phòng khám</a>
+              </div>
+
+              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
+              
+              <p style="color: #9ca3af; font-size: 13px; text-align: center; margin: 0;">Trân trọng,<br><strong>Đội ngũ MedFlow AI</strong></p>
+            </div>
+          </div>
+        `;
+        
+        sendMail(patientObj.email, "Xác nhận lịch khám từ xa - Phòng Khám", htmlContent).catch(err => {
+          console.error("Failed to send telemedicine booking email:", err);
+        });
+      }
+    } catch (mailError) {
+      console.error("Error preparing email for telemedicine:", mailError);
+    }
 
     res.status(201).json(session);
   } catch (error) {
