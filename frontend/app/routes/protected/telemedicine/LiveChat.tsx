@@ -10,7 +10,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Send,
   ArrowLeft,
-  Video,
   Clock,
   MoreVertical,
   Loader2,
@@ -208,13 +207,6 @@ export default function ConsultationChat() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="hidden md:flex bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100 transition-all gap-2 font-bold"
-          >
-            <Video className="w-4 h-4" /> Cuộc gọi Video
-          </Button>
           <Button variant="ghost" size="icon" className="rounded-full">
             <MoreVertical className="w-5 h-5 text-muted-foreground" />
           </Button>

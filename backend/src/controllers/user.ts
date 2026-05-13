@@ -81,7 +81,24 @@ export const getUserById = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, email, role, password, ...customFields } = req.body;
+    const currentUser = (req as any).user;
+    let { name, email, role, password, ...customFields } = req.body;
+
+    // Security check: Patients can only update their own profile
+    if (currentUser.role === "patient") {
+      if (currentUser.id !== id) {
+        return res.status(403).json({ message: "Bạn không có quyền cập nhật hồ sơ của người khác" });
+      }
+      // Patients can ONLY update name, email, birthday, phoneNumber, address, and insuranceId
+      role = undefined;
+      password = undefined;
+      customFields = { 
+        birthday: customFields.birthday, 
+        phoneNumber: customFields.phoneNumber, 
+        address: customFields.address, 
+        insuranceId: customFields.insuranceId 
+      }; 
+    }
 
     const queryId =
       id?.length === 24 ? new mongoose.Types.ObjectId(id as string) : id;
@@ -94,7 +111,7 @@ export const updateUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
     }
 
-    const updatePayload = {
+    const updatePayload: any = {
       name,
       email,
       role,
@@ -108,24 +125,27 @@ export const updateUser = async (req: Request, res: Response) => {
     );
 
     const result = await collection.updateOne(
-      { _id: new mongoose.Types.ObjectId(id as string) },
+      { _id: queryId as mongoose.Types.ObjectId },
       { $set: updatePayload },
     );
+    
     if (result.matchedCount === 0) {
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
     }
+    
     const io = req.app.get("io");
     if (io && result.modifiedCount > 0) {
       io.emit("notify_user_updated");
     }
 
     await logActivity(
-      (req as any).user.id,
-      "Cập nhật người dùng",
-      `Đã cập nhật người dùng: ${id}`,
+      currentUser.id,
+      "Cập nhật hồ sơ",
+      `Đã cập nhật thông tin cho người dùng: ${id}`
     );
+    
     res.json({
-      message: "Cập nhật người dùng thành công",
+      message: "Cập nhật thành công",
       updatedUser: result,
     });
   } catch (error) {

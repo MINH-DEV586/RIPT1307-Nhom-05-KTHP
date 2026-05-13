@@ -18,6 +18,10 @@ import {
   Building2,
   FileHeart,
   UserIcon,
+  Phone,
+  MapPin,
+  Calendar,
+  ShieldCheck,
 } from "lucide-react";
 import { CustomInput } from "@/components/global/CustomInput";
 import { CustomSelect } from "@/components/global/CustomSelect";
@@ -71,11 +75,14 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
       password: "",
       specialization: "",
       department: "",
-      age: "",
       gender: "",
       bloodgroup: "",
       medicalHistory: "",
       status: role === "patient" ? "admitted" : "active",
+      birthday: "",
+      phoneNumber: "",
+      address: "",
+      insuranceId: "",
     },
   });
 
@@ -89,25 +96,31 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
           status: user.status as string,
           specialization: user.specialization || "",
           department: user.department || "",
-          age: user.age || "",
           gender: user.gender || "",
           bloodgroup: user.bloodgroup || "",
           medicalHistory: user.medicalHistory || "",
+          birthday: user.birthday || "",
+          phoneNumber: user.phoneNumber || "",
+          address: user.address || "",
+          insuranceId: user.insuranceId || "",
         });
       } else {
         form.reset({
-          name: "",
-          email: "",
-          password: "",
-          status: role === "patient" ? "admitted" : "active",
-          specialization: "",
-          department: "",
-          age: "",
-          gender: "",
-          bloodgroup: "",
-          medicalHistory: "",
-        });
-      }
+           name: "",
+           email: "",
+           password: "",
+           status: role === "patient" ? "admitted" : "active",
+           specialization: "",
+           department: "",
+           gender: "",
+           bloodgroup: "",
+           medicalHistory: "",
+           birthday: "",
+           phoneNumber: "",
+           address: "",
+           insuranceId: "",
+         });
+       }
     }
   }, [open, user, form, role]);
 
@@ -154,10 +167,13 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
       payload.specialization = data.specialization;
       payload.department = data.department;
     } else if (role === "patient") {
-      payload.age = data.age;
       payload.gender = data.gender;
       payload.bloodgroup = data.bloodgroup;
       payload.medicalHistory = data.medicalHistory;
+      payload.birthday = data.birthday;
+      payload.phoneNumber = data.phoneNumber;
+      payload.address = data.address;
+      payload.insuranceId = data.insuranceId;
     } else if (["nurse", "lab_tech", "pharmacist"].includes(role)) {
       payload.department = data.department;
     }
@@ -284,38 +300,63 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
               />
             </>
           )}
-          {role === "patient" && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
+            {role === "patient" && (
+              <>
+                <div className="grid grid-cols-1 gap-4">
+                  <CustomSelect
+                    control={form.control}
+                    name="gender"
+                    label="Giới tính"
+                    options={GENDER_OPTIONS}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <CustomInput
+                    control={form.control}
+                    name="birthday"
+                    label="Ngày sinh"
+                    type="date"
+                    startIcon={<Calendar size={18} />}
+                  />
+                  <CustomInput
+                    control={form.control}
+                    name="phoneNumber"
+                    label="Số điện thoại"
+                    placeholder="0912..."
+                    startIcon={<Phone size={18} />}
+                  />
+                </div>
                 <CustomInput
                   control={form.control}
-                  name="age"
-                  label="Tuổi"
-                  type="number"
-                  placeholder="Ví dụ: 34"
+                  name="address"
+                  label="Địa chỉ"
+                  placeholder="Số 123, Đường..."
+                  startIcon={<MapPin size={18} />}
                 />
-                <CustomSelect
+                <div className="grid grid-cols-2 gap-4">
+                  <CustomSelect
+                    control={form.control}
+                    name="bloodgroup"
+                    label="Nhóm máu"
+                    options={BLOOD_GROUP_OPTIONS}
+                  />
+                  <CustomInput
+                    control={form.control}
+                    name="insuranceId"
+                    label="Mã BHYT"
+                    placeholder="GD401..."
+                    startIcon={<ShieldCheck size={18} />}
+                  />
+                </div>
+                <CustomInput
                   control={form.control}
-                  name="gender"
-                  label="Giới tính"
-                  options={GENDER_OPTIONS}
+                  name="medicalHistory"
+                  label="Tiền sử bệnh lý / Dị ứng / Lý do nhập viện"
+                  placeholder="Đậu phộng, Penicillin..."
+                  startIcon={<FileHeart size={18} />}
                 />
-              </div>
-              <CustomSelect
-                control={form.control}
-                name="bloodgroup"
-                label="Nhóm máu"
-                options={BLOOD_GROUP_OPTIONS}
-              />
-              <CustomInput
-                control={form.control}
-                name="medicalHistory"
-                label="Tiền sử bệnh lý / Dị ứng / Lý do nhập viện"
-                placeholder="Đậu phộng, Penicillin..."
-                startIcon={<FileHeart size={18} />}
-              />
-            </>
-          )}
+              </>
+            )}
           <CustomSelect
             control={form.control}
             name="status"

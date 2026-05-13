@@ -204,7 +204,6 @@ const UserManagement = ({ role, title, description }: UserManagementProps) => {
                   {role === "doctor" && <TableHead>Chuyên môn</TableHead>}
                   {role === "patient" && (
                     <>
-                      <TableHead>Tuổi</TableHead>
                       <TableHead>Giới tính</TableHead>
                       <TableHead>Nhóm máu</TableHead>
                       <TableHead>Thành viên</TableHead>
@@ -262,7 +261,6 @@ const UserManagement = ({ role, title, description }: UserManagementProps) => {
                       )}
                       {role === "patient" && (
                         <>
-                          <TableCell>{user.age || "N/A"}</TableCell>
                           <TableCell>{genderTranslations[user.gender!] || user.gender || "N/A"}</TableCell>
                           <TableCell>
                             {user.bloodgroup ? (

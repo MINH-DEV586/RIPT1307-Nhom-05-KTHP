@@ -6,6 +6,7 @@ import {
   getMyActiveInvoice,
   createCheckoutSession,
   getBillingHistory,
+  updateUser,
 } from "@/lib/api";
 import {
   Card,
@@ -17,7 +18,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
+import { 
+  Edit3,
   Loader2,
   User,
   CreditCard,
@@ -26,12 +28,32 @@ import {
   CheckCircle2,
   Video,
   MessageSquare,
+  Building2,
+  Zap,
+  Phone,
+  MapPin,
+  Calendar,
+  ShieldCheck,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { STATUS_CONFIG } from "@/components/users/statusBadge";
 import Loader from "@/components/global/Loader";
 import MedicalHistory from "@/components/patients/MedicalHistory";
 import CreateMedicalRecordModal from "@/components/patients/CreateMedicalRecordModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function meta() {
   return [{ title: "Hồ sơ người dùng" }];
@@ -40,6 +62,7 @@ export function meta() {
 const Profile = () => {
   const { id } = useParams<{ id: string }>();
   const { data: session, isPending: sessionLoading } = authClient.useSession();
+  const queryClient = useQueryClient();
   const loggedInUser = session?.user;
 
   const targetUserId = id || loggedInUser?.id;
@@ -130,6 +153,10 @@ const Profile = () => {
               </Badge>
             </div>
 
+            { (isViewingOwnProfile || isAdmin || (loggedInUser?.role === 'doctor' && isPatient)) && (
+              <EditProfileModal user={profileUser} viewerRole={loggedInUser?.role} />
+            )}
+
             {/* Quick Actions for Profile */}
             <div className="mt-6 w-full pt-6 border-t space-y-2">
               {isPatient && (
@@ -164,18 +191,23 @@ const Profile = () => {
                 {isPatient ? "Thông tin y tế" : "Thông tin nghề nghiệp"}
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-y-4 text-sm">
+            <CardContent className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
               {isPatient ? (
                 <>
-                  <DetailItem label="Tuổi" value={profileUser.age} />
-                  <DetailItem
-                    label="Nhóm máu"
-                    value={profileUser.bloodgroup}
-                  />
+                  <DetailItem label="Ngày sinh" value={profileUser.birthday} icon={<Calendar className="w-3.5 h-3.5" />} />
+                  <DetailItem label="Số điện thoại" value={profileUser.phoneNumber} icon={<Phone className="w-3.5 h-3.5" />} />
+                  <DetailItem label="Nhóm máu" value={profileUser.bloodgroup} icon={<ShieldCheck className="w-3.5 h-3.5 text-red-500" />} />
+                  <div className="col-span-2">
+                    <DetailItem label="Địa chỉ" value={profileUser.address} icon={<MapPin className="w-3.5 h-3.5" />} />
+                  </div>
+                  <div className="col-span-2">
+                    <DetailItem label="Mã BHYT" value={profileUser.insuranceId} icon={<ShieldCheck className="w-3.5 h-3.5" />} />
+                  </div>
                   <div className="col-span-2">
                     <DetailItem
                       label="Tiền sử bệnh lý"
                       value={profileUser.medicalHistory || "Hồ sơ sạch"}
+                      icon={<FileText className="w-3.5 h-3.5" />}
                     />
                   </div>
                 </>
@@ -184,10 +216,12 @@ const Profile = () => {
                   <DetailItem
                     label="Khoa"
                     value={profileUser.department}
+                    icon={<Building2 className="w-3.5 h-3.5" />}
                   />
                   <DetailItem
                     label="Chuyên môn"
                     value={profileUser.specialization}
+                    icon={<Zap className="w-3.5 h-3.5" />}
                   />
                 </>
               )}
@@ -337,16 +371,213 @@ const Profile = () => {
   );
 };
 
-function DetailItem({ label, value }: { label: string; value?: string }) {
+function DetailItem({ label, value, icon }: { label: string; value?: string; icon?: React.ReactNode }) {
   return (
-    <div>
-      <span className="text-slate-400 text-[11px] uppercase font-bold tracking-wider">
+    <div className="space-y-1">
+      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5">
+        {icon}
         {label}
       </span>
-      <p className="font-semibold text-slate-800 dark:text-slate-200">
-        {value || "N/A"}
+      <p className="font-medium text-slate-800 dark:text-slate-200">
+        {value || "Chưa cập nhật"}
       </p>
     </div>
+  );
+}
+
+function EditProfileModal({ user, viewerRole }: { user: any, viewerRole?: string }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(user.name || "");
+  const [email, setEmail] = useState(user.email || "");
+  const [birthday, setBirthday] = useState(user.birthday || "");
+  const [phoneNumber, setPhoneNumber] = useState(user.phoneNumber || "");
+  const [address, setAddress] = useState(user.address || "");
+  const [insuranceId, setInsuranceId] = useState(user.insuranceId || "");
+  const [bloodgroup, setBloodgroup] = useState(user.bloodgroup || "");
+  const [medicalHistory, setMedicalHistory] = useState(user.medicalHistory || "");
+  const queryClient = useQueryClient();
+
+  const isPatient = user.role === "patient";
+  const canEditMedical = viewerRole === "admin" || viewerRole === "doctor";
+  const isSelf = viewerRole === user.role; // This is a bit simplistic but works for determining self-edit fields
+
+  useEffect(() => {
+    setName(user.name || "");
+    setEmail(user.email || "");
+    setBirthday(user.birthday || "");
+    setPhoneNumber(user.phoneNumber || "");
+    setAddress(user.address || "");
+    setInsuranceId(user.insuranceId || "");
+    setBloodgroup(user.bloodgroup || "");
+    setMedicalHistory(user.medicalHistory || "");
+  }, [user, open]);
+
+  const updateMutation = useMutation({
+    mutationFn: updateUser,
+    onSuccess: () => {
+      toast.success("Cập nhật hồ sơ thành công");
+      queryClient.invalidateQueries({ queryKey: ["user", user._id] });
+      setOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Lỗi khi cập nhật hồ sơ");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const data: any = { 
+      name, 
+      email, 
+      birthday, 
+      phoneNumber, 
+      address, 
+      insuranceId 
+    };
+    if (canEditMedical && isPatient) {
+      data.bloodgroup = bloodgroup;
+      data.medicalHistory = medicalHistory;
+    }
+    updateMutation.mutate({
+      userId: user._id,
+      userData: data,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="mt-4 gap-2 border-slate-200 w-full">
+          <Edit3 className="w-3.5 h-3.5" /> Chỉnh sửa hồ sơ
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px]">
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Chỉnh sửa hồ sơ</DialogTitle>
+            <DialogDescription>
+              Cập nhật thông tin {isPatient ? "bệnh nhân" : "cá nhân"} tại đây.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Họ và tên</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Nhập họ tên"
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Nhập email"
+                required
+              />
+            </div>
+            {isPatient && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="birthday">Ngày sinh</Label>
+                    <Input
+                      id="birthday"
+                      type="date"
+                      value={birthday}
+                      onChange={(e) => setBirthday(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="phoneNumber">Số điện thoại</Label>
+                    <Input
+                      id="phoneNumber"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="Nhập số điện thoại"
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="address">Địa chỉ</Label>
+                  <Input
+                    id="address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Nhập địa chỉ cư trú"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="insuranceId">Mã bảo hiểm y tế</Label>
+                  <Input
+                    id="insuranceId"
+                    value={insuranceId}
+                    onChange={(e) => setInsuranceId(e.target.value)}
+                    placeholder="Mã số BHYT"
+                  />
+                </div>
+              </>
+            )}
+            {isPatient && canEditMedical && (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="bloodgroup">Nhóm máu</Label>
+                  <select 
+                    id="bloodgroup"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={bloodgroup}
+                    onChange={(e) => setBloodgroup(e.target.value)}
+                  >
+                    <option value="">Chọn nhóm máu</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                  </select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="medicalHistory">Tiền sử bệnh lý</Label>
+                  <textarea
+                    id="medicalHistory"
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={medicalHistory}
+                    onChange={(e) => setMedicalHistory(e.target.value)}
+                    placeholder="Nhập tiền sử bệnh lý, dị ứng..."
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setOpen(false)}
+              disabled={updateMutation.isPending}
+            >
+              Hủy
+            </Button>
+            <Button 
+              type="submit" 
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              disabled={updateMutation.isPending}
+            >
+              {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Lưu thay đổi
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

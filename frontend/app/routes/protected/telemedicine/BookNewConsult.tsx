@@ -70,7 +70,7 @@ export default function BookConsultation() {
                <Stethoscope className="w-6 h-6 text-primary" />
             </div>
             <CardTitle className="text-2xl font-bold text-primary">Đặt lịch tư vấn trực tuyến</CardTitle>
-            <CardDescription>Chọn bác sĩ và thời gian bạn muốn thực hiện tư vấn từ xa.</CardDescription>
+            <CardDescription>Chọn bác sĩ và thời gian bạn muốn thực hiện tư vấn trực tuyến.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">

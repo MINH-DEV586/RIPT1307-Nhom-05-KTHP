@@ -29,8 +29,7 @@ userRouter.get(
 userRouter.put(
   "/update/:id",
   requireAuth,
-  //   allowed roles: admin, doctor, nurse
-  checkRole(["admin", "doctor", "nurse"]),
+  checkRole(["admin", "doctor", "nurse", "patient"]),
   updateUser,
 );
 

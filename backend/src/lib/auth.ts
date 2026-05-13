@@ -87,6 +87,22 @@ export const auth = betterAuth({
         type: "string",
         required: false,
       },
+      phoneNumber: {
+        type: "string",
+        required: false,
+      },
+      address: {
+        type: "string",
+        required: false,
+      },
+      birthday: {
+        type: "string",
+        required: false,
+      },
+      insuranceId: {
+        type: "string",
+        required: false,
+      },
       patientType: {
         type: "string", // "inpatient" (nội trú) | "outpatient" (ngoại trú)
         required: false,

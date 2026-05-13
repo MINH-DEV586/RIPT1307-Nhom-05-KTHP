@@ -73,8 +73,8 @@ const features = [
   },
   {
     icon: MessageSquare,
-    title: "Khám từ xa",
-    desc: "Chat và tư vấn từ xa giữa bác sĩ và bệnh nhân theo thời gian thực, kết nối mọi lúc mọi nơi.",
+    title: "Tư vấn trực tuyến",
+    desc: "Chat và tư vấn trực tuyến giữa bác sĩ và bệnh nhân theo thời gian thực, kết nối mọi lúc mọi nơi.",
     color: "from-pink-500 to-rose-600",
     bg: "bg-pink-50 dark:bg-pink-950/30",
     iconColor: "text-pink-600 dark:text-pink-400",

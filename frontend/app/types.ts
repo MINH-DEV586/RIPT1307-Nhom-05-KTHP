@@ -53,7 +53,6 @@ export interface User {
   gender?: string;
   bloodgroup?: string;
   medicalHistory?: string;
-  age?: string;
   department?: string;
   labResults?: LabResult[];
   prescriptions?: string[];
@@ -66,6 +65,10 @@ export interface User {
   membership?: "standard" | "pro";
   assignedBedId?: string;
   patientType?: "inpatient" | "outpatient";
+  birthday?: string;
+  phoneNumber?: string;
+  address?: string;
+  insuranceId?: string;
 }
 
 export interface Bed {

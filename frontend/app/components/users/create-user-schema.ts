@@ -7,11 +7,14 @@ export const createUserSchema = z.object({
 
   specialization: z.string().optional(),
   department: z.string().optional(),
-  age: z.string().optional(),
   gender: z.string().optional(),
   bloodgroup: z.string().optional(),
   medicalHistory: z.string().optional(),
   status: z.string().optional(),
+  birthday: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  address: z.string().optional(),
+  insuranceId: z.string().optional(),
 });
 
 export const userSchema = (isEdit: boolean) => {
@@ -20,11 +23,14 @@ export const userSchema = (isEdit: boolean) => {
     email: z.string().email("Địa chỉ email không hợp lệ"),
     specialization: z.string().optional(),
     department: z.string().optional(),
-    age: z.string().optional(),
     gender: z.string().optional(),
     bloodgroup: z.string().optional(),
     medicalHistory: z.string().optional(),
     status: z.string().optional(),
+    birthday: z.string().optional(),
+    phoneNumber: z.string().optional(),
+    address: z.string().optional(),
+    insuranceId: z.string().optional(),
     password: isEdit
       ? z
           .string()
