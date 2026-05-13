@@ -2,7 +2,7 @@ import * as z from "zod";
 
 export const createUserSchema = z.object({
   name: z.string().min(2, "Họ tên là bắt buộc"),
-  email: z.email("Địa chỉ email không hợp lệ"),
+  email: z.string().email("Địa chỉ email không hợp lệ"),
   password: z.string().min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
 
   specialization: z.string().optional(),
@@ -17,7 +17,7 @@ export const createUserSchema = z.object({
 export const userSchema = (isEdit: boolean) => {
   return z.object({
     name: z.string().min(2, "Họ tên là bắt buộc"),
-    email: z.email("Địa chỉ email không hợp lệ"),
+    email: z.string().email("Địa chỉ email không hợp lệ"),
     specialization: z.string().optional(),
     department: z.string().optional(),
     age: z.string().optional(),
