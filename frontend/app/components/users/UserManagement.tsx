@@ -2,9 +2,11 @@ import { authClient } from "@/lib/auth-client";
 import type { Role, User, UserStatus } from "@/types";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createActivityLog, getUsers } from "@/lib/api";
+import { Zap, Stethoscope } from "lucide-react";
+import { createActivityLog, getUsers, createWalkInAppointment, updateAppointmentStatus } from "@/lib/api";
+import { ConsultationModal } from "../appointments/ConsultationModal";
+import type { Appointment } from "@/types";
 import { useNavigate } from "react-router";
-import { Zap } from "lucide-react";
 import Loader from "@/components/global/Loader";
 import {
   Card,
@@ -48,6 +50,9 @@ const UserManagement = ({ role, title, description }: UserManagementProps) => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const { data: session } = authClient.useSession();
+  
+  const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
+  const [isConsultationOpen, setIsConsultationOpen] = useState(false);
 
   const handleViewUser = (user: User) => {
     setSelectedUser(user);
@@ -159,6 +164,32 @@ const UserManagement = ({ role, title, description }: UserManagementProps) => {
       setLoading(false);
       console.error("Error deleting user:", error);
       toast.error("Đã xảy ra lỗi. Vui lòng thử lại.");
+    }
+  };
+
+  const handleDirectExamine = async (patientId: string) => {
+    try {
+      setLoading(true);
+      const appt = await createWalkInAppointment(patientId);
+      setActiveAppointment(appt);
+      setIsConsultationOpen(true);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      toast.error("Không thể tạo cuộc khám vãng lai");
+    }
+  };
+
+  const handleFinalizeConsultation = async (billingData: any) => {
+    if (activeAppointment) {
+      try {
+        await updateAppointmentStatus(activeAppointment._id, { status: "completed", billing: billingData });
+        setIsConsultationOpen(false);
+        setActiveAppointment(null);
+        refetch();
+      } catch (error) {
+        toast.error("Lỗi khi hoàn thành ca khám");
+      }
     }
   };
 
@@ -305,6 +336,18 @@ const UserManagement = ({ role, title, description }: UserManagementProps) => {
                       </TableCell>
                       <TableCell className="">
                         <div className="flex justify-end gap-2">
+                          {role === "patient" && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="bg-emerald-600 hover:bg-emerald-700 font-bold gap-1"
+                              onClick={() => handleDirectExamine(user._id)}
+                              disabled={loading}
+                            >
+                              <Stethoscope className="w-3.5 h-3.5" />
+                              Khám bệnh
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
@@ -357,6 +400,18 @@ const UserManagement = ({ role, title, description }: UserManagementProps) => {
           </div>
         </CardContent>
       </Card>
+      {/* Consultation Modal for Direct Examination */}
+      {activeAppointment && (
+        <ConsultationModal 
+          appointment={activeAppointment}
+          isOpen={isConsultationOpen}
+          onClose={() => {
+            setIsConsultationOpen(false);
+            setActiveAppointment(null);
+          }}
+          onComplete={handleFinalizeConsultation}
+        />
+      )}
     </div>
   );
 };

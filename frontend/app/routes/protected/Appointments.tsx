@@ -44,6 +44,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConsultationModal } from "@/components/appointments/ConsultationModal";
 
 export function meta() {
   return [{ title: "Quản lý lịch hẹn | MedFlow AI" }];
@@ -174,42 +175,14 @@ function AppointmentCard({
   const [diagnosisModalOpen, setDiagnosisModalOpen] = useState(false);
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
-  const [diagnosisData, setDiagnosisData] = useState({
-    diagnosis: "",
-    treatmentPlan: "",
-    notes: "",
-    consultationFee: appointment.doctor?.consultationFee || 200000,
-    labFee: 0,
-    prescriptionFee: 0
-  });
 
   const status = STATUS_MAP[appointment.status];
   const person = isDoctor ? appointment.patient : appointment.doctor;
   const isOnline = appointment.type === "online";
 
-  const medicalRecordMutation = useMutation({
-    mutationFn: (data: any) => createMedicalRecord(data),
-    onSuccess: () => {
-      toast.success("Đã lưu chuẩn đoán và bệnh án!");
-      setDiagnosisModalOpen(false);
-      onStatusUpdate?.("completed", undefined, {
-        consultationFee: Number(diagnosisData.consultationFee),
-        labFee: Number(diagnosisData.labFee),
-        prescriptionFee: Number(diagnosisData.prescriptionFee)
-      });
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
-    },
-    onError: () => toast.error("Lỗi khi lưu bệnh án")
-  });
-
-  const handleSaveDiagnosis = (e: React.FormEvent) => {
-    e.preventDefault();
-    medicalRecordMutation.mutate({
-      patient: appointment.patientId,
-      doctor: appointment.doctorId,
-      symptoms: appointment.symptoms,
-      ...diagnosisData
-    });
+  const handleFinalizeConsultation = (billingData: any) => {
+    onStatusUpdate?.("completed", undefined, billingData);
+    setDiagnosisModalOpen(false);
   };
 
   return (
@@ -348,93 +321,13 @@ function AppointmentCard({
         </div>
       </CardContent>
 
-      {/* Diagnosis Modal */}
-      <Dialog open={diagnosisModalOpen} onOpenChange={setDiagnosisModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-black">Ghi chuẩn đoán & Điều trị</DialogTitle>
-            <DialogDescription>
-              Bệnh nhân: <span className="font-bold text-primary">{person?.name}</span>
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSaveDiagnosis} className="space-y-6 py-4">
-            <div className="space-y-2">
-              <Label>Chuẩn đoán bệnh</Label>
-              <Input 
-                placeholder="Ví dụ: Viêm họng cấp, Suy nhược cơ thể..." 
-                className="bg-muted/50"
-                required
-                value={diagnosisData.diagnosis}
-                onChange={(e) => setDiagnosisData({...diagnosisData, diagnosis: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Phác đồ điều trị</Label>
-              <Textarea 
-                placeholder="Mô tả các bước điều trị, thuốc cần dùng..." 
-                className="bg-muted/50 min-h-[120px]"
-                required
-                value={diagnosisData.treatmentPlan}
-                onChange={(e) => setDiagnosisData({...diagnosisData, treatmentPlan: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Lời khuyên & Ghi chú</Label>
-              <Textarea 
-                placeholder="Dặn dò bệnh nhân về chế độ ăn uống, sinh hoạt..." 
-                className="bg-muted/50"
-                value={diagnosisData.notes}
-                onChange={(e) => setDiagnosisData({...diagnosisData, notes: e.target.value})}
-              />
-            </div>
-
-            <div className="pt-4 border-t space-y-4">
-               <h4 className="font-bold text-sm uppercase tracking-wider text-indigo-600">Thông tin viện phí</h4>
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Phí khám (VNĐ)</Label>
-                    <Input 
-                      type="number"
-                      value={diagnosisData.consultationFee}
-                      onChange={(e) => setDiagnosisData({...diagnosisData, consultationFee: e.target.value})}
-                      className="bg-muted/50 font-bold"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Phí xét nghiệm (VNĐ)</Label>
-                    <Input 
-                      type="number"
-                      value={diagnosisData.labFee}
-                      onChange={(e) => setDiagnosisData({...diagnosisData, labFee: e.target.value})}
-                      className="bg-muted/50 font-bold"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Tiền thuốc (VNĐ)</Label>
-                    <Input 
-                      type="number"
-                      value={diagnosisData.prescriptionFee}
-                      onChange={(e) => setDiagnosisData({...diagnosisData, prescriptionFee: e.target.value})}
-                      className="bg-muted/50 font-bold"
-                    />
-                  </div>
-               </div>
-               <div className="flex justify-between items-center p-3 bg-indigo-50 rounded-lg border border-indigo-100">
-                  <span className="text-sm font-bold text-indigo-700">Tổng cộng ước tính:</span>
-                  <span className="text-lg font-black text-indigo-700">
-                    {(Number(diagnosisData.consultationFee) + Number(diagnosisData.labFee) + Number(diagnosisData.prescriptionFee)).toLocaleString()} VNĐ
-                  </span>
-               </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setDiagnosisModalOpen(false)}>Hủy</Button>
-              <Button type="submit" className="bg-indigo-600 font-bold px-8" disabled={medicalRecordMutation.isPending}>
-                {medicalRecordMutation.isPending ? "Đang lưu..." : "Lưu & Hoàn thành khám"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Consultation Modal (Advanced Diagnosis & Indications) */}
+      <ConsultationModal 
+        appointment={appointment}
+        isOpen={diagnosisModalOpen}
+        onClose={() => setDiagnosisModalOpen(false)}
+        onComplete={handleFinalizeConsultation}
+      />
 
       {/* Rejection Modal */}
       <Dialog open={rejectionModalOpen} onOpenChange={setRejectionModalOpen}>

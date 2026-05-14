@@ -523,6 +523,17 @@ export const updateAppointmentStatus = async (id: string, data: { status: string
   return res.json();
 };
 
+export const createWalkInAppointment = async (patientId: string) => {
+  const res = await fetch(`${API_URL}/appointments/walk-in`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ patientId }),
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to create walk-in appointment");
+  return res.json();
+};
+
 export const updateDoctorSchedule = async (data: any) => {
   const res = await fetch(`${API_URL}/appointments/schedule`, {
     method: "POST",

@@ -10,7 +10,8 @@ import {
   upsertSchedule,
   getDoctorSchedule,
   getAllSchedules,
-  getAvailableSlots
+  getAvailableSlots,
+  createWalkInAppointment
 } from "../controllers/appointment";
 
 const router = express.Router();
@@ -25,6 +26,7 @@ router.get("/available-slots/:doctorId", getAvailableSlots);
 
 // Doctor routes
 router.get("/doctor-list", checkRole(["doctor", "admin"]), getDoctorAppointments);
+router.post("/walk-in", checkRole(["doctor", "admin"]), createWalkInAppointment);
 router.put("/:id/status", checkRole(["doctor", "admin"]), updateAppointmentStatus);
 
 // Schedule routes

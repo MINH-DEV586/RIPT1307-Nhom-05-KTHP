@@ -414,3 +414,43 @@ function parseTime(timeStr: string): Date {
 function formatTime(date: Date): string {
   return date.toTimeString().substring(0, 5);
 }
+
+// Tạo cuộc hẹn vãng lai (Walk-in)
+export const createWalkInAppointment = async (req: Request, res: Response) => {
+  try {
+    const doctorId = (req as any).user.id;
+    const { patientId } = req.body;
+
+    const appointment = new Appointment({
+      patientId,
+      doctorId,
+      patientType: "self",
+      date: new Date(),
+      timeSlot: format(new Date(), "HH:mm"),
+      type: "offline",
+      symptoms: "Khám trực tiếp (Walk-in)",
+      status: "confirmed"
+    });
+
+    await appointment.save();
+    
+    const userCollection = mongoose.connection.collection("user");
+    let queryId: any = patientId;
+    if (mongoose.Types.ObjectId.isValid(patientId)) {
+      queryId = new mongoose.Types.ObjectId(patientId);
+    }
+    
+    const patient = await userCollection.findOne({ _id: queryId as any });
+    
+    let docQueryId: any = doctorId;
+    if (mongoose.Types.ObjectId.isValid(doctorId)) {
+      docQueryId = new mongoose.Types.ObjectId(doctorId);
+    }
+    const doctor = await userCollection.findOne({ _id: docQueryId as any });
+
+    res.status(201).json({ ...appointment.toObject(), patient, doctor });
+  } catch (error) {
+    console.error("Error creating walk-in appointment:", error);
+    res.status(500).json({ message: "Lỗi khi tạo cuộc khám vãng lai" });
+  }
+};

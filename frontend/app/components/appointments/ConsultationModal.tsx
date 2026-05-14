@@ -58,7 +58,7 @@ interface ConsultationModalProps {
 export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: ConsultationModalProps) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("exam");
-  const [isAdmissionSuggested, setIsAdmissionSuggested] = useState(false);
+  const [disposition, setDisposition] = useState<"outpatient" | "inpatient">("outpatient");
 
   // Form State
   const [diagnosis, setDiagnosis] = useState("");
@@ -78,7 +78,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
   const { data: beds = [] } = useQuery({
     queryKey: ["beds", "available"],
     queryFn: () => getAllBeds({ status: "available" }),
-    enabled: isOpen && isAdmissionSuggested,
+    enabled: isOpen && disposition === "inpatient",
   });
 
   const { data: medicines = [] } = useQuery<Medicine[]>({
@@ -186,7 +186,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
       }
 
       // 4. Handle Admission Suggestion
-      if (isAdmissionSuggested && selectedBedId) {
+      if (disposition === "inpatient" && selectedBedId) {
         await admitPatientToBed({
           patientId: appointment.patientId,
           bedId: selectedBedId,
@@ -250,11 +250,27 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
               </Button>
             ))}
             
-            <div className="mt-auto pt-4 border-t border-dashed">
-               <div className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${isAdmissionSuggested ? "bg-amber-50 border-amber-500 text-amber-700" : "bg-slate-50 border-slate-200 text-slate-500"}`} onClick={() => setIsAdmissionSuggested(!isAdmissionSuggested)}>
-                  <Building2 className={`w-6 h-6 mb-2 ${isAdmissionSuggested ? "text-amber-500" : "text-slate-400"}`} />
-                  <p className="text-[10px] font-black uppercase tracking-tighter">Đề xuất nhập viện</p>
-                  <p className="text-[9px] font-medium leading-tight mt-1 opacity-80">Gửi bệnh nhân tới khu nội trú</p>
+            <div className="mt-auto pt-4 border-t border-dashed space-y-3">
+               <div className="flex items-center gap-2 mb-1">
+                  <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Chỉ định xử trí</span>
+               </div>
+               <div 
+                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${disposition === "outpatient" ? "bg-indigo-50 border-indigo-500 text-indigo-700" : "bg-slate-50 border-slate-200 text-slate-500"}`} 
+                  onClick={() => setDisposition("outpatient")}
+               >
+                  <Stethoscope className={`w-6 h-6 mb-2 ${disposition === "outpatient" ? "text-indigo-500" : "text-slate-400"}`} />
+                  <p className="text-[10px] font-black uppercase tracking-tighter">Ngoại trú</p>
+                  <p className="text-[9px] font-medium leading-tight mt-1 opacity-80">Kê đơn & Thanh toán</p>
+               </div>
+
+               <div 
+                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${disposition === "inpatient" ? "bg-amber-50 border-amber-500 text-amber-700" : "bg-slate-50 border-slate-200 text-slate-500"}`} 
+                  onClick={() => setDisposition("inpatient")}
+               >
+                  <Building2 className={`w-6 h-6 mb-2 ${disposition === "inpatient" ? "text-amber-500" : "text-slate-400"}`} />
+                  <p className="text-[10px] font-black uppercase tracking-tighter">Nội trú</p>
+                  <p className="text-[9px] font-medium leading-tight mt-1 opacity-80">Nhập viện (Chọn giường)</p>
                </div>
             </div>
           </div>
@@ -300,29 +316,54 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                     />
                   </div>
 
-                  {isAdmissionSuggested && (
-                    <div className="p-6 bg-amber-50 border border-amber-200 rounded-3xl space-y-4">
-                       <div className="flex items-center gap-3">
-                          <Building2 className="w-6 h-6 text-amber-600" />
-                          <h4 className="font-black text-amber-700">Chọn giường nhập viện</h4>
+                  {disposition === "inpatient" && (
+                    <div className="p-6 bg-amber-50 border border-amber-200 rounded-3xl space-y-4 animate-in fade-in slide-in-from-top-2">
+                       <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                             <Building2 className="w-6 h-6 text-amber-600" />
+                             <h4 className="font-black text-amber-700">Chỉ định nhập viện</h4>
+                          </div>
+                          <Badge className="bg-amber-500 text-white border-none">Nội trú</Badge>
                        </div>
                        <div className="grid grid-cols-1 gap-4">
-                          <Select value={selectedBedId} onValueChange={setSelectedBedId}>
-                             <SelectTrigger className="rounded-xl h-12 bg-white border-amber-200">
-                                <SelectValue placeholder="Chọn giường trống..." />
-                             </SelectTrigger>
-                             <SelectContent>
-                                {beds.map((bed: any) => (
-                                  <SelectItem key={bed._id} value={bed._id}>
-                                     {bed.bedNumber} - {bed.department} (Tầng {bed.floor})
-                                  </SelectItem>
-                                ))}
-                             </SelectContent>
-                          </Select>
-                          <p className="text-[10px] text-amber-600 font-bold uppercase tracking-widest">
-                             Lưu ý: Bệnh nhân sẽ được chuyển sang trạng thái nội trú ngay sau khi hoàn thành ca khám.
+                          <div className="space-y-2">
+                            <Label className="text-xs font-bold text-amber-700 uppercase tracking-wider">Chọn giường trống (Theo khoa)</Label>
+                            <Select value={selectedBedId} onValueChange={setSelectedBedId}>
+                               <SelectTrigger className="rounded-xl h-12 bg-white border-amber-200">
+                                  <SelectValue placeholder="Chọn giường & khoa..." />
+                               </SelectTrigger>
+                               <SelectContent>
+                                  {beds.length === 0 ? (
+                                    <div className="p-4 text-center text-sm text-muted-foreground">Không có giường trống</div>
+                                  ) : (
+                                    beds.map((bed: any) => (
+                                      <SelectItem key={bed._id} value={bed._id}>
+                                         [{bed.department}] - Giường {bed.bedNumber} (Tầng {bed.floor})
+                                      </SelectItem>
+                                    ))
+                                  )}
+                               </SelectContent>
+                            </Select>
+                          </div>
+                          <p className="text-[10px] text-amber-600 font-bold uppercase tracking-widest bg-white/50 p-2 rounded-lg border border-amber-100">
+                             Lưu ý: Bác sĩ chỉ định nhập viện sẽ chuyển bệnh nhân sang chế độ chăm sóc nội trú.
                           </p>
                        </div>
+                    </div>
+                  )}
+
+                  {disposition === "outpatient" && (
+                    <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-3xl space-y-4 animate-in fade-in slide-in-from-top-2">
+                       <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                             <Stethoscope className="w-6 h-6 text-indigo-600" />
+                             <h4 className="font-black text-indigo-700">Chỉ định ngoại trú</h4>
+                          </div>
+                          <Badge className="bg-indigo-600 text-white border-none">Ngoại trú</Badge>
+                       </div>
+                       <p className="text-sm text-indigo-600/80 font-medium italic">
+                          Bệnh nhân được điều trị tại nhà theo đơn thuốc và phác đồ đã kê. Hệ thống sẽ tạo hóa đơn thanh toán sau khi hoàn thành.
+                       </p>
                     </div>
                   )}
                 </div>
@@ -558,12 +599,18 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                       <Pill className={`w-3 h-3 ${prescribedItems.length > 0 ? "text-indigo-600" : "text-slate-300"}`} />
                       <span className="text-xs font-bold">{prescribedItems.length} thuốc</span>
                    </div>
-                   {isAdmissionSuggested && (
-                      <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-100 rounded-md text-amber-700">
-                         <Zap className="w-3 h-3 fill-amber-500 text-amber-500" />
-                         <span className="text-[10px] font-black">NHẬP VIỆN</span>
-                      </div>
-                   )}
+                    {disposition === "inpatient" && (
+                       <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-100 rounded-md text-amber-700">
+                          <Zap className="w-3 h-3 fill-amber-500 text-amber-500" />
+                          <span className="text-[10px] font-black uppercase">Chỉ định: NHẬP VIỆN</span>
+                       </div>
+                    )}
+                    {disposition === "outpatient" && (
+                       <div className="flex items-center gap-1 px-2 py-0.5 bg-indigo-100 rounded-md text-indigo-700">
+                          <Stethoscope className="w-3 h-3 text-indigo-500" />
+                          <span className="text-[10px] font-black uppercase">Chỉ định: NGOẠI TRÚ</span>
+                       </div>
+                    )}
                 </div>
              </div>
           </div>
