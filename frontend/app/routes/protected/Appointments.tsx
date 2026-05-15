@@ -175,6 +175,7 @@ function AppointmentCard({
   const [diagnosisModalOpen, setDiagnosisModalOpen] = useState(false);
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   const status = STATUS_MAP[appointment.status];
   const person = isDoctor ? appointment.patient : appointment.doctor;
@@ -299,6 +300,17 @@ function AppointmentCard({
               </>
             )}
 
+            {/* Thêm nút Hủy lịch trực tiếp cho Bệnh nhân */}
+            {!isDoctor && !isAdmin && (appointment.status === "pending" || appointment.status === "confirmed") && (
+              <Button 
+                variant="outline" 
+                className="text-rose-600 border-rose-200 hover:bg-rose-50 font-bold gap-2 mt-2"
+                onClick={() => setIsCancelDialogOpen(true)}
+              >
+                <XCircle className="w-4 h-4" /> Hủy lịch hẹn
+              </Button>
+            )}
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -329,7 +341,7 @@ function AppointmentCard({
         onComplete={handleFinalizeConsultation}
       />
 
-      {/* Rejection Modal */}
+      {/* Rejection Modal (Doctor only) */}
       <Dialog open={rejectionModalOpen} onOpenChange={setRejectionModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -362,6 +374,45 @@ function AppointmentCard({
               }}
             >
               Xác nhận từ chối
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancellation Confirmation Modal (Patient) */}
+      <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-rose-500" />
+          <DialogHeader className="p-2">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-rose-50 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-6 h-6 text-rose-500" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-black tracking-tight text-slate-900 dark:text-white">Xác nhận hủy lịch?</DialogTitle>
+                <DialogDescription className="text-sm font-medium text-slate-500 mt-1 leading-relaxed">
+                  Bạn có chắc chắn muốn hủy lịch hẹn này không? Hành động này không thể hoàn tác.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <DialogFooter className="bg-slate-50 dark:bg-slate-900/50 p-4 gap-3">
+            <Button 
+              variant="ghost" 
+              onClick={() => setIsCancelDialogOpen(false)}
+              className="rounded-xl font-bold h-11"
+            >
+              Quay lại
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                onStatusUpdate?.("cancelled");
+                setIsCancelDialogOpen(false);
+              }}
+              className="rounded-xl font-black h-11 px-8 shadow-lg shadow-rose-500/20 bg-rose-600 hover:bg-rose-700 border-none transition-all active:scale-95"
+            >
+              Xác nhận hủy
             </Button>
           </DialogFooter>
         </DialogContent>

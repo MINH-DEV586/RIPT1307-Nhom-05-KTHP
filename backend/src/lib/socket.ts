@@ -1,6 +1,8 @@
 import { Server as SocketIOServer } from "socket.io";
 import { Server as HttpServer } from "http";
 import { Message } from "../models/telemedicine";
+import Notification from "../models/notification";
+import mongoose from "mongoose";
 
 let io: SocketIOServer;
 const onlineUsers = new Map<string, string>(); // userId -> socketId
@@ -49,14 +51,35 @@ export const initSocket = (server: HttpServer) => {
         // Gửi tin nhắn tới tất cả mọi người trong phòng (bao gồm người gửi)
         io.to(sessionId).emit("receive_message", newMessage);
         
-        // Gửi thông báo cho người nhận nếu họ đang online nhưng không trong phòng chat
-        const receiverSocketId = onlineUsers.get(receiverId);
-        if (receiverSocketId) {
-          io.to(receiverSocketId).emit("new_chat_notification", {
-            sessionId,
-            senderId,
-            content
+        // Tạo thông báo hệ thống (DB Notification)
+        try {
+          const userCollection = mongoose.connection.collection("user");
+          let senderObj = await userCollection.findOne({ _id: senderId as any });
+          if (!senderObj && mongoose.Types.ObjectId.isValid(senderId)) {
+            senderObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(senderId) });
+          }
+
+          await Notification.create({
+            user: receiverId,
+            title: "Tin nhắn mới",
+            message: `Bạn có tin nhắn mới từ ${senderObj?.name || "Bệnh nhân"}`,
+            type: "alert",
+            link: `/telemedicine/sessions/${sessionId}/chat`
           });
+
+          // Gửi thông báo real-time qua socket cho người nhận (để hiện badge/toast ngay lập tức)
+          const receiverSocketId = onlineUsers.get(receiverId);
+          if (receiverSocketId) {
+            io.to(receiverSocketId).emit("new_chat_notification", {
+              sessionId,
+              senderId,
+              content
+            });
+            // Thông báo cập nhật danh sách thông báo chung
+            io.to(receiverSocketId).emit("notification_received");
+          }
+        } catch (notifyErr) {
+          console.error("Failed to create notification for message:", notifyErr);
         }
       } catch (error) {
         console.error("Error saving message:", error);

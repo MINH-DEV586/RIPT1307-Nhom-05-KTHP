@@ -27,7 +27,7 @@ router.get("/available-slots/:doctorId", getAvailableSlots);
 // Doctor routes
 router.get("/doctor-list", checkRole(["doctor", "admin"]), getDoctorAppointments);
 router.post("/walk-in", checkRole(["doctor", "admin"]), createWalkInAppointment);
-router.put("/:id/status", checkRole(["doctor", "admin"]), updateAppointmentStatus);
+router.put("/:id/status", checkRole(["patient", "doctor", "admin"]), updateAppointmentStatus);
 
 // Schedule routes
 router.get("/schedule/all", checkRole(["admin"]), getAllSchedules);

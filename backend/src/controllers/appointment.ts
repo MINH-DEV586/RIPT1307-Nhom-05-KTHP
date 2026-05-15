@@ -215,6 +215,17 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     const appointment = await Appointment.findById(id);
     if (!appointment) return res.status(404).json({ message: "Không tìm thấy lịch hẹn" });
 
+    // Security check: Patients can only cancel their own appointments
+    const user = (req as any).user;
+    if (user.role === "patient") {
+      if (appointment.patientId !== user.id) {
+        return res.status(403).json({ message: "Bạn không có quyền thay đổi lịch hẹn của người khác" });
+      }
+      if (status !== "cancelled") {
+        return res.status(403).json({ message: "Bệnh nhân chỉ có quyền hủy lịch hẹn" });
+      }
+    }
+
     const oldStatus = appointment.status;
     appointment.status = status;
     if (meetingLink) appointment.meetingLink = meetingLink;

@@ -1,14 +1,24 @@
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate, useParams } from "react-router";
-import { Search, MessageCircle, Plus, Users, LayoutDashboard } from "lucide-react";
+import { Search, MessageCircle, Plus, Users, LayoutDashboard, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getTelemedicineSessions } from "@/lib/api";
+import { getTelemedicineSessions, deleteTelemedicineSession } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { socket } from "@/lib/socket";
+import { toast } from "sonner";
+import { AlertCircle } from "lucide-react";
 
 export default function TelemedicineLayout() {
   const { pathname } = useLocation();
@@ -20,23 +30,45 @@ export default function TelemedicineLayout() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    fetchSessions();
-    socket.connect();
+    if (currentUser?.id) {
+      socket.connect();
+      socket.emit("identify", currentUser.id);
+      
+      // Re-identify on reconnect
+      socket.on("connect", () => {
+        socket.emit("identify", currentUser.id);
+      });
+
+      fetchSessions();
+    }
     
     const handleOnlineUsers = (users: string[]) => setOnlineUsers(users);
-    const handleReceiveMessage = () => fetchSessions(); // Refresh sidebar on new message
+    const handleRefresh = () => fetchSessions(); 
+    const handleSessionDeleted = (deletedId: string) => {
+      fetchSessions();
+      if (pathname.includes(deletedId)) {
+        toast.info("Cuộc hội thoại này đã bị xóa bởi người dùng khác.");
+        navigate("/telemedicine");
+      }
+    };
 
     socket.on("online_users", handleOnlineUsers);
-    socket.on("receive_message", handleReceiveMessage);
+    socket.on("receive_message", handleRefresh);
+    socket.on("new_chat_notification", handleRefresh);
+    socket.on("session_deleted", handleSessionDeleted);
 
     return () => {
       socket.off("online_users", handleOnlineUsers);
-      socket.off("receive_message", handleReceiveMessage);
+      socket.off("receive_message", handleRefresh);
+      socket.off("new_chat_notification", handleRefresh);
+      socket.off("session_deleted", handleSessionDeleted);
       socket.disconnect();
     };
-  }, []);
+  }, [currentUser?.id]);
 
   const fetchSessions = async () => {
     try {
@@ -51,6 +83,24 @@ export default function TelemedicineLayout() {
     }
   };
 
+  const handleDeleteSession = async () => {
+    if (!sessionToDelete) return;
+    try {
+      setIsDeleting(true);
+      await deleteTelemedicineSession(sessionToDelete);
+      toast.success("Đã xóa cuộc hội thoại thành công");
+      fetchSessions();
+      if (pathname.includes(sessionToDelete)) {
+        navigate("/telemedicine");
+      }
+      setSessionToDelete(null);
+    } catch (error) {
+      toast.error("Lỗi khi xóa cuộc hội thoại");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const filteredSessions = sessions.filter(s => 
     s.otherUser?.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -58,7 +108,7 @@ export default function TelemedicineLayout() {
   return (
     <div className="flex h-[calc(100vh-100px)] w-full overflow-hidden rounded-3xl border bg-card/30 backdrop-blur-md shadow-2xl animate-page-in">
       {/* Sidebar - Messenger Style */}
-      <div className="w-80 md:w-96 border-r flex flex-col bg-background/40 backdrop-blur-xl">
+      <div className="w-80 md:w-96 border-r flex flex-col min-h-0 bg-background/40 backdrop-blur-xl">
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
             <div>
@@ -86,7 +136,7 @@ export default function TelemedicineLayout() {
           </div>
         </div>
 
-        <ScrollArea className="flex-1 px-3">
+        <ScrollArea className="flex-1 min-h-0 px-3">
           <div className="space-y-1 pb-6">
             <div className="px-3 mb-2 flex items-center justify-between">
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Gần đây</span>
@@ -137,6 +187,21 @@ export default function TelemedicineLayout() {
                         {s.lastMessage || "Nhấn để bắt đầu trao đổi..."}
                       </p>
                     </div>
+
+                    {!s.isAppointment && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSessionToDelete(s._id);
+                        }}
+                        className={cn(
+                          "opacity-0 group-hover:opacity-100 p-2 rounded-full transition-all hover:bg-red-500/20 text-red-500",
+                          isActive && "group-hover:text-white group-hover:hover:bg-white/20"
+                        )}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 );
               })
@@ -157,9 +222,47 @@ export default function TelemedicineLayout() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col bg-card/5 relative">
+      <div className="flex-1 flex flex-col min-h-0 bg-card/5 relative">
         <Outlet />
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!sessionToDelete} onOpenChange={(open) => !open && setSessionToDelete(null)}>
+        <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-red-500" />
+          <DialogHeader className="p-2">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-red-50 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-6 h-6 text-red-500" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-black tracking-tight text-slate-900 dark:text-white">Xóa cuộc hội thoại?</DialogTitle>
+                <DialogDescription className="text-sm font-medium text-slate-500 mt-1 leading-relaxed">
+                  Hành động này sẽ xóa vĩnh viễn toàn bộ lịch sử tin nhắn. Bạn không thể hoàn tác thao tác này.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <DialogFooter className="bg-slate-50 dark:bg-slate-900/50 p-4 gap-3">
+            <Button 
+              variant="ghost" 
+              onClick={() => setSessionToDelete(null)}
+              className="rounded-xl font-bold h-11"
+              disabled={isDeleting}
+            >
+              Hủy bỏ
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteSession}
+              disabled={isDeleting}
+              className="rounded-xl font-black h-11 px-8 shadow-lg shadow-red-500/20 bg-red-500 hover:bg-red-600 border-none transition-all active:scale-95"
+            >
+              {isDeleting ? "Đang xóa..." : "Xác nhận xóa"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

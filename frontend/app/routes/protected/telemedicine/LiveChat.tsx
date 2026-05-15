@@ -124,7 +124,7 @@ export default function EmbeddedChat() {
   if (loading) return <div className="h-full flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-indigo-500 opacity-50" /></div>;
 
   return (
-    <div className="flex flex-col h-full bg-background/20 animate-fade-in">
+    <div className="flex flex-col flex-1 min-h-0 bg-background/20 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between p-6 bg-background/60 backdrop-blur-md border-b">
         <div className="flex items-center gap-4">
@@ -159,7 +159,7 @@ export default function EmbeddedChat() {
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-8">
+      <ScrollArea className="flex-1 min-h-0 p-8">
         <div className="space-y-8 pb-4">
           <div className="flex flex-col items-center justify-center text-center py-10 opacity-40">
             <div className="p-4 bg-indigo-50 rounded-3xl mb-4 border border-indigo-100 shadow-sm">
@@ -169,6 +169,25 @@ export default function EmbeddedChat() {
             <p className="text-[10px] mt-2 max-w-[300px] leading-relaxed font-medium">
               Cuộc trò chuyện này được mã hóa đầu cuối. Mọi thông tin y tế trao đổi tại đây sẽ được lưu trữ trong hồ sơ bệnh án điện tử của bạn.
             </p>
+            {consultation?.isAppointment && (
+              <div className="mt-6 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex flex-col items-center gap-2 max-w-[400px]">
+                <div className="flex items-center gap-2 text-amber-700">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="text-[11px] font-black uppercase tracking-tight">Thông tin lịch hẹn</span>
+                </div>
+                <p className="text-[10px] text-amber-600 font-medium">
+                  Đây là phòng chat đi kèm với lịch hẹn khám đã xác nhận. Bạn không thể xóa cuộc hội thoại này trừ khi lịch hẹn bị hủy hoặc hoàn thành.
+                </p>
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  className="text-[10px] font-black text-amber-700 h-auto p-0 underline decoration-amber-300"
+                  onClick={() => navigate("/appointments")}
+                >
+                  QUẢN LÝ LỊCH HẸN TẠI ĐÂY
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-5">

@@ -4,12 +4,24 @@ import Appointment from "../models/appointment";
 import { logActivity } from "../lib/activity";
 import mongoose from "mongoose";
 import { sendMail } from "../lib/mailer";
+import { getIO } from "../lib/socket";
 
 // Đặt lịch khám online
 export const bookSession = async (req: Request, res: Response) => {
   try {
     const { doctorId, startTime, notes } = req.body;
     const patientId = (req as any).user.id;
+
+    // Kiểm tra xem đã có phiên khám nào giữa 2 người này chưa
+    const existingSession = await TelemedicineSession.findOne({
+      patientId,
+      doctorId,
+      status: { $in: ["scheduled", "active"] }
+    });
+
+    if (existingSession) {
+      return res.status(200).json(existingSession);
+    }
 
     const session = new TelemedicineSession({
       patientId,
@@ -115,11 +127,23 @@ export const getSessions = async (req: Request, res: Response) => {
 
         const otherUser = await userCollection.findOne(
           { _id: queryId },
-          { projection: { name: 1, image: 1 } }
+          { projection: { name: 1, image: 1, specialization: 1 } }
         );
-        return { ...s, otherUser };
+
+        // Fetch last message
+        const lastMsg = await Message.findOne({ sessionId: s._id }).sort({ createdAt: -1 });
+
+        return { 
+          ...s, 
+          otherUser, 
+          lastMessage: lastMsg?.content || s.notes,
+          updatedAt: lastMsg?.createdAt || s.updatedAt || s.startTime
+        };
       })
     );
+
+    // Sort by latest activity
+    detailedSessions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
     res.json(detailedSessions);
   } catch (error) {
@@ -148,5 +172,39 @@ export const updateSessionStatus = async (req: Request, res: Response) => {
     res.json(updated);
   } catch (error) {
     res.status(500).json({ message: "Lỗi khi cập nhật trạng thái" });
+  }
+};
+// Xóa cuộc hội thoại
+export const deleteSession = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.id;
+
+    const session = await TelemedicineSession.findById(id);
+    if (!session) {
+      return res.status(404).json({ message: "Không tìm thấy phiên khám" });
+    }
+
+    // Chỉ cho phép bệnh nhân hoặc bác sĩ trong cuộc hội thoại xóa
+    if (session.patientId !== userId && session.doctorId !== userId) {
+      return res.status(403).json({ message: "Bạn không có quyền xóa phiên khám này" });
+    }
+
+    await TelemedicineSession.findByIdAndDelete(id);
+    await Message.deleteMany({ sessionId: id });
+
+    // Thông báo cho bên còn lại qua socket
+    try {
+      const io = getIO();
+      io.to(id).emit("session_deleted", id);
+    } catch (err) {
+      console.error("Socket emit failed in deleteSession:", err);
+    }
+
+    await logActivity(userId, "Xóa cuộc hội thoại", `Đã xóa phiên khám ID: ${id}`);
+
+    res.json({ message: "Đã xóa cuộc hội thoại thành công" });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi xóa phiên khám" });
   }
 };

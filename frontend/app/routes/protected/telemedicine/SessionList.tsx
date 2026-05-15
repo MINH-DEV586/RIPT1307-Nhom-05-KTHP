@@ -101,7 +101,7 @@ export default function TelemedicineHome() {
   );
 
   return (
-    <div className="p-8 space-y-10 animate-page-in h-full overflow-y-auto custom-scrollbar">
+    <div className="p-8 space-y-10 animate-page-in flex-1 min-h-0 overflow-y-auto custom-scrollbar">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b pb-8">
         <div>
           <Badge className="bg-indigo-100 text-indigo-700 border-none mb-3 px-3 py-1 font-black text-[10px] tracking-widest uppercase">

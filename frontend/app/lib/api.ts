@@ -436,6 +436,15 @@ export const updateSessionStatus = async (id: string, status: string): Promise<a
   return res.json();
 };
 
+export const deleteTelemedicineSession = async (id: string): Promise<any> => {
+  const res = await fetch(`${API_URL}/telemedicine/sessions/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to delete session");
+  return res.json();
+};
+
 export const createUser = async (data: any): Promise<any> => {
   const res = await fetch(`${API_URL}/users/create`, {
     method: "POST",

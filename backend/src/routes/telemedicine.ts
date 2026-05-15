@@ -5,7 +5,8 @@ import {
   bookSession, 
   getSessions, 
   getChatHistory, 
-  updateSessionStatus 
+  updateSessionStatus,
+  deleteSession
 } from "../controllers/telemedicine";
 
 const router = express.Router();
@@ -21,5 +22,8 @@ router.get("/sessions/:sessionId/chat", requireAuth, getChatHistory);
 
 // Matches frontend: updateSessionStatus -> PUT /api/telemedicine/sessions/:id/status
 router.put("/sessions/:id/status", requireAuth, checkRole(["doctor", "admin"]), updateSessionStatus);
+
+// Matches frontend: deleteTelemedicineSession -> DELETE /api/telemedicine/sessions/:id
+router.delete("/sessions/:id", requireAuth, deleteSession);
 
 export default router;
