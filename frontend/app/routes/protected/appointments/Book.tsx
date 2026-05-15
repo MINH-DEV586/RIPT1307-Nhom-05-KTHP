@@ -230,7 +230,6 @@ export default function BookAppointment() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="offline">Tại bệnh viện</SelectItem>
-                    <SelectItem value="online">Tư vấn trực tuyến</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

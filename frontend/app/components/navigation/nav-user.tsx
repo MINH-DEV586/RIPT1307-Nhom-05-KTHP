@@ -44,7 +44,7 @@ export function NavUser({
       fetchOptions: {
         onSuccess: () => {
           toast.success("Đăng xuất thành công");
-          window.location.href = "login";
+          window.location.href = "/login";
         },
         onError: () => {
           toast.error("Có lỗi xảy ra khi đăng xuất");

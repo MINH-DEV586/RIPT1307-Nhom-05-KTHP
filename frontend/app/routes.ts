@@ -40,8 +40,7 @@ export default [
       route("results", "routes/protected/lab/ManageLabResults.tsx"),
     ]),
     route("telemedicine", "routes/protected/telemedicine/ConsultLayout.tsx", [
-      route("sessions", "routes/protected/telemedicine/SessionList.tsx"),
-      route("sessions/book", "routes/protected/telemedicine/BookNewConsult.tsx"),
+      index("routes/protected/telemedicine/SessionList.tsx"),
       route("sessions/:id/chat", "routes/protected/telemedicine/LiveChat.tsx"),
     ]),
     route("patient/medical-records", "routes/protected/patient/MedicalRecords.tsx"),

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { socket } from "@/lib/socket";
-import { MessageSquare, X, Video, ExternalLink } from "lucide-react";
+import { MessageSquare, X, Video, ExternalLink, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
   Popover, 
@@ -55,7 +55,7 @@ export default function ChatFloatingButton() {
           <p className="text-sm font-bold truncate">Bạn có một tin nhắn tư vấn mới</p>
           <p className="text-xs text-muted-foreground line-clamp-2 italic">"{lastNotification.content}"</p>
           <Button asChild size="sm" className="w-full mt-1 bg-indigo-600 hover:bg-indigo-700 h-8 text-xs">
-            <Link to={`/telemedicine/sessions/${lastNotification.sessionId}/chat`} onClick={() => setLastNotification(null)}>
+            <Link to={`/telemedicine/c/${lastNotification.sessionId}`} onClick={() => setLastNotification(null)}>
               Trả lời ngay
             </Link>
           </Button>
@@ -95,7 +95,7 @@ export default function ChatFloatingButton() {
         <PopoverContent align="end" className="w-72 p-0 rounded-2xl overflow-hidden border-none shadow-2xl glass">
           <div className="bg-indigo-600 p-4 text-white">
             <h3 className="font-black text-lg flex items-center gap-2">
-               <Video className="w-5 h-5" /> MedFlow Consult
+               <MessageCircle className="w-5 h-5" /> MedFlow Messenger
             </h3>
             <p className="text-[10px] text-indigo-100 opacity-80 uppercase font-bold tracking-wider mt-1">
                Tư vấn trực tuyến 24/7
@@ -108,16 +108,11 @@ export default function ChatFloatingButton() {
                 </p>
              </div>
              <div className="grid grid-cols-1 gap-2">
-                <Button asChild variant="outline" className="justify-start gap-2 h-11 rounded-xl border-indigo-100 text-indigo-600 hover:bg-indigo-50 font-bold">
-                  <Link to="/telemedicine/sessions" onClick={() => setIsOpen(false)}>
-                    <MessageSquare className="w-4 h-4" /> Danh sách phiên chat
-                  </Link>
-                </Button>
-                <Button asChild variant="ghost" className="justify-start gap-2 h-11 rounded-xl font-bold">
-                  <Link to="/telemedicine/sessions/book" onClick={() => setIsOpen(false)}>
-                    <ExternalLink className="w-4 h-4" /> Đặt lịch khám mới
-                  </Link>
-                </Button>
+                 <Button asChild variant="outline" className="justify-start gap-2 h-11 rounded-xl border-indigo-100 text-indigo-600 hover:bg-indigo-50 font-bold">
+                   <Link to="/telemedicine" onClick={() => setIsOpen(false)}>
+                     <MessageSquare className="w-4 h-4" /> Mở Messenger
+                   </Link>
+                 </Button>
              </div>
           </div>
           <div className="p-3 bg-slate-50 dark:bg-slate-900/50 text-center">
