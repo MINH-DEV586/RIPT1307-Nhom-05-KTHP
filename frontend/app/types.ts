@@ -216,5 +216,24 @@ export interface MedicalRecord {
   treatmentPlan: string;
   notes?: string;
   attachments?: string[];
+  admissionReason?: string;
+  recordType?: "inpatient" | "outpatient";
   createdAt: string;
 }
+
+export interface ExamHistory {
+  _id: string;
+  patient: User | string;
+  doctor: User | string;
+  examDate: string;
+  chiefComplaint: string;
+  symptoms: string;
+  diagnosis: string;
+  treatment: string;
+  prescription?: string;
+  followUpDate?: string;
+  notes?: string;
+  visitType: "outpatient";
+  createdAt: string;
+}
+

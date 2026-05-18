@@ -36,6 +36,7 @@ import medicalRecordRouter from "./routes/medicalRecord";
 import telemedicineRouter from "./routes/telemedicine";
 import appointmentRouter from "./routes/appointment";
 import bedRouter from "./routes/bed";
+import examHistoryRouter from "./routes/examHistory";
 
 // Initialize Express application
 const app: Application = express();
@@ -106,6 +107,7 @@ app.use("/api/medical-records", medicalRecordRouter);
 app.use("/api/telemedicine", telemedicineRouter);
 app.use("/api/appointments", appointmentRouter);
 app.use("/api/beds", bedRouter);
+app.use("/api/exam-history", examHistoryRouter);
 // inngest API route
 app.use(
   "/api/inngest",

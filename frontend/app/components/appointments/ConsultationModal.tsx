@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router";
 import { 
-  createMedicalRecord, 
+  createMedicalRecord,
+  createExamHistory,
   getAllMedicines, 
   createPrescription, 
   createLabRequest, 
@@ -57,6 +59,7 @@ interface ConsultationModalProps {
 
 export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: ConsultationModalProps) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("exam");
   const [disposition, setDisposition] = useState<"outpatient" | "inpatient">("outpatient");
 
@@ -104,6 +107,10 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
     mutationFn: createMedicalRecord,
   });
 
+  const examHistoryMutation = useMutation({
+    mutationFn: createExamHistory,
+  });
+
   const prescriptionMutation = useMutation({
     mutationFn: createPrescription,
   });
@@ -145,66 +152,101 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
     }
 
     try {
-      // 1. Create Medical Record
-      await medicalRecordMutation.mutateAsync({
-        patient: appointment.patientId,
-        doctor: appointment.doctorId,
-        symptoms: appointment.symptoms,
-        diagnosis,
-        treatmentPlan,
-        notes
-      });
-
-      // 2. Create Prescription if any
+      // 1. Create Prescription if any
       let prescriptionTotal = 0;
+      let prescriptionId: string | undefined;
       if (prescribedItems.length > 0) {
-        await prescriptionMutation.mutateAsync({
+        const prescription = await prescriptionMutation.mutateAsync({
           patientId: appointment.patientId,
           doctorId: appointment.doctorId,
           diagnosis,
           items: prescribedItems,
           notes
         });
-        
-        // Calculate prescription fee for billing
+        prescriptionId = prescription?._id;
         prescribedItems.forEach(item => {
-           const med = medicines.find(m => m._id === item.medicineId);
-           if (med) prescriptionTotal += (med.price * (item.quantity || 0));
+          const med = medicines.find(m => m._id === item.medicineId);
+          if (med) prescriptionTotal += (med.price * (item.quantity || 0));
         });
       }
 
-      // 3. Create Lab Requests if any
+      // 2. Create Lab Requests if any
+      const labRequestIds: string[] = [];
       if (selectedTests.length > 0) {
         for (const test of selectedTests) {
-          await labRequestMutation.mutateAsync({
+          const lab = await labRequestMutation.mutateAsync({
             patientId: appointment.patientId,
             doctorId: appointment.doctorId,
             testType: test,
             status: "pending"
           });
+          if (lab?._id) labRequestIds.push(lab._id);
         }
       }
 
-      // 4. Handle Admission Suggestion
-      if (disposition === "inpatient" && selectedBedId) {
+      if (disposition === "outpatient") {
+        // 3a. NGOẠI TRÚ → lưu lịch sử khám (ExamHistory)
+        await examHistoryMutation.mutateAsync({
+          patient: appointment.patientId,
+          symptoms: appointment.symptoms || "",
+          diagnosis,
+          treatmentPlan,
+          notes,
+          visitReason: appointment.symptoms || "Khám tổng quát",
+          prescriptionIds: prescriptionId ? [prescriptionId] : [],
+          labRequestIds,
+        });
+
+        onComplete({
+          consultationFee: appointment.doctor?.consultationFee || 200000,
+          labFee: selectedTests.length * 50000,
+          prescriptionFee: prescriptionTotal
+        });
+        toast.success("Ca khám ngoại trú đã hoàn thành và lưu lịch sử khám!");
+        onClose();
+
+      } else {
+        // 3b. NỘI TRÚ → tạo hồ sơ bệnh án + nhập viện + redirect
+        if (!selectedBedId) {
+          toast.error("Vui lòng chọn giường bệnh để nhập viện");
+          return;
+        }
+
+        // Nhập viện vào giường
         await admitPatientToBed({
           patientId: appointment.patientId,
           bedId: selectedBedId,
           admissionReason: diagnosis
         });
+
+        // Tạo hồ sơ bệnh án nội trú
+        await medicalRecordMutation.mutateAsync({
+          patient: appointment.patientId,
+          doctor: appointment.doctorId,
+          symptoms: appointment.symptoms,
+          diagnosis,
+          treatmentPlan,
+          notes,
+          admissionReason: diagnosis,
+          recordType: "inpatient",
+        });
+
+        onComplete({
+          consultationFee: appointment.doctor?.consultationFee || 200000,
+          labFee: selectedTests.length * 50000,
+          prescriptionFee: prescriptionTotal
+        });
+        toast.success("Bệnh nhân đã được nhập viện! Đang chuyển sang hồ sơ bệnh nhân...");
+        onClose();
+
+        // Redirect đến profile bệnh nhân sau 1 giây
+        setTimeout(() => {
+          navigate(`/profile/${appointment.patientId}`);
+        }, 1000);
       }
 
-      // 5. Trigger Completion & Billing
-      onComplete({
-        consultationFee: appointment.doctor?.consultationFee || 200000,
-        labFee: selectedTests.length * 50000, // Mock fee
-        prescriptionFee: prescriptionTotal
-      });
-
-      toast.success("Ca khám đã được hoàn thành và lưu hồ sơ!");
-      onClose();
-    } catch (error) {
-      toast.error("Đã xảy ra lỗi trong quá trình lưu hồ sơ");
+    } catch (error: any) {
+      toast.error(error?.message || "Đã xảy ra lỗi trong quá trình lưu hồ sơ");
     }
   };
 

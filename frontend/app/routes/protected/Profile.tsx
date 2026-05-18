@@ -41,6 +41,8 @@ import { STATUS_CONFIG } from "@/components/users/statusBadge";
 import Loader from "@/components/global/Loader";
 import MedicalHistory from "@/components/patients/MedicalHistory";
 import CreateMedicalRecordModal from "@/components/patients/CreateMedicalRecordModal";
+import ExamHistoryList from "@/components/patients/ExamHistoryList";
+import CreateExamHistoryModal from "@/components/patients/CreateExamHistoryModal";
 import {
   Dialog,
   DialogContent,
@@ -230,16 +232,36 @@ const Profile = () => {
 
           {isPatient && (
             <Card className="card shadow-sm p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold">Hồ sơ bệnh án</h3>
-                {["admin", "doctor", "nurse"].includes(loggedInUser?.role || "") && (
-                  <CreateMedicalRecordModal 
-                    patientId={profileUser._id} 
-                    patientName={profileUser.name} 
-                  />
-                )}
+              <div className="space-y-6">
+                {/* Hồ sơ bệnh án nội trú */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold">Hồ sơ bệnh án (Nội trú)</h3>
+                    {["admin", "doctor"].includes(loggedInUser?.role || "") && (
+                      <CreateMedicalRecordModal
+                        patientId={profileUser._id}
+                        patientName={profileUser.name}
+                        patientStatus={profileUser.status as any}
+                      />
+                    )}
+                  </div>
+                  <MedicalHistory patientId={profileUser._id} />
+                </div>
+
+                {/* Lịch sử khám ngoại trú */}
+                <div className="border-t pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold">Lịch sử khám (Ngoại trú)</h3>
+                    {["admin", "doctor"].includes(loggedInUser?.role || "") && (
+                      <CreateExamHistoryModal
+                        patientId={profileUser._id}
+                        patientName={profileUser.name}
+                      />
+                    )}
+                  </div>
+                  <ExamHistoryList patientId={profileUser._id} />
+                </div>
               </div>
-              <MedicalHistory patientId={profileUser._id} />
             </Card>
           )}
 
