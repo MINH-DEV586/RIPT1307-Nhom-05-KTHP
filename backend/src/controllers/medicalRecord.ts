@@ -36,7 +36,7 @@ export const createMedicalRecord = async (req: Request, res: Response) => {
       attachments,
       admissionReason,
       recordType,
-      prescriptionId,       // ID đơn thuốc liên kết
+      prescriptionId,        // ID đơn thuốc tại thời điểm nhập viện
     } = req.body;
 
     const newRecord = new MedicalRecord({
@@ -49,7 +49,7 @@ export const createMedicalRecord = async (req: Request, res: Response) => {
       attachments,
       admissionReason,
       recordType: recordType || "inpatient",
-      prescriptionId,       // Lưu vào DB
+      prescriptionIds: prescriptionId ? [prescriptionId] : [],  // Bắt đầu với array
     });
 
 
@@ -152,6 +152,68 @@ export const updateMedicalRecord = async (req: Request, res: Response) => {
     res.status(500).json({ message: (error as Error).message });
   }
 };
+
+// @desc    Thêm prescription vào hồ sơ bệnh án
+// @route   PATCH /api/medical-records/:id/add-prescription
+// @access  Private (Doctor/Admin)
+export const addPrescriptionToRecord = async (req: Request, res: Response) => {
+  try {
+    const { prescriptionId } = req.body;
+    if (!prescriptionId) {
+      return res.status(400).json({ message: "prescriptionId là bắt buộc" });
+    }
+
+    const updated = await MedicalRecord.findByIdAndUpdate(
+      req.params.id,
+      { $addToSet: { prescriptionIds: prescriptionId } },  // addToSet tránh trùng lặp
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Không tìm thấy hồ sơ bệnh án" });
+    }
+
+    res.status(200).json(updated);
+  } catch (error) {
+    res.status(500).json({ message: (error as Error).message });
+  }
+};
+
+// @desc    Tự động gẫn prescription vào hồ sơ nội trú mới nhất của bệnh nhân
+// @route   PATCH /api/medical-records/patient/:patientId/add-prescription
+// @access  Private (Doctor/Admin)
+export const addPrescriptionToPatientRecord = async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params;
+    const { prescriptionId } = req.body;
+
+    if (!prescriptionId) {
+      return res.status(400).json({ message: "prescriptionId là bắt buộc" });
+    }
+
+    // Tìm hồ sơ nội trú mới nhất của bệnh nhân
+    const latestRecord = await MedicalRecord.findOne(
+      { patient: patientId, recordType: "inpatient" },
+      null,
+      { sort: { date: -1 } }
+    );
+
+    if (!latestRecord) {
+      return res.status(404).json({ message: "Không tìm thấy hồ sơ nội trú" });
+    }
+
+    const updated = await MedicalRecord.findByIdAndUpdate(
+      latestRecord._id,
+      { $addToSet: { prescriptionIds: prescriptionId } },
+      { new: true }
+    );
+
+    res.status(200).json(updated);
+  } catch (error) {
+    res.status(500).json({ message: (error as Error).message });
+  }
+};
+
 
 // @desc    Xóa hồ sơ bệnh án
 // @route   DELETE /api/medical-records/:id

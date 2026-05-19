@@ -11,7 +11,7 @@ export interface IMedicalRecord extends Document {
   attachments?: string[];
   admissionReason?: string;
   recordType?: "inpatient" | "outpatient";
-  prescriptionId?: string;  // ID đơn thuốc liên kết
+  prescriptionIds?: string[];  // Danh sách đơn thuốc trong quá trình điều trị
 }
 
 const MedicalRecordSchema: Schema = new Schema(
@@ -26,7 +26,7 @@ const MedicalRecordSchema: Schema = new Schema(
     attachments: [{ type: String }],
     admissionReason: { type: String },
     recordType: { type: String, enum: ["inpatient", "outpatient"], default: "inpatient" },
-    prescriptionId: { type: String },
+    prescriptionIds: [{ type: String }],  // Mảng ID đơn thuốc
 
   },
   { timestamps: true }

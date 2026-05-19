@@ -1,8 +1,10 @@
 import type { Request, Response } from "express";
 import Prescription from "../models/prescription";
 import Medicine from "../models/medicine";
+import MedicalRecord from "../models/medicalRecord";
 import { logActivity } from "../lib/activity";
 import mongoose from "mongoose";
+
 
 export const getMedicines = async (req: Request, res: Response) => {
   try {
@@ -33,6 +35,30 @@ export const createPrescription = async (req: Request, res: Response) => {
 
     await newPrescription.save();
 
+    // Tự động gẫn vào hồ sơ nội trú mới nhất nếu bệnh nhân đang nằm viện
+    try {
+      const userCollection = mongoose.connection.collection("user");
+      const patient = await userCollection.findOne({ _id: patientId as any }, { projection: { status: 1 } });
+      const inpatientStatuses = ["admitted", "in_treatment", "observation"];
+
+      if (patient && inpatientStatuses.includes(patient.status)) {
+        const latestRecord = await MedicalRecord.findOne(
+          { patient: patientId, recordType: "inpatient" },
+          null,
+          { sort: { date: -1 } }
+        );
+        if (latestRecord) {
+          await MedicalRecord.findByIdAndUpdate(
+            latestRecord._id,
+            { $addToSet: { prescriptionIds: newPrescription._id.toString() } }
+          );
+        }
+      }
+    } catch (linkErr) {
+      // Không làm hỏng flow chính nếu link thất bại
+      console.warn("Could not auto-link prescription to medical record:", linkErr);
+    }
+
     await logActivity(
       doctorId,
       "Kê đơn thuốc",
@@ -45,6 +71,7 @@ export const createPrescription = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Lỗi khi tạo đơn thuốc" });
   }
 };
+
 
 export const getPrescriptions = async (req: Request, res: Response) => {
   try {

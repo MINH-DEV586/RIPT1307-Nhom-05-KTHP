@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
+
 import { getPatientMedicalRecords, deleteMedicalRecord, updateMedicalRecord, getPrescriptionById } from "@/lib/api";
 
 import { authClient } from "@/lib/auth-client";
@@ -19,7 +20,9 @@ import {
   ChevronUp,
   FileText,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
+
 import type { MedicalRecord } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,12 +57,22 @@ function RecordDetailDialog({
       ? (record.doctor as any).specialization ?? ""
       : "";
 
-  const prescriptionId = (record as any).prescriptionId;
-  const { data: prescription } = useQuery({
-    queryKey: ["prescription", prescriptionId],
-    queryFn: () => getPrescriptionById(prescriptionId!),
-    enabled: !!prescriptionId,
+  // Hỗ trợ cả prescriptionId (cũ) lẫn prescriptionIds (mới)
+  const rawIds: string[] = [
+    ...((record as any).prescriptionIds || []),
+    ...((record as any).prescriptionId ? [(record as any).prescriptionId] : []),
+  ].filter((v, i, arr) => arr.indexOf(v) === i);  // deduplicate
+
+  const prescriptionQueries = useQueries({
+    queries: rawIds.map((pid) => ({
+      queryKey: ["prescription", pid],
+      queryFn: () => getPrescriptionById(pid),
+      enabled: !!pid,
+    })),
   });
+  const prescriptions = prescriptionQueries
+    .map((q) => q.data)
+    .filter(Boolean);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -96,26 +109,39 @@ function RecordDetailDialog({
             </div>
           )}
 
-          {/* Đơn thuốc */}
-          {prescription && prescription.items && prescription.items.length > 0 && (
-            <div className="border rounded-lg overflow-hidden">
-              <div className="bg-purple-50 dark:bg-purple-950/20 px-4 py-2 border-b flex items-center gap-2">
+          {/* Danh sách đơn thuốc trong quá trình điều trị */}
+          {prescriptions.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-purple-700 uppercase tracking-wider flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-purple-500" />
-                <p className="text-xs font-bold text-purple-700 uppercase tracking-wider">
-                  Đơn thuốc ({prescription.items.length} loại) — {prescription.status === "dispensed" ? "Đã phát" : "Đang chờ"}
-                </p>
-              </div>
-              <div className="divide-y">
-                {prescription.items.map((item: any, i: number) => (
-                  <div key={i} className="px-4 py-2 flex items-center justify-between text-sm">
-                    <div>
-                      <p className="font-semibold text-slate-800 dark:text-slate-200">{item.medicineName}</p>
-                      <p className="text-xs text-muted-foreground">{item.dosage} • {item.frequency} • {item.duration}</p>
-                    </div>
-                    <Badge variant="outline" className="text-xs ml-4 shrink-0">x{item.quantity}</Badge>
+                Đơn thuốc trong điều trị ({prescriptions.length} đơn)
+              </p>
+              {prescriptions.map((rx: any, idx: number) => (
+                <div key={rx._id || idx} className="border rounded-lg overflow-hidden">
+                  <div className="bg-purple-50 dark:bg-purple-950/20 px-4 py-2 border-b flex items-center justify-between">
+                    <p className="text-xs font-semibold text-purple-700">
+                      Đơn #{idx + 1} — {rx.items?.length || 0} loại thuốc
+                    </p>
+                    <Badge className={rx.status === "dispensed"
+                      ? "bg-green-100 text-green-700 text-[10px]"
+                      : "bg-yellow-100 text-yellow-700 text-[10px]"}
+                    >
+                      {rx.status === "dispensed" ? "Đã phát" : "Đang chờ"}
+                    </Badge>
                   </div>
-                ))}
-              </div>
+                  <div className="divide-y">
+                    {(rx.items || []).map((item: any, i: number) => (
+                      <div key={i} className="px-4 py-2 flex items-center justify-between text-sm">
+                        <div>
+                          <p className="font-semibold text-slate-800 dark:text-slate-200">{item.medicineName}</p>
+                          <p className="text-xs text-muted-foreground">{item.dosage} • {item.frequency} • {item.duration}</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs ml-4 shrink-0">x{item.quantity}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -221,7 +247,8 @@ function EditRecordDialog({
 }
 
 // ---- RecordCard ----
-function RecordCard({ record, canEdit, patientId }: { record: MedicalRecord; canEdit: boolean; patientId: string }) {
+function RecordCard({ record, canEdit, canDelete, patientId }: { record: MedicalRecord; canEdit: boolean; canDelete: boolean; patientId: string }) {
+
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
@@ -274,17 +301,18 @@ function RecordCard({ record, canEdit, patientId }: { record: MedicalRecord; can
               <Eye className="w-4 h-4" />
             </Button>
             {canEdit && (
-              <>
-                <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-indigo-600"
-                  onClick={() => setShowEdit(true)} title="Chỉnh sửa">
-                  <Pencil className="w-4 h-4" />
-                </Button>
-                <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-red-600"
-                  onClick={() => setShowDelete(true)} title="Xóa">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-indigo-600"
+                onClick={() => setShowEdit(true)} title="Chỉnh sửa">
+                <Pencil className="w-4 h-4" />
+              </Button>
             )}
+            {canDelete && (
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-red-600"
+                onClick={() => setShowDelete(true)} title="Xóa">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+
             <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400"
               onClick={() => setExpanded(!expanded)}>
               {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -352,16 +380,25 @@ function RecordCard({ record, canEdit, patientId }: { record: MedicalRecord; can
 }
 
 // ---- Main Component ----
-export default function MedicalHistory({ patientId }: { patientId: string }) {
+export default function MedicalHistory({ patientId, patientStatus }: { patientId: string; patientStatus?: string }) {
   const { data: session } = authClient.useSession();
   const userRole = (session?.user as any)?.role;
-  const canEdit = userRole === "doctor" || userRole === "admin";
+  const isAdminOrDoctor = userRole === "doctor" || userRole === "admin";
+  const isDischarged = patientStatus === "discharged";
 
-  const { data: records, isLoading, isError } = useQuery<MedicalRecord[]>({
+  // Đã xuất viện → chỉ xoá được, không sửa
+  const canEdit = isAdminOrDoctor && !isDischarged;
+  const canDelete = isAdminOrDoctor;
+
+  const { data: records, isLoading, isError, refetch } = useQuery<MedicalRecord[]>({
     queryKey: ["medical-records", patientId],
     queryFn: () => getPatientMedicalRecords(patientId),
     enabled: !!patientId,
+    staleTime: 0,               // Luôn coi data là cũ
+    refetchOnMount: "always",   // Luôn fetch lại khi component mount
+    refetchOnWindowFocus: true, // Fetch lại khi quay lại tab
   });
+
 
   if (isLoading) return <Loader label="Đang tải hồ sơ bệnh án..." />;
 
@@ -389,11 +426,21 @@ export default function MedicalHistory({ patientId }: { patientId: string }) {
         <Activity className="w-5 h-5 text-red-500" />
         <h3 className="text-lg font-bold">Hồ sơ bệnh án nội trú</h3>
         <Badge variant="secondary">{records.length} hồ sơ</Badge>
+        <Button
+          size="icon" variant="ghost"
+          className="h-6 w-6 ml-auto text-muted-foreground hover:text-primary"
+          onClick={() => refetch()}
+          title="Làm mới"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+        </Button>
       </div>
+
       <div className="space-y-3">
         {records.map((record) => (
-          <RecordCard key={record._id} record={record} canEdit={canEdit} patientId={patientId} />
+          <RecordCard key={record._id} record={record} canEdit={canEdit} canDelete={canDelete} patientId={patientId} />
         ))}
+
       </div>
 
     </div>

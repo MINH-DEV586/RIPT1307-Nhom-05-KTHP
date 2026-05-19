@@ -244,7 +244,8 @@ const Profile = () => {
                       />
                     )}
                   </div>
-                  <MedicalHistory patientId={profileUser._id} />
+                  <MedicalHistory patientId={profileUser._id} patientStatus={profileUser.status} />
+
                 </div>
               </Card>
 
