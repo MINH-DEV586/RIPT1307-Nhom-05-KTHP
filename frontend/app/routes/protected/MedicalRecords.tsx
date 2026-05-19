@@ -11,7 +11,6 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -44,6 +43,25 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   follow_up: { label: "Tái khám", color: "bg-purple-100 text-purple-700 border-purple-200" },
 };
 
+const TABS = [
+  {
+    key: "medical-records" as TabType,
+    label: "Hồ sơ bệnh án",
+    icon: FileText,
+    description: "Hồ sơ nội trú sau khi bệnh nhân nhập viện",
+    color: "text-blue-600",
+    bg: "bg-blue-50 dark:bg-blue-950/30",
+  },
+  {
+    key: "exam-history" as TabType,
+    label: "Lịch sử khám",
+    icon: ClipboardCheck,
+    description: "Kết quả các lần khám ngoại trú",
+    color: "text-emerald-600",
+    bg: "bg-emerald-50 dark:bg-emerald-950/30",
+  },
+];
+
 export default function MedicalRecordsPage() {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabType>("medical-records");
@@ -61,41 +79,95 @@ export default function MedicalRecordsPage() {
 
   const { data: session } = authClient.useSession();
   const userRole = session?.user?.role;
+  const isPatientRole = userRole === "patient";
   const canCreateRecord = userRole === "doctor" || userRole === "admin";
+
+  // Nếu là bệnh nhân → xem trực tiếp hồ sơ của chính mình (không cần chọn từ danh sách)
+  const patientSelfId = isPatientRole ? session?.user?.id : null;
 
   const { data: patientsData, isLoading } = useQuery({
     queryKey: ["patients", "all"],
     queryFn: () => getUsers({ role: "patient", limit: 100 }),
+    enabled: !isPatientRole, // Chỉ fetch danh sách khi là doctor/admin
   });
 
   const patients = patientsData?.res || [];
-
   const filtered = patients.filter((p: User) =>
     p.name?.toLowerCase().includes(search.toLowerCase()) ||
     p.email?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const TABS = [
-    {
-      key: "medical-records" as TabType,
-      label: "Hồ sơ bệnh án",
-      icon: FileText,
-      description: "Hồ sơ nội trú sau khi bệnh nhân nhập viện",
-      color: "text-blue-600",
-      bg: "bg-blue-50 dark:bg-blue-950/30",
-      activeBg: "bg-blue-600",
-    },
-    {
-      key: "exam-history" as TabType,
-      label: "Lịch sử khám",
-      icon: ClipboardCheck,
-      description: "Kết quả các lần khám ngoại trú",
-      color: "text-emerald-600",
-      bg: "bg-emerald-50 dark:bg-emerald-950/30",
-      activeBg: "bg-emerald-600",
-    },
-  ];
+  // ============================================================
+  // PATIENT VIEW: bệnh nhân xem trực tiếp hồ sơ của chính mình
+  // ============================================================
+  if (isPatientRole && patientSelfId) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight">Hồ sơ sức khỏe của tôi</h1>
+          <p className="text-muted-foreground mt-1">
+            Xem hồ sơ bệnh án nội trú và lịch sử kết quả khám ngoại trú của bạn.
+          </p>
+        </div>
 
+        {/* Tab Switcher */}
+        <div className="grid grid-cols-2 gap-3">
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${
+                  isActive
+                    ? "border-transparent bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+                    : "border-border hover:border-blue-200 hover:bg-muted/50"
+                }`}
+              >
+                <div className={`p-2 rounded-lg ${isActive ? "bg-white/20" : tab.bg}`}>
+                  <Icon className={`w-5 h-5 ${isActive ? "text-white" : tab.color}`} />
+                </div>
+                <div>
+                  <p className={`font-bold text-sm ${isActive ? "text-white" : ""}`}>{tab.label}</p>
+                  <p className={`text-xs ${isActive ? "text-white/70" : "text-muted-foreground"}`}>
+                    {tab.description}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Content */}
+        <Card className="card shadow-sm">
+          <CardContent className="p-6">
+            {activeTab === "medical-records" ? (
+              <div>
+                <div className="flex items-center gap-2 mb-5">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  <h2 className="text-lg font-bold">Hồ sơ bệnh án nội trú</h2>
+                </div>
+                <MedicalHistory patientId={patientSelfId} />
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center gap-2 mb-5">
+                  <ClipboardCheck className="w-5 h-5 text-emerald-600" />
+                  <h2 className="text-lg font-bold">Lịch sử khám ngoại trú</h2>
+                </div>
+                <ExamHistoryList patientId={patientSelfId} />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // DOCTOR/ADMIN VIEW: chọn bệnh nhân từ danh sách
+  // ============================================================
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
@@ -106,9 +178,8 @@ export default function MedicalRecordsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-black tracking-tight">Hồ sơ & Lịch sử khám</h1>
+        <h1 className="text-3xl font-black tracking-tight">Hồ sơ &amp; Lịch sử khám</h1>
         <p className="text-muted-foreground mt-1">
           Quản lý hồ sơ bệnh án nội trú và lịch sử kết quả khám ngoại trú.
         </p>
@@ -122,10 +193,7 @@ export default function MedicalRecordsPage() {
           return (
             <button
               key={tab.key}
-              onClick={() => {
-                setActiveTab(tab.key);
-                setSelectedPatient(null);
-              }}
+              onClick={() => { setActiveTab(tab.key); setSelectedPatient(null); }}
               className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${
                 isActive
                   ? "border-transparent bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
@@ -162,7 +230,6 @@ export default function MedicalRecordsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4 pt-0 space-y-3">
-              {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -172,18 +239,13 @@ export default function MedicalRecordsPage() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-
-              {/* Patient List */}
               <div className="space-y-1 max-h-[500px] overflow-y-auto pr-1">
                 {filtered.length === 0 ? (
-                  <p className="text-center text-sm text-muted-foreground py-6">
-                    Không tìm thấy bệnh nhân.
-                  </p>
+                  <p className="text-center text-sm text-muted-foreground py-6">Không tìm thấy bệnh nhân.</p>
                 ) : (
                   filtered.map((patient: User) => {
                     const isSelected = selectedPatient?._id === patient._id;
                     const statusInfo = STATUS_LABEL[patient.status] || null;
-
                     return (
                       <button
                         key={patient._id}
@@ -210,9 +272,7 @@ export default function MedicalRecordsPage() {
                             </Badge>
                           )}
                         </div>
-                        <ChevronRight
-                          className={`w-4 h-4 shrink-0 ${isSelected ? "text-indigo-500" : "text-muted-foreground/40"}`}
-                        />
+                        <ChevronRight className={`w-4 h-4 shrink-0 ${isSelected ? "text-indigo-500" : "text-muted-foreground/40"}`} />
                       </button>
                     );
                   })
@@ -231,17 +291,13 @@ export default function MedicalRecordsPage() {
                   <>
                     <BedDouble className="w-16 h-16 text-slate-200 dark:text-slate-700 mb-4" />
                     <p className="font-bold text-slate-500">Chọn bệnh nhân để xem hồ sơ bệnh án</p>
-                    <p className="text-sm text-slate-400 mt-1">
-                      Hồ sơ bệnh án chỉ có sau khi bệnh nhân nhập viện.
-                    </p>
+                    <p className="text-sm text-slate-400 mt-1">Hồ sơ bệnh án chỉ có sau khi bệnh nhân nhập viện.</p>
                   </>
                 ) : (
                   <>
                     <Stethoscope className="w-16 h-16 text-slate-200 dark:text-slate-700 mb-4" />
                     <p className="font-bold text-slate-500">Chọn bệnh nhân để xem lịch sử khám</p>
-                    <p className="text-sm text-slate-400 mt-1">
-                      Lịch sử được lưu sau mỗi lần khám ngoại trú.
-                    </p>
+                    <p className="text-sm text-slate-400 mt-1">Lịch sử được lưu sau mỗi lần khám ngoại trú.</p>
                   </>
                 )}
               </CardContent>
@@ -270,8 +326,6 @@ export default function MedicalRecordsPage() {
                       </CardDescription>
                     </div>
                   </div>
-
-                  {/* Action Buttons */}
                   {canCreateRecord && (
                     <div className="flex gap-2">
                       {activeTab === "medical-records" && (

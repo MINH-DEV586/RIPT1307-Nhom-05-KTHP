@@ -231,7 +231,7 @@ const Profile = () => {
           </Card>
 
           {isPatient && (
-            <Card className="card shadow-sm p-6">
+            <Card id="medical-records" className="card shadow-sm p-6 scroll-mt-20">
               <div className="space-y-6">
                 {/* Hồ sơ bệnh án nội trú */}
                 <div>

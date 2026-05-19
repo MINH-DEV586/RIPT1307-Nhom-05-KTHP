@@ -1,24 +1,25 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-// Model lưu lịch sử kết quả khám ngoại trú
+// Better Auth dùng String IDs, không phải ObjectId
 export interface IExamHistory extends Document {
-  patient: mongoose.Types.ObjectId;
-  doctor: mongoose.Types.ObjectId;
+  patient: string;
+  doctor: string;
   examDate: Date;
-  chiefComplaint: string;   // Lý do khám
+  chiefComplaint: string;
   symptoms: string;
   diagnosis: string;
-  treatment: string;        // Hướng xử trí
-  prescription?: string;    // Toa thuốc / ghi chú kê đơn
-  followUpDate?: Date;      // Lịch tái khám
+  treatment: string;
+  prescription?: string;
+  followUpDate?: Date;
   notes?: string;
-  visitType: "outpatient";  // Khám ngoại trú
+  visitType: "outpatient";
 }
 
 const ExamHistorySchema: Schema = new Schema(
   {
-    patient: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    doctor: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    // Dùng String thay vì ObjectId — Better Auth user IDs là strings
+    patient: { type: String, required: true },
+    doctor: { type: String, required: true },
     examDate: { type: Date, default: Date.now },
     chiefComplaint: { type: String, required: true },
     symptoms: { type: String, required: true },

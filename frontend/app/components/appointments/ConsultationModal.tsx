@@ -68,7 +68,10 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
   const [treatmentPlan, setTreatmentPlan] = useState("");
   const [notes, setNotes] = useState("");
   const [selectedBedId, setSelectedBedId] = useState("");
-  
+  // Triệu chứng — bác sĩ có thể chỉnh sửa (walk-in mặc định không có)
+  const isWalkIn = appointment.symptoms === "Khám trực tiếp (Walk-in)" || !appointment.symptoms;
+  const [symptoms, setSymptoms] = useState(isWalkIn ? "" : (appointment.symptoms || ""));
+
   // Lab State
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
   const [customTest, setCustomTest] = useState("");
@@ -150,6 +153,10 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
       toast.error("Vui lòng nhập chuẩn đoán và hướng điều trị");
       return;
     }
+    if (!symptoms.trim()) {
+      toast.error("Vui lòng nhập triệu chứng của bệnh nhân");
+      return;
+    }
 
     try {
       // 1. Create Prescription if any
@@ -188,11 +195,11 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
         // 3a. NGOẠI TRÚ → lưu lịch sử khám (ExamHistory)
         await examHistoryMutation.mutateAsync({
           patient: appointment.patientId,
-          symptoms: appointment.symptoms || "",
+          symptoms: symptoms.trim(),
           diagnosis,
           treatmentPlan,
           notes,
-          visitReason: appointment.symptoms || "Khám tổng quát",
+          visitReason: symptoms.trim() || "Khám tổng quát",
           prescriptionIds: prescriptionId ? [prescriptionId] : [],
           labRequestIds,
         });
@@ -223,7 +230,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
         await medicalRecordMutation.mutateAsync({
           patient: appointment.patientId,
           doctor: appointment.doctorId,
-          symptoms: appointment.symptoms,
+          symptoms: symptoms.trim(),
           diagnosis,
           treatmentPlan,
           notes,
@@ -239,10 +246,10 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
         toast.success("Bệnh nhân đã được nhập viện! Đang chuyển sang hồ sơ bệnh nhân...");
         onClose();
 
-        // Redirect đến profile bệnh nhân sau 1 giây
+        // Redirect đến profile bệnh nhân, scroll đến phần hồ sơ bệnh án
         setTimeout(() => {
-          navigate(`/profile/${appointment.patientId}`);
-        }, 1000);
+          navigate(`/profile/${appointment.patientId}#medical-records`);
+        }, 800);
       }
 
     } catch (error: any) {
@@ -323,10 +330,22 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
               {/* --- EXAM TAB --- */}
               <TabsContent value="exam" className="mt-0 space-y-6">
                 <div className="space-y-4">
-                  <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600 mb-2">Triệu chứng hiện tại</h4>
-                    <p className="text-sm font-medium text-slate-700 italic">"{appointment.symptoms}"</p>
+                  <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl space-y-2">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600">
+                      Triệu chứng hiện tại <span className="text-red-500">*</span>
+                    </h4>
+                    {!isWalkIn && appointment.symptoms ? (
+                      // Có triệu chứng từ lịch hẹn — hiển thị nhưng vẫn cho sửa
+                      <p className="text-xs text-indigo-400 italic mb-1">Từ lịch hẹn: "{appointment.symptoms}"</p>
+                    ) : null}
+                    <Textarea
+                      placeholder="Nhập triệu chứng bệnh nhân mô tả (đau bụng, sốt, ho...)..."
+                      value={symptoms}
+                      onChange={(e) => setSymptoms(e.target.value)}
+                      className="min-h-[80px] rounded-xl bg-white border-indigo-200 text-sm"
+                    />
                   </div>
+
                   
                   <div className="space-y-2">
                     <Label className="font-bold text-slate-700">Chuẩn đoán xác định <span className="text-red-500">*</span></Label>
