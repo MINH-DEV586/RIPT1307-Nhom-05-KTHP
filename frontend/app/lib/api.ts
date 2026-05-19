@@ -62,7 +62,7 @@ export const updateUser = async ({ userId, userData }: UpdateUserParams) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(userData),
-    credentials: "include", // Important for Better Auth cookies
+    credentials: "include",
   });
 
   if (!res.ok) {
@@ -72,6 +72,16 @@ export const updateUser = async ({ userId, userData }: UpdateUserParams) => {
 
   return res.json();
 };
+
+// Cập nhật trạng thái bệnh nhân (status)
+export const updatePatientStatus = async (
+  patientId: string,
+  status: string
+) => {
+  return updateUser({ userId: patientId, userData: { status } as any });
+};
+
+
 
 export const createActivityLog = async (data: {
   userId: string;

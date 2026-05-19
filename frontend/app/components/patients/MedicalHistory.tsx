@@ -49,7 +49,9 @@ function RecordDetailDialog({
       ? (record.doctor as any).name
       : "Chưa rõ";
   const doctorSpec =
-    typeof record.doctor === "object" ? (record.doctor as any).specialization : "";
+    typeof record.doctor === "object" && record.doctor !== null
+      ? (record.doctor as any).specialization ?? ""
+      : "";
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -206,8 +208,9 @@ function RecordCard({ record, canEdit, patientId }: { record: MedicalRecord; can
 
   const doctorName =
     typeof record.doctor === "object" && record.doctor !== null
-      ? (record.doctor as any).name
+      ? (record.doctor as any).name ?? "Chưa rõ"
       : "Chưa rõ";
+
 
   return (
     <>

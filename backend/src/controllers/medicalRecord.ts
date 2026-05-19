@@ -75,9 +75,14 @@ export const getPatientMedicalRecords = async (req: Request, res: Response) => {
           specialization: 1,
           image: 1,
         });
-        return { ...record, doctor };
+        return {
+          ...record,
+          // Luôn trả về object, không bao giờ null
+          doctor: doctor ?? { _id: record.doctor, name: "Bác sĩ hệ thống", specialization: "" },
+        };
       })
     );
+
 
     res.status(200).json(enriched);
   } catch (error) {
