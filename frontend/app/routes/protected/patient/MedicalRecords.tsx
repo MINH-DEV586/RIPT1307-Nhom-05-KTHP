@@ -27,7 +27,7 @@ import Loader from "@/components/global/Loader";
 import ExamHistoryList from "@/components/patients/ExamHistoryList";
 
 export function meta() {
-  return [{ title: "Hồ sơ sức khỏe | MedFlow AI" }];
+  return [{ title: "Lịch sử khám chữa bệnh | MedFlow AI" }];
 }
 
 type TabType = "medical-records" | "exam-history";
@@ -82,10 +82,10 @@ export default function PatientMedicalRecords() {
           <div className="p-2 bg-primary/10 rounded-xl">
             <ClipboardList className="w-8 h-8 text-primary" />
           </div>
-          Hồ sơ sức khỏe của tôi
+          Lịch sử khám chữa bệnh
         </h1>
         <p className="text-muted-foreground text-lg ml-1">
-          Xem hồ sơ bệnh án nội trú và lịch sử các lần khám ngoại trú.
+          Toàn bộ lịch sử khám chữa bệnh: hồ sơ nội trú và các lần khám ngoại trú.
         </p>
       </div>
 

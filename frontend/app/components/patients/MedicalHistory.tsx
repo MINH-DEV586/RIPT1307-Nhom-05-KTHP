@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getPatientMedicalRecords, deleteMedicalRecord, updateMedicalRecord } from "@/lib/api";
+import { getPatientMedicalRecords, deleteMedicalRecord, updateMedicalRecord, getPrescriptionById } from "@/lib/api";
+
 import { authClient } from "@/lib/auth-client";
 import { format, isValid } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -53,6 +54,13 @@ function RecordDetailDialog({
       ? (record.doctor as any).specialization ?? ""
       : "";
 
+  const prescriptionId = (record as any).prescriptionId;
+  const { data: prescription } = useQuery({
+    queryKey: ["prescription", prescriptionId],
+    queryFn: () => getPrescriptionById(prescriptionId!),
+    enabled: !!prescriptionId,
+  });
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
@@ -87,11 +95,35 @@ function RecordDetailDialog({
               <p className="text-sm text-amber-900 dark:text-amber-100 italic">"{record.notes}"</p>
             </div>
           )}
+
+          {/* Đơn thuốc */}
+          {prescription && prescription.items && prescription.items.length > 0 && (
+            <div className="border rounded-lg overflow-hidden">
+              <div className="bg-purple-50 dark:bg-purple-950/20 px-4 py-2 border-b flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-purple-500" />
+                <p className="text-xs font-bold text-purple-700 uppercase tracking-wider">
+                  Đơn thuốc ({prescription.items.length} loại) — {prescription.status === "dispensed" ? "Đã phát" : "Đang chờ"}
+                </p>
+              </div>
+              <div className="divide-y">
+                {prescription.items.map((item: any, i: number) => (
+                  <div key={i} className="px-4 py-2 flex items-center justify-between text-sm">
+                    <div>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">{item.medicineName}</p>
+                      <p className="text-xs text-muted-foreground">{item.dosage} • {item.frequency} • {item.duration}</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs ml-4 shrink-0">x{item.quantity}</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
   );
 }
+
 
 function DetailSection({ label, value, dotColor, color }: { label: string; value: string; dotColor: string; color: string }) {
   return (
@@ -358,13 +390,12 @@ export default function MedicalHistory({ patientId }: { patientId: string }) {
         <h3 className="text-lg font-bold">Hồ sơ bệnh án nội trú</h3>
         <Badge variant="secondary">{records.length} hồ sơ</Badge>
       </div>
-      <ScrollArea className="h-[500px] pr-2">
-        <div className="space-y-3">
-          {records.map((record) => (
-            <RecordCard key={record._id} record={record} canEdit={canEdit} patientId={patientId} />
-          ))}
-        </div>
-      </ScrollArea>
+      <div className="space-y-3">
+        {records.map((record) => (
+          <RecordCard key={record._id} record={record} canEdit={canEdit} patientId={patientId} />
+        ))}
+      </div>
+
     </div>
   );
 }

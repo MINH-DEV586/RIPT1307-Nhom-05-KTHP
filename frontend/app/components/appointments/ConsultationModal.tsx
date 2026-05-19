@@ -202,7 +202,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
           treatmentPlan,
           notes,
           visitReason: symptoms.trim() || "Khám tổng quát",
-          prescriptionIds: prescriptionId ? [prescriptionId] : [],
+          prescription: prescriptionId,           // singular — khớp với backend schema
           labRequestIds,
         });
 
@@ -249,7 +249,9 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
           notes,
           admissionReason: diagnosis,
           recordType: "inpatient",
+          prescriptionId,                         // Link đơn thuốc vào hồ sơ nội trú
         });
+
 
         onComplete({
           consultationFee: appointment.doctor?.consultationFee || 200000,

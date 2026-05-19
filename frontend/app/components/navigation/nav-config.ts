@@ -123,8 +123,7 @@ export const navConfig: {
       icon: ClipboardPlus,
       allowedRoles: ["patient"],
       items: [
-        { title: "Hồ sơ bệnh án", url: "/patient/medical-records" },
-        { title: "Lịch sử khám ngoại trú", url: "/patient/medical-records?tab=exam-history" },
+        { title: "Lịch sử khám chữa bệnh", url: "/patient/medical-records" },
         { title: "Đơn thuốc điện tử", url: "/patient/prescriptions" },
         { title: "Kết quả xét nghiệm", url: "/patient/test-results" },
         { title: "Thanh toán viện phí", url: "/patient/invoices" },

@@ -231,12 +231,11 @@ const Profile = () => {
           </Card>
 
           {isPatient && (
-            <Card id="medical-records" className="card shadow-sm p-6 scroll-mt-20">
-              <div className="space-y-6">
-                {/* Hồ sơ bệnh án nội trú */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold">Hồ sơ bệnh án (Nội trú)</h3>
+            <>
+              {/* Card: Hồ sơ bệnh án nội trú */}
+              <Card id="medical-records" className="card shadow-sm scroll-mt-20">
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center justify-end">
                     {["admin", "doctor"].includes(loggedInUser?.role || "") && (
                       <CreateMedicalRecordModal
                         patientId={profileUser._id}
@@ -247,11 +246,12 @@ const Profile = () => {
                   </div>
                   <MedicalHistory patientId={profileUser._id} />
                 </div>
+              </Card>
 
-                {/* Lịch sử khám ngoại trú */}
-                <div className="border-t pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold">Lịch sử khám (Ngoại trú)</h3>
+              {/* Card: Lịch sử khám ngoại trú */}
+              <Card className="card shadow-sm">
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center justify-end">
                     {["admin", "doctor"].includes(loggedInUser?.role || "") && (
                       <CreateExamHistoryModal
                         patientId={profileUser._id}
@@ -261,9 +261,10 @@ const Profile = () => {
                   </div>
                   <ExamHistoryList patientId={profileUser._id} />
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </>
           )}
+
 
           {isPatient && (isViewingOwnProfile || isAdmin) && (
             <Card className="card shadow-sm overflow-hidden border-l-4 border-l-blue-500">

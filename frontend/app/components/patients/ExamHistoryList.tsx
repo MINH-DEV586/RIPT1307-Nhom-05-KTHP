@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getPatientExamHistory } from "@/lib/api";
+import { getPatientExamHistory, getPrescriptionById } from "@/lib/api";
+
 import { authClient } from "@/lib/auth-client";
 import { format, isValid } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -47,7 +48,17 @@ function ExamDetailDialog({
       ? (record.doctor as any).name
       : "Chưa rõ";
   const doctorSpec =
-    typeof record.doctor === "object" ? (record.doctor as any).specialization : "";
+    typeof record.doctor === "object" && record.doctor !== null
+      ? (record.doctor as any).specialization ?? ""
+      : "";
+
+  // prescription là ObjectId string → fetch chi tiết
+  const prescriptionId = record.prescription;
+  const { data: prescriptionDetail } = useQuery({
+    queryKey: ["prescription", prescriptionId],
+    queryFn: () => getPrescriptionById(prescriptionId!),
+    enabled: !!prescriptionId,
+  });
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -103,14 +114,34 @@ function ExamDetailDialog({
             dotColor="bg-green-500"
           />
 
-          {record.prescription && (
+          {/* Đơn thuốc */}
+          {prescriptionDetail && prescriptionDetail.items && prescriptionDetail.items.length > 0 ? (
+            <div className="border rounded-lg overflow-hidden">
+              <div className="bg-purple-50 dark:bg-purple-950/20 px-4 py-2 border-b flex items-center gap-2">
+                <Pill className="w-4 h-4 text-purple-600" />
+                <p className="text-xs font-bold text-purple-700 uppercase tracking-wider">
+                  Đơn thuốc ({prescriptionDetail.items.length} loại) — {prescriptionDetail.status === "dispensed" ? "Đã phát" : "Đang chờ phát"}
+                </p>
+              </div>
+              <div className="divide-y">
+                {prescriptionDetail.items.map((item: any, i: number) => (
+                  <div key={i} className="px-4 py-2 flex items-center justify-between text-sm">
+                    <div>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">{item.medicineName}</p>
+                      <p className="text-xs text-muted-foreground">{item.dosage} • {item.frequency} • {item.duration}</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs ml-4 shrink-0">x{item.quantity}</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : prescriptionId ? (
             <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-200">
               <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-1 flex items-center gap-1">
-                <Pill className="w-3 h-3" /> Đơn thuốc / Toa kê
+                <Pill className="w-3 h-3" /> Đang tải đơn thuốc...
               </p>
-              <p className="text-sm text-blue-900 dark:text-blue-100">{record.prescription}</p>
             </div>
-          )}
+          ) : null}
 
           {record.followUpDate && isValid(new Date(record.followUpDate)) && (
             <div className="bg-purple-50 dark:bg-purple-950/20 p-3 rounded-lg border border-purple-200">
@@ -281,13 +312,12 @@ export default function ExamHistoryList({ patientId }: ExamHistoryListProps) {
         <h3 className="text-lg font-bold">Lịch sử khám ngoại trú</h3>
         <Badge variant="secondary">{records.length} lần khám</Badge>
       </div>
-      <ScrollArea className="h-[500px] pr-2">
-        <div className="space-y-3">
-          {records.map((record) => (
-            <ExamCard key={record._id} record={record} />
-          ))}
-        </div>
-      </ScrollArea>
+      <div className="space-y-3">
+        {records.map((record) => (
+          <ExamCard key={record._id} record={record} />
+        ))}
+      </div>
+
     </div>
   );
 }

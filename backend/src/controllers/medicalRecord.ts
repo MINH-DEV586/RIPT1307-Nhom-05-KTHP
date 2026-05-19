@@ -36,6 +36,7 @@ export const createMedicalRecord = async (req: Request, res: Response) => {
       attachments,
       admissionReason,
       recordType,
+      prescriptionId,       // ID đơn thuốc liên kết
     } = req.body;
 
     const newRecord = new MedicalRecord({
@@ -48,7 +49,9 @@ export const createMedicalRecord = async (req: Request, res: Response) => {
       attachments,
       admissionReason,
       recordType: recordType || "inpatient",
+      prescriptionId,       // Lưu vào DB
     });
+
 
     const savedRecord = await newRecord.save();
     res.status(201).json(savedRecord);

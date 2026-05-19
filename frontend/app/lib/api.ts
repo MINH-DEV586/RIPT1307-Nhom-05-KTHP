@@ -278,12 +278,13 @@ export const getPrescriptions = async (): Promise<any[]> => {
 };
 
 export const getPrescriptionById = async (id: string): Promise<any> => {
-  const res = await fetch(`${API_URL}/dispense/${id}`, {
+  const res = await fetch(`${API_URL}/prescriptions/${id}`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("Failed to fetch prescription");
   return res.json();
 };
+
 
 export const confirmDispense = async (prescriptionId: string): Promise<any> => {
   const res = await fetch(`${API_URL}/dispense/confirm`, {
@@ -669,7 +670,7 @@ export const createExamHistory = async (data: {
   diagnosis: string;
   treatmentPlan: string;
   notes?: string;
-  prescriptionIds?: string[];
+  prescription?: string;   // ID đơn thuốc (singular, khớp với backend schema)
   labRequestIds?: string[];
   visitReason?: string;
   nextAppointment?: string;
@@ -686,6 +687,7 @@ export const createExamHistory = async (data: {
   }
   return res.json();
 };
+
 
 export const getPatientExamHistory = async (patientId: string) => {
   const res = await fetch(`${API_URL}/exam-history/patient/${patientId}`, {
