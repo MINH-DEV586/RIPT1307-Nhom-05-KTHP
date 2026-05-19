@@ -62,7 +62,7 @@ export const updateUser = async ({ userId, userData }: UpdateUserParams) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(userData),
-    credentials: "include", // Important for Better Auth cookies
+    credentials: "include",
   });
 
   if (!res.ok) {
@@ -72,6 +72,16 @@ export const updateUser = async ({ userId, userData }: UpdateUserParams) => {
 
   return res.json();
 };
+
+// Cập nhật trạng thái bệnh nhân (status)
+export const updatePatientStatus = async (
+  patientId: string,
+  status: string
+) => {
+  return updateUser({ userId: patientId, userData: { status } as any });
+};
+
+
 
 export const createActivityLog = async (data: {
   userId: string;
@@ -268,12 +278,13 @@ export const getPrescriptions = async (): Promise<any[]> => {
 };
 
 export const getPrescriptionById = async (id: string): Promise<any> => {
-  const res = await fetch(`${API_URL}/dispense/${id}`, {
+  const res = await fetch(`${API_URL}/prescriptions/${id}`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error("Failed to fetch prescription");
   return res.json();
 };
+
 
 export const confirmDispense = async (prescriptionId: string): Promise<any> => {
   const res = await fetch(`${API_URL}/dispense/confirm`, {
@@ -459,16 +470,8 @@ export const createUser = async (data: any): Promise<any> => {
   return res.json();
 };
 
-export const createMedicalRecord = async (data: any) => {
-  const res = await fetch(`${API_URL}/medical-records`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-    credentials: "include",
-  });
-  if (!res.ok) throw new Error("Failed to create medical record");
-  return res.json();
-};
+
+
 
 export const getPatientMedicalRecords = async (patientId: string) => {
   const res = await fetch(`${API_URL}/medical-records/patient/${patientId}`, {
@@ -486,7 +489,53 @@ export const getMedicalRecordById = async (id: string) => {
   return res.json();
 };
 
-// --- APPOINTMENT SYSTEM ---
+export const updateMedicalRecord = async (id: string, data: {
+  symptoms?: string;
+  diagnosis?: string;
+  treatmentPlan?: string;
+  notes?: string;
+  admissionReason?: string;
+}) => {
+  const res = await fetch(`${API_URL}/medical-records/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to update medical record");
+  }
+  return res.json();
+};
+
+export const deleteMedicalRecord = async (id: string) => {
+  const res = await fetch(`${API_URL}/medical-records/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to delete medical record");
+  }
+  return res.json();
+};
+
+export const createMedicalRecord = async (data: any) => {
+  const res = await fetch(`${API_URL}/medical-records`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to create medical record");
+  }
+  return res.json();
+};
+
+
 
 export const getAvailableDoctors = async (params?: { specialization?: string; feeMax?: number }) => {
   const filteredParams = params ? Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined)) : {};
@@ -612,3 +661,47 @@ export const createBed = async (data: any) => {
   if (!res.ok) throw new Error("Failed to create bed");
   return res.json();
 };
+
+// --- EXAM HISTORY (Outpatient) ---
+
+export const createExamHistory = async (data: {
+  patient: string;
+  symptoms: string;
+  diagnosis: string;
+  treatmentPlan: string;
+  notes?: string;
+  prescription?: string;   // ID đơn thuốc (singular, khớp với backend schema)
+  labRequestIds?: string[];
+  visitReason?: string;
+  nextAppointment?: string;
+}) => {
+  const res = await fetch(`${API_URL}/exam-history`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to create exam history");
+  }
+  return res.json();
+};
+
+
+export const getPatientExamHistory = async (patientId: string) => {
+  const res = await fetch(`${API_URL}/exam-history/patient/${patientId}`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch exam history");
+  return res.json();
+};
+
+export const getExamHistoryById = async (id: string) => {
+  const res = await fetch(`${API_URL}/exam-history/${id}`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch exam history detail");
+  return res.json();
+};
+
