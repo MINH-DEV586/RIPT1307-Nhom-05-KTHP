@@ -3,6 +3,8 @@ import LabRequest from "../models/labRequest";
 import type { Request, Response } from "express";
 import { logActivity } from "../lib/activity";
 import { inngest } from "../inngest/client";
+import Notification from "../models/notification";
+import { getIO } from "../lib/socket";
 
 export const createLabResult = async (req: Request, res: Response) => {
   try {
@@ -48,6 +50,20 @@ export const createLabResult = async (req: Request, res: Response) => {
           bodyPart,
         },
       });
+    }
+
+    // Tạo thông báo cho bệnh nhân
+    try {
+      await Notification.create({
+        user: patientId,
+        title: "Kết quả xét nghiệm mới",
+        message: `Kết quả xét nghiệm ${testType} đã có. Vui lòng kiểm tra phần Kết quả xét nghiệm.`,
+        type: "lab_result",
+        link: `/patient/test-results`,
+      });
+      try { getIO().emit(`new_notification_${patientId}`); } catch (e) { /* ignore */ }
+    } catch (notifyErr) {
+      console.error("Failed to create notification for lab result:", notifyErr);
     }
 
     const io = req.app.get("io");

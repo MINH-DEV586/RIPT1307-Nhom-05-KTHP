@@ -3,6 +3,8 @@ import ExamHistory from "../models/examHistory";
 import { auth } from "../lib/auth";
 import { fromNodeHeaders } from "better-auth/node";
 import mongoose from "mongoose";
+import Notification from "../models/notification";
+import { getIO } from "../lib/socket";
 
 // Helper: manual lookup user từ Better Auth "user" collection (string IDs)
 const lookupUser = async (
@@ -73,6 +75,24 @@ export const createExamHistory = async (req: Request, res: Response) => {
       lookupUser(saved.doctor as string, { name: 1, specialization: 1, department: 1, image: 1 }),
       lookupUser(saved.patient as string, { name: 1, gender: 1, bloodgroup: 1, image: 1 }),
     ]);
+
+    // Gửi thông báo cho bệnh nhân có kết quả khám mới
+    try {
+      await Notification.create({
+        user: saved.patient,
+        title: "Kết quả khám mới",
+        message: `Bác sĩ đã cập nhật kết quả khám, đơn thuốc/xét nghiệm của bạn.`,
+        type: "system",
+        link: `/patient/medical-records`,
+      });
+      try {
+        getIO().emit(`new_notification_${saved.patient}`);
+      } catch (e) {
+        // ignore socket errors
+      }
+    } catch (notifyErr) {
+      console.error("Failed to notify patient about exam history:", notifyErr);
+    }
 
     res.status(201).json({
       ...saved.toObject(),

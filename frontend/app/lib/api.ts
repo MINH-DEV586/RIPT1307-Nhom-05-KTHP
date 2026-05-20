@@ -269,6 +269,17 @@ export const markAsRead = async (id: string) => {
   return res.json();
 };
 
+export const getAppointmentById = async (id: string) => {
+  const res = await fetch(`${API_URL}/appointments/${id}`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => null);
+    throw new Error(error?.message || "Failed to fetch appointment details");
+  }
+  return res.json();
+};
+
 export const getPrescriptions = async (): Promise<any[]> => {
   const res = await fetch(`${API_URL}/dispense`, {
     credentials: "include",

@@ -24,6 +24,7 @@ export default [
     route("appointments/book", "routes/protected/appointments/Book.tsx"),
     route("appointments/all-schedules", "routes/protected/appointments/AllSchedules.tsx"),
     route("appointments/schedule-setup", "routes/protected/appointments/ScheduleSetup.tsx"),
+    route("appointments/:id", "routes/protected/appointments/AppointmentDetail.tsx"),
     route("bed-management", "routes/protected/BedManagement.tsx"),
     route("reports", "routes/protected/Reports.tsx"),
     route("pharmacy", "routes/protected/pharmacy/layout.tsx", [

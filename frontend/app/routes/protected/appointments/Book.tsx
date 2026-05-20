@@ -68,8 +68,12 @@ export default function BookAppointment() {
     onSuccess: () => {
       toast.success("Đặt lịch thành công!");
       setBookingModalOpen(false);
-      setSuccessModalOpen(true);
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      setSuccessModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["appointments"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["appointments"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["available-slots", selectedDoctor?._id, formData.date], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["available-slots"], exact: false });
+      navigate("/appointments", { replace: true });
     },
     onError: () => {
       toast.error("Có lỗi xảy ra khi đặt lịch.");

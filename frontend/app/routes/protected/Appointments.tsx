@@ -66,10 +66,13 @@ export default function AppointmentsPage() {
   const isDoctor = user?.role === "doctor";
   const isDoctorOrAdmin = isDoctor || isAdmin;
 
+  const appointmentQueryKey = ["appointments", user?.role, user?.id] as const;
+
   const { data: appointments = [], isLoading } = useQuery({
-    queryKey: ["appointments", user?.role],
+    queryKey: appointmentQueryKey,
     queryFn: () => (isDoctorOrAdmin ? getDoctorAppointments() : getMyAppointments()),
     enabled: !!user,
+    refetchOnMount: "always",
   });
 
   const statusMutation = useMutation({
@@ -77,13 +80,19 @@ export default function AppointmentsPage() {
       updateAppointmentStatus(id, { status, meetingLink, billing, rejectionReason }),
     onSuccess: () => {
       toast.success("Cập nhật trạng thái thành công");
-      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: appointmentQueryKey, exact: true });
+      queryClient.invalidateQueries({ queryKey: ["appointments"], exact: false });
+      queryClient.refetchQueries({ queryKey: appointmentQueryKey, exact: true });
     }
   });
 
   if (isLoading) return <div className="h-[60vh] flex items-center justify-center"><Loader label="Đang tải lịch hẹn..." /></div>;
 
-  const upcoming = appointments.filter(a => a.status === "pending" || a.status === "confirmed");
+  const now = new Date();
+  const upcoming = appointments.filter(a => {
+    const appointmentDate = new Date(a.date);
+    return (a.status === "pending" || a.status === "confirmed") && appointmentDate >= now;
+  });
   const completed = appointments.filter(a => a.status === "completed");
   const cancelled = appointments.filter(a => a.status === "cancelled");
 
@@ -286,7 +295,15 @@ function AppointmentCard({
                 <Button
                   variant="outline"
                   className="gap-2 font-bold"
-                  onClick={() => navigate("/patient/prescriptions")}
+                  onClick={() => {
+                    // Patients see their prescriptions page. Staff (doctor/admin) should view prescriptions via pharmacy.
+                    if (isDoctor || isAdmin) {
+                      // pass patientId to pharmacy prescriptions so staff can view this patient's prescriptions
+                      navigate(`/pharmacy/prescriptions?patientId=${appointment.patientId}`);
+                    } else {
+                      navigate("/patient/prescriptions");
+                    }
+                  }}
                 >
                   <FileText className="w-4 h-4" /> Xem đơn thuốc
                 </Button>

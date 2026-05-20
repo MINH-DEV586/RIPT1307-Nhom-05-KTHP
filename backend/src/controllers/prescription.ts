@@ -4,6 +4,8 @@ import Medicine from "../models/medicine";
 import MedicalRecord from "../models/medicalRecord";
 import { logActivity } from "../lib/activity";
 import mongoose from "mongoose";
+import Notification from "../models/notification";
+import { getIO } from "../lib/socket";
 
 
 export const getMedicines = async (req: Request, res: Response) => {
@@ -34,6 +36,20 @@ export const createPrescription = async (req: Request, res: Response) => {
     });
 
     await newPrescription.save();
+
+    // Thông báo cho bệnh nhân rằng có đơn thuốc mới
+    try {
+      await Notification.create({
+        user: patientId,
+        title: "Bạn có đơn thuốc mới",
+        message: `Bác sĩ đã thêm đơn thuốc cho bạn. Vui lòng kiểm tra phần Đơn thuốc.`,
+        type: "assignment",
+        link: `/patient/prescriptions`,
+      });
+      try { getIO().emit(`new_notification_${patientId}`); } catch (e) { /* ignore */ }
+    } catch (notifyErr) {
+      console.error("Failed to create notification for prescription:", notifyErr);
+    }
 
     // Tự động gẫn vào hồ sơ nội trú mới nhất nếu bệnh nhân đang nằm viện
     try {

@@ -41,4 +41,9 @@ const AppointmentSchema: Schema = new Schema(
   { timestamps: true }
 );
 
+// Add compound indexes for efficient querying
+AppointmentSchema.index({ patientId: 1, date: -1 });
+AppointmentSchema.index({ doctorId: 1, date: -1 });
+AppointmentSchema.index({ doctorId: 1, status: 1, date: 1 });
+
 export default mongoose.model<IAppointment>("Appointment", AppointmentSchema);

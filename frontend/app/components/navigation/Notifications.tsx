@@ -102,7 +102,7 @@ export default function Notifications({ user }: { user: User }) {
                   asChild
                 >
                   <Link
-                    to={notif.link || "#"}
+                    to={notif.link || "/appointments"}
                     className="flex items-start gap-3 w-full"
                   >
                     <div className="mt-1 bg-white dark:bg-slate-800 p-2 rounded-full border shadow-sm shrink-0">

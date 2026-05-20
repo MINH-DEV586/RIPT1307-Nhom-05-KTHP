@@ -5,6 +5,9 @@ import mongoose from "mongoose";
 import { logActivity } from "../lib/activity";
 import { format, parseISO } from "date-fns";
 import { sendMail } from "../lib/mailer";
+import Notification from "../models/notification";
+import { getIO } from "../lib/socket";
+import Invoice from "../models/invoice";
 
 // --- PATIENT ACTIONS ---
 
@@ -40,12 +43,18 @@ export const bookAppointment = async (req: Request, res: Response) => {
     const patientId = (req as any).user.id;
     const { doctorId, patientType, patientName, date, timeSlot, type, symptoms, notes, files } = req.body;
 
+    // Parse and validate date
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) {
+      return res.status(400).json({ message: "Ngày hẹn không hợp lệ" });
+    }
+
     const appointment = new Appointment({
       patientId,
       doctorId,
       patientType,
       patientName,
-      date,
+      date: parsedDate,
       timeSlot,
       type,
       symptoms,
@@ -56,6 +65,24 @@ export const bookAppointment = async (req: Request, res: Response) => {
 
     await appointment.save();
     await logActivity(patientId, "Đặt lịch khám", `Đặt lịch khám ${type} với bác sĩ ID: ${doctorId}`);
+
+    // Tạo thông báo cho bác sĩ khi có bệnh nhân đặt lịch
+    try {
+      await Notification.create({
+        user: doctorId,
+        title: "Bệnh nhân đặt lịch hẹn",
+        message: `Bệnh nhân ${patientName || 'một bệnh nhân'} đã đặt lịch vào ${format(new Date(date), 'dd/MM/yyyy')} (${timeSlot})`,
+        type: "system",
+        link: `/appointments/${appointment._id}`,
+      });
+      try {
+        getIO().emit(`new_notification_${doctorId}`);
+      } catch (e) {
+        // ignore socket errors
+      }
+    } catch (notifyErr) {
+      console.error("Failed to create notification for doctor on booking:", notifyErr);
+    }
 
     try {
       const userCollection = mongoose.connection.collection("user");
@@ -108,8 +135,9 @@ export const bookAppointment = async (req: Request, res: Response) => {
     }
 
     res.status(201).json(appointment);
-  } catch (error) {
-    res.status(500).json({ message: "Lỗi khi đặt lịch khám" });
+  } catch (error: any) {
+    console.error("Booking error:", error);
+    res.status(500).json({ message: "Lỗi khi đặt lịch khám", error: error.message || error });
   }
 };
 
@@ -117,12 +145,17 @@ export const bookAppointment = async (req: Request, res: Response) => {
 export const getMyAppointments = async (req: Request, res: Response) => {
   try {
     const patientId = (req as any).user.id;
-    const { status } = req.query;
+    const { status, includeAll } = req.query;
     
     const filter: any = { patientId };
     if (status) filter.status = status;
-
+    
+    // By default, show upcoming appointments only (future dates)
+    // Don't filter by date on backend - let frontend handle it for flexibility
+    // This ensures all appointments are returned regardless of date
+    
     const appointments = await Appointment.find(filter).sort({ date: 1, timeSlot: 1 }).lean();
+    console.log(`[getMyAppointments] PatientID: ${patientId}, Found: ${appointments.length} appointments`);
     
     const userCollection = mongoose.connection.collection("user");
     const detailed = await Promise.all(appointments.map(async (app) => {
@@ -147,13 +180,45 @@ export const getMyAppointments = async (req: Request, res: Response) => {
   }
 };
 
+// Lấy chi tiết lịch hẹn theo ID
+export const getAppointmentById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const user = (req as any).user;
+    const appointment = await Appointment.findById(id).lean();
+    if (!appointment) return res.status(404).json({ message: "Không tìm thấy lịch hẹn" });
+
+    if (user.role === "doctor" && appointment.doctorId !== user.id) {
+      return res.status(403).json({ message: "Không có quyền truy cập lịch hẹn này" });
+    }
+    if (user.role === "patient" && appointment.patientId !== user.id) {
+      return res.status(403).json({ message: "Không có quyền truy cập lịch hẹn này" });
+    }
+
+    const userCollection = mongoose.connection.collection("user");
+    let doctor = await userCollection.findOne({ _id: appointment.doctorId as any });
+    if (!doctor && mongoose.Types.ObjectId.isValid(appointment.doctorId)) {
+      doctor = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.doctorId) });
+    }
+
+    let patient = await userCollection.findOne({ _id: appointment.patientId as any });
+    if (!patient && mongoose.Types.ObjectId.isValid(appointment.patientId)) {
+      patient = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.patientId) });
+    }
+
+    res.json({ ...appointment, doctor, patient });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi lấy chi tiết lịch hẹn" });
+  }
+};
+
 // --- DOCTOR ACTIONS ---
 
 // Lấy danh sách lịch khám của bác sĩ
 export const getDoctorAppointments = async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const { status, date, doctorId: queryDoctorId } = req.query;
+    const { status, date, doctorId: queryDoctorId, includeAll } = req.query;
 
     const filter: any = {};
     
@@ -170,6 +235,8 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
     }
 
     if (status) filter.status = status;
+    
+    // Only filter by specific date if provided, don't filter by "upcoming" on backend
     if (date) {
       const start = new Date(date as string);
       start.setHours(0,0,0,0);
@@ -180,21 +247,14 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
 
     const appointments = await Appointment.find(filter).sort({ date: 1, timeSlot: 1 }).lean();
     
+    // Bổ sung thông tin bệnh nhân
     const userCollection = mongoose.connection.collection("user");
     const detailed = await Promise.all(appointments.map(async (app) => {
-      // Tìm kiếm bệnh nhân
       let patient = await userCollection.findOne({ _id: app.patientId as any });
       if (!patient && mongoose.Types.ObjectId.isValid(app.patientId)) {
         patient = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(app.patientId) });
       }
-
-      // Tìm kiếm bác sĩ
-      let doctor = await userCollection.findOne({ _id: app.doctorId as any });
-      if (!doctor && mongoose.Types.ObjectId.isValid(app.doctorId)) {
-        doctor = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(app.doctorId) });
-      }
-
-      return { ...app, patient, doctor };
+      return { ...app, patient };
     }));
 
     res.json(detailed);
@@ -203,94 +263,111 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
   }
 };
 
-import Invoice from "../models/invoice";
+    // Cập nhật trạng thái lịch hẹn (ví dụ: bác sĩ xác nhận)
+    export const updateAppointmentStatus = async (req: Request, res: Response) => {
+      try {
+        const { id } = req.params;
+        const { status, billing } = req.body;
+        const userId = (req as any).user.id;
 
-// Cập nhật trạng thái (Accept/Reject/Complete)
-export const updateAppointmentStatus = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { status, meetingLink, billing, rejectionReason } = req.body;
-    const userId = (req as any).user.id;
+        const appointment = await Appointment.findByIdAndUpdate(id, { status }, { new: true }).lean();
+        if (!appointment) return res.status(404).json({ message: "Không tìm thấy lịch hẹn" });
 
-    const appointment = await Appointment.findById(id);
-    if (!appointment) return res.status(404).json({ message: "Không tìm thấy lịch hẹn" });
+        const userCollection = mongoose.connection.collection("user");
 
-    // Security check: Patients can only cancel their own appointments
-    const user = (req as any).user;
-    if (user.role === "patient") {
-      if (appointment.patientId !== user.id) {
-        return res.status(403).json({ message: "Bạn không có quyền thay đổi lịch hẹn của người khác" });
+        // Nếu bác sĩ xác nhận lịch, thông báo cho bệnh nhân
+        if (status === "confirmed") {
+          try {
+            let doctorObj = await userCollection.findOne({ _id: appointment.doctorId as any });
+            if (!doctorObj && mongoose.Types.ObjectId.isValid(appointment.doctorId)) {
+              doctorObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.doctorId) });
+            }
+
+            await Notification.create({
+              user: appointment.patientId,
+              title: "Bác sĩ xác nhận lịch hẹn",
+              message: `Bác sĩ ${doctorObj?.name || 'Bác sĩ'} đã xác nhận lịch hẹn của bạn vào ${format(new Date(appointment.date), 'dd/MM/yyyy')} (${appointment.timeSlot})`,
+              type: "system",
+              link: `/appointments/${id}`,
+            });
+            try { getIO().emit(`new_notification_${appointment.patientId}`); } catch (e) { /* ignore */ }
+          } catch (notifyErr) {
+            console.error("Failed to notify patient on appointment confirmation:", notifyErr);
+          }
+        }
+
+        if (status === "completed") {
+          try {
+            // Generate invoice
+            let doctor = await userCollection.findOne({ _id: appointment.doctorId as any });
+            if (!doctor && mongoose.Types.ObjectId.isValid(appointment.doctorId)) {
+              doctor = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.doctorId) });
+            }
+            
+            const items = [];
+            let totalAmount = 0;
+
+            const consultationFee = billing?.consultationFee || doctor?.consultationFee || 200000;
+            items.push({
+              description: `Phí khám bệnh - ${doctor?.name || "Bác sĩ"}`,
+              quantity: 1,
+              unitPrice: consultationFee,
+              totalPrice: consultationFee
+            });
+            totalAmount += consultationFee;
+
+            if (billing?.labFee && billing.labFee > 0) {
+              items.push({
+                description: "Chi phí xét nghiệm & Cận lâm sàng",
+                quantity: 1,
+                unitPrice: billing.labFee,
+                totalPrice: billing.labFee
+              });
+              totalAmount += billing.labFee;
+            }
+
+            if (billing?.prescriptionFee && billing.prescriptionFee > 0) {
+              items.push({
+                description: "Chi phí đơn thuốc",
+                quantity: 1,
+                unitPrice: billing.prescriptionFee,
+                totalPrice: billing.prescriptionFee
+              });
+              totalAmount += billing.prescriptionFee;
+            }
+
+            const newInvoice = new Invoice({
+              patientId: appointment.patientId,
+              status: "pending_payment",
+              items,
+              totalAmount
+            });
+            await newInvoice.save();
+            await logActivity(userId, "Tạo hóa đơn chi tiết", `Đã tạo hóa đơn tổng cộng ${totalAmount} cho bệnh nhân ID: ${appointment.patientId}`);
+            
+            // Notify patient about completed appointment and results
+            await Notification.create({
+              user: appointment.patientId,
+              title: "Kết quả khám đã có",
+              message: `Lịch khám của bạn đã hoàn tất. Bạn có thể xem kết quả khám, đơn thuốc và thanh toán hóa đơn.`,
+              type: "system",
+              link: `/appointments`,
+            });
+            try { getIO().emit(`new_notification_${appointment.patientId}`); } catch (e) { /* ignore */ }
+            
+          } catch (err) {
+            console.error("Failed to generate invoice or notification for completed appointment:", err);
+          }
+        }
+
+        await logActivity(userId, "Cập nhật trạng thái lịch hẹn", `Cập nhật lịch hẹn ${id} sang ${status}`);
+
+        res.json(appointment);
+      } catch (error) {
+        console.error("Error in updateAppointmentStatus:", error);
+        res.status(500).json({ message: "Lỗi khi cập nhật trạng thái" });
       }
-      if (status !== "cancelled") {
-        return res.status(403).json({ message: "Bệnh nhân chỉ có quyền hủy lịch hẹn" });
-      }
-    }
-
-    const oldStatus = appointment.status;
-    appointment.status = status;
-    if (meetingLink) appointment.meetingLink = meetingLink;
-    if (rejectionReason) appointment.rejectionReason = rejectionReason;
-    
-    await appointment.save();
-
-    // Nếu vừa chuyển sang trạng thái hoàn thành, tạo hóa đơn
-    if (status === "completed" && oldStatus !== "completed") {
-      const userCollection = mongoose.connection.collection("user");
-      const doctor = await userCollection.findOne({ _id: appointment.doctorId as any });
-      
-      const items = [];
-      let totalAmount = 0;
-
-      // 1. Phí khám
-      const consultationFee = billing?.consultationFee || doctor?.consultationFee || 200000;
-      items.push({
-        description: `Phí khám bệnh - ${doctor?.name || "Bác sĩ"}`,
-        quantity: 1,
-        unitPrice: consultationFee,
-        totalPrice: consultationFee
-      });
-      totalAmount += consultationFee;
-
-      // 2. Phí xét nghiệm (nếu có)
-      if (billing?.labFee && billing.labFee > 0) {
-        items.push({
-          description: "Chi phí xét nghiệm & Cận lâm sàng",
-          quantity: 1,
-          unitPrice: billing.labFee,
-          totalPrice: billing.labFee
-        });
-        totalAmount += billing.labFee;
-      }
-
-      // 3. Phí thuốc (nếu có)
-      if (billing?.prescriptionFee && billing.prescriptionFee > 0) {
-        items.push({
-          description: "Chi phí đơn thuốc",
-          quantity: 1,
-          unitPrice: billing.prescriptionFee,
-          totalPrice: billing.prescriptionFee
-        });
-        totalAmount += billing.prescriptionFee;
-      }
-
-      const newInvoice = new Invoice({
-        patientId: appointment.patientId,
-        status: "pending_payment",
-        items,
-        totalAmount
-      });
-
-      await newInvoice.save();
-      await logActivity(userId, "Tạo hóa đơn chi tiết", `Đã tạo hóa đơn tổng cộng ${totalAmount} cho bệnh nhân ID: ${appointment.patientId}`);
-    }
-    
-    await logActivity(userId, "Cập nhật trạng thái lịch hẹn", `Cập nhật lịch hẹn ${id} sang ${status}`);
-
-    res.json(appointment);
-  } catch (error) {
-    res.status(500).json({ message: "Lỗi khi cập nhật trạng thái" });
-  }
-};
+    };
 
 // --- SCHEDULE ACTIONS ---
 
