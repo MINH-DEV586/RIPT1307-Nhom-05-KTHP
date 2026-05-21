@@ -4,7 +4,7 @@ import DoctorSchedule from "../models/doctorSchedule";
 import mongoose from "mongoose";
 import { logActivity } from "../lib/activity";
 import { format, parseISO } from "date-fns";
-import { sendMail } from "../lib/mailer";
+import { sendMail, getAppointmentConfirmedTemplate, getAppointmentRejectedTemplate } from "../lib/mailer";
 import Notification from "../models/notification";
 import { getIO } from "../lib/socket";
 import Invoice from "../models/invoice";
@@ -267,20 +267,25 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
     export const updateAppointmentStatus = async (req: Request, res: Response) => {
       try {
         const { id } = req.params;
-        const { status, billing } = req.body;
+        const { status, billing, rejectionReason } = req.body;
         const userId = (req as any).user.id;
 
-        const appointment = await Appointment.findByIdAndUpdate(id, { status }, { new: true }).lean();
+        const appointment = await Appointment.findByIdAndUpdate(id, { status, rejectionReason }, { new: true }).lean();
         if (!appointment) return res.status(404).json({ message: "Không tìm thấy lịch hẹn" });
 
         const userCollection = mongoose.connection.collection("user");
 
-        // Nếu bác sĩ xác nhận lịch, thông báo cho bệnh nhân
+        // Nếu bác sĩ xác nhận lịch, thông báo và gửi email cho bệnh nhân
         if (status === "confirmed") {
           try {
             let doctorObj = await userCollection.findOne({ _id: appointment.doctorId as any });
             if (!doctorObj && mongoose.Types.ObjectId.isValid(appointment.doctorId)) {
               doctorObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.doctorId) });
+            }
+
+            let patientObj = await userCollection.findOne({ _id: appointment.patientId as any });
+            if (!patientObj && mongoose.Types.ObjectId.isValid(appointment.patientId)) {
+              patientObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.patientId) });
             }
 
             await Notification.create({
@@ -291,8 +296,73 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
               link: `/appointments/${id}`,
             });
             try { getIO().emit(`new_notification_${appointment.patientId}`); } catch (e) { /* ignore */ }
+
+            // Gửi email xác nhận đến bệnh nhân
+            if (patientObj && patientObj.email) {
+              const emailHtml = getAppointmentConfirmedTemplate(
+                patientObj.name || appointment.patientName || "Bệnh nhân",
+                doctorObj?.name || "Bác sĩ",
+                appointment.date,
+                appointment.timeSlot,
+                appointment.type,
+                appointment.symptoms
+              );
+              
+              sendMail(
+                patientObj.email,
+                "✓ Lịch hẹn khám của bạn đã được duyệt",
+                emailHtml
+              ).catch(err => {
+                console.error("Failed to send appointment confirmation email:", err);
+              });
+            }
           } catch (notifyErr) {
             console.error("Failed to notify patient on appointment confirmation:", notifyErr);
+          }
+        }
+
+        // Nếu bác sĩ từ chối lịch, thông báo và gửi email cho bệnh nhân
+        if (status === "cancelled") {
+          try {
+            let doctorObj = await userCollection.findOne({ _id: appointment.doctorId as any });
+            if (!doctorObj && mongoose.Types.ObjectId.isValid(appointment.doctorId)) {
+              doctorObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.doctorId) });
+            }
+
+            let patientObj = await userCollection.findOne({ _id: appointment.patientId as any });
+            if (!patientObj && mongoose.Types.ObjectId.isValid(appointment.patientId)) {
+              patientObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.patientId) });
+            }
+
+            await Notification.create({
+              user: appointment.patientId,
+              title: "Lịch hẹn đã được từ chối",
+              message: `Lịch hẹn của bạn vào ${format(new Date(appointment.date), 'dd/MM/yyyy')} (${appointment.timeSlot}) đã được bác sĩ từ chối${rejectionReason ? ". Lý do: " + rejectionReason : ""}`,
+              type: "system",
+              link: `/appointments/${id}`,
+            });
+            try { getIO().emit(`new_notification_${appointment.patientId}`); } catch (e) { /* ignore */ }
+
+            // Gửi email từ chối đến bệnh nhân
+            if (patientObj && patientObj.email) {
+              const emailHtml = getAppointmentRejectedTemplate(
+                patientObj.name || appointment.patientName || "Bệnh nhân",
+                doctorObj?.name || "Bác sĩ",
+                appointment.date,
+                appointment.timeSlot,
+                rejectionReason
+              );
+              
+              sendMail(
+                patientObj.email,
+                "⚠️ Lịch hẹn khám của bạn đã được từ chối",
+                emailHtml
+              ).catch(err => {
+                console.error("Failed to send appointment rejection email:", err);
+              });
+            }
+          } catch (notifyErr) {
+            console.error("Failed to notify patient on appointment rejection:", notifyErr);
           }
         }
 

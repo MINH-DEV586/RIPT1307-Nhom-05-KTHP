@@ -5,6 +5,7 @@ import { logActivity } from "../lib/activity";
 import { inngest } from "../inngest/client";
 import Notification from "../models/notification";
 import { getIO } from "../lib/socket";
+import { sendMail, getLabResultsTemplate } from "../lib/mailer";
 
 export const createLabResult = async (req: Request, res: Response) => {
   try {
@@ -62,6 +63,37 @@ export const createLabResult = async (req: Request, res: Response) => {
         link: `/patient/test-results`,
       });
       try { getIO().emit(`new_notification_${patientId}`); } catch (e) { /* ignore */ }
+
+      // Gửi email kết quả xét nghiệm tới bệnh nhân
+      try {
+        const mongoose = (await import("mongoose")).default;
+        const userCollection = mongoose.connection.collection("user");
+        
+        let patient = await userCollection.findOne({ _id: patientId as any });
+        if (!patient && mongoose.Types.ObjectId.isValid(patientId)) {
+          patient = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(patientId) });
+        }
+
+        if (patient && patient.email) {
+          const resultStatus = indicators && indicators.length > 0 ? "Hoàn thành" : "Đang xử lý";
+          const emailHtml = getLabResultsTemplate(
+            patient.name || "Bệnh nhân",
+            testType,
+            bodyPart,
+            resultStatus
+          );
+
+          sendMail(
+            patient.email,
+            "🔬 Kết quả xét nghiệm của bạn đã sẵn sàng",
+            emailHtml
+          ).catch(err => {
+            console.error("Failed to send lab results email:", err);
+          });
+        }
+      } catch (emailErr) {
+        console.error("Failed to send lab results email notification:", emailErr);
+      }
     } catch (notifyErr) {
       console.error("Failed to create notification for lab result:", notifyErr);
     }
