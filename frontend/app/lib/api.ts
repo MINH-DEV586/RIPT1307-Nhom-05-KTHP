@@ -581,7 +581,7 @@ export const getDoctorAppointments = async (params?: { status?: string; date?: s
   return res.json();
 };
 
-export const updateAppointmentStatus = async (id: string, data: { status: string; meetingLink?: string; billing?: any }) => {
+export const updateAppointmentStatus = async (id: string, data: { status: string; meetingLink?: string; billing?: any; rejectionReason?: string }) => {
   const res = await fetch(`${API_URL}/appointments/${id}/status`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },

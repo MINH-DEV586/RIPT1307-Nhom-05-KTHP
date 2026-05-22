@@ -84,55 +84,7 @@ export const bookAppointment = async (req: Request, res: Response) => {
       console.error("Failed to create notification for doctor on booking:", notifyErr);
     }
 
-    try {
-      const userCollection = mongoose.connection.collection("user");
-      let patientObj = await userCollection.findOne({ _id: patientId as any });
-      if (!patientObj && mongoose.Types.ObjectId.isValid(patientId)) {
-        patientObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(patientId) });
-      }
-
-      let doctorObj = await userCollection.findOne({ _id: doctorId as any });
-      if (!doctorObj && mongoose.Types.ObjectId.isValid(doctorId)) {
-        doctorObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(doctorId) });
-      }
-
-      if (patientObj && patientObj.email) {
-        const formattedDate = format(new Date(date), "dd/MM/yyyy");
-        const htmlContent = `
-          <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 20px; border-radius: 12px;">
-            <div style="background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid #10b981;">
-              <h2 style="color: #1f2937; margin-top: 0; font-size: 24px;">Xác nhận đặt lịch khám</h2>
-              <p style="color: #4b5563; font-size: 16px; line-height: 1.5;">Xin chào <strong style="color: #111827;">${patientName || patientObj.name}</strong>,</p>
-              <p style="color: #4b5563; font-size: 16px; line-height: 1.5;">Cảm ơn bạn đã tin tưởng dịch vụ của MedFlow. Lịch hẹn khám của bạn đã được ghi nhận thành công trên hệ thống. Dưới đây là thông tin chi tiết:</p>
-              
-              <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 25px 0;">
-                <p style="margin: 0 0 10px 0; color: #374151; font-size: 15px;"><strong>👨‍⚕️ Bác sĩ:</strong> ${doctorObj?.name || 'Bác sĩ chuyên khoa'}</p>
-                <p style="margin: 0 0 10px 0; color: #374151; font-size: 15px;"><strong>📅 Ngày khám:</strong> ${formattedDate}</p>
-                <p style="margin: 0 0 10px 0; color: #374151; font-size: 15px;"><strong>⏰ Khung giờ:</strong> ${timeSlot}</p>
-                <p style="margin: 0 0 10px 0; color: #374151; font-size: 15px;"><strong>🏥 Hình thức:</strong> ${type === 'online' ? 'Khám trực tuyến' : 'Khám trực tiếp tại phòng khám'}</p>
-                <p style="margin: 0; color: #374151; font-size: 15px;"><strong>🩺 Triệu chứng:</strong> ${symptoms || 'Không có'}</p>
-              </div>
-
-              <p style="color: #4b5563; font-size: 15px; line-height: 1.6;">Vui lòng sắp xếp thời gian đến đúng giờ. Nếu có bất kỳ thay đổi nào, bạn có thể chủ động hủy hoặc dời lịch trên hệ thống.</p>
-              
-              <div style="margin-top: 30px; text-align: center;">
-                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/appointments" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Xem lịch hẹn</a>
-              </div>
-
-              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
-              
-              <p style="color: #9ca3af; font-size: 13px; text-align: center; margin: 0;">Trân trọng,<br><strong>Đội ngũ MedFlow AI</strong></p>
-            </div>
-          </div>
-        `;
-        
-        sendMail(patientObj.email, "Xác nhận đặt lịch hẹn - Phòng Khám", htmlContent).catch(err => {
-          console.error("Failed to send booking email:", err);
-        });
-      }
-    } catch (mailError) {
-      console.error("Error preparing email:", mailError);
-    }
+    // Không gửi email khi đặt lịch (trạng thái pending), chỉ gửi khi bác sĩ duyệt hoặc từ chối
 
     res.status(201).json(appointment);
   } catch (error: any) {
@@ -322,47 +274,79 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
         }
 
         // Nếu bác sĩ từ chối lịch, thông báo và gửi email cho bệnh nhân
+        // Chỉ gửi thông báo + email khi BÁC SĨ/ADMIN từ chối, không gửi khi bệnh nhân tự hủy
         if (status === "cancelled") {
-          try {
-            let doctorObj = await userCollection.findOne({ _id: appointment.doctorId as any });
-            if (!doctorObj && mongoose.Types.ObjectId.isValid(appointment.doctorId)) {
-              doctorObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.doctorId) });
-            }
+          const isCancelledByDoctor = userId === appointment.doctorId || rejectionReason;
+          
+          // Kiểm tra user hiện tại có phải bác sĩ/admin không
+          let currentUser = await userCollection.findOne({ _id: userId as any });
+          if (!currentUser && mongoose.Types.ObjectId.isValid(userId)) {
+            currentUser = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(userId) });
+          }
+          const isStaffCancelling = currentUser?.role === "doctor" || currentUser?.role === "admin" || isCancelledByDoctor;
 
-            let patientObj = await userCollection.findOne({ _id: appointment.patientId as any });
-            if (!patientObj && mongoose.Types.ObjectId.isValid(appointment.patientId)) {
-              patientObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.patientId) });
-            }
+          if (isStaffCancelling) {
+            // Bác sĩ/Admin từ chối → thông báo và gửi email cho bệnh nhân
+            try {
+              let doctorObj = await userCollection.findOne({ _id: appointment.doctorId as any });
+              if (!doctorObj && mongoose.Types.ObjectId.isValid(appointment.doctorId)) {
+                doctorObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.doctorId) });
+              }
 
-            await Notification.create({
-              user: appointment.patientId,
-              title: "Lịch hẹn đã được từ chối",
-              message: `Lịch hẹn của bạn vào ${format(new Date(appointment.date), 'dd/MM/yyyy')} (${appointment.timeSlot}) đã được bác sĩ từ chối${rejectionReason ? ". Lý do: " + rejectionReason : ""}`,
-              type: "system",
-              link: `/appointments/${id}`,
-            });
-            try { getIO().emit(`new_notification_${appointment.patientId}`); } catch (e) { /* ignore */ }
+              let patientObj = await userCollection.findOne({ _id: appointment.patientId as any });
+              if (!patientObj && mongoose.Types.ObjectId.isValid(appointment.patientId)) {
+                patientObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.patientId) });
+              }
 
-            // Gửi email từ chối đến bệnh nhân
-            if (patientObj && patientObj.email) {
-              const emailHtml = getAppointmentRejectedTemplate(
-                patientObj.name || appointment.patientName || "Bệnh nhân",
-                doctorObj?.name || "Bác sĩ",
-                appointment.date,
-                appointment.timeSlot,
-                rejectionReason
-              );
-              
-              sendMail(
-                patientObj.email,
-                "⚠️ Lịch hẹn khám của bạn đã được từ chối",
-                emailHtml
-              ).catch(err => {
-                console.error("Failed to send appointment rejection email:", err);
+              await Notification.create({
+                user: appointment.patientId,
+                title: "Lịch hẹn đã được từ chối",
+                message: `Lịch hẹn của bạn vào ${format(new Date(appointment.date), 'dd/MM/yyyy')} (${appointment.timeSlot}) đã được bác sĩ từ chối${rejectionReason ? ". Lý do: " + rejectionReason : ""}`,
+                type: "system",
+                link: `/appointments/${id}`,
               });
+              try { getIO().emit(`new_notification_${appointment.patientId}`); } catch (e) { /* ignore */ }
+
+              // Gửi email từ chối đến bệnh nhân
+              if (patientObj && patientObj.email) {
+                const emailHtml = getAppointmentRejectedTemplate(
+                  patientObj.name || appointment.patientName || "Bệnh nhân",
+                  doctorObj?.name || "Bác sĩ",
+                  appointment.date,
+                  appointment.timeSlot,
+                  rejectionReason
+                );
+                
+                sendMail(
+                  patientObj.email,
+                  "⚠️ Lịch hẹn khám của bạn đã được từ chối",
+                  emailHtml
+                ).catch(err => {
+                  console.error("Failed to send appointment rejection email:", err);
+                });
+              }
+            } catch (notifyErr) {
+              console.error("Failed to notify patient on appointment rejection:", notifyErr);
             }
-          } catch (notifyErr) {
-            console.error("Failed to notify patient on appointment rejection:", notifyErr);
+          } else {
+            // Bệnh nhân tự hủy → chỉ thông báo cho bác sĩ (không gửi mail cho bệnh nhân)
+            try {
+              let patientObj = await userCollection.findOne({ _id: appointment.patientId as any });
+              if (!patientObj && mongoose.Types.ObjectId.isValid(appointment.patientId)) {
+                patientObj = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.patientId) });
+              }
+
+              await Notification.create({
+                user: appointment.doctorId,
+                title: "Bệnh nhân đã hủy lịch hẹn",
+                message: `Bệnh nhân ${patientObj?.name || appointment.patientName || 'một bệnh nhân'} đã hủy lịch hẹn vào ${format(new Date(appointment.date), 'dd/MM/yyyy')} (${appointment.timeSlot})`,
+                type: "system",
+                link: `/appointments/${id}`,
+              });
+              try { getIO().emit(`new_notification_${appointment.doctorId}`); } catch (e) { /* ignore */ }
+            } catch (notifyErr) {
+              console.error("Failed to notify doctor on patient cancellation:", notifyErr);
+            }
           }
         }
 

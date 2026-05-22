@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAppointmentById, updateAppointmentStatus } from "@/lib/api";
@@ -5,6 +6,16 @@ import { authClient } from "@/lib/auth-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { ArrowLeft, CalendarDays, Clock, MapPin, Video, Stethoscope, User, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -26,6 +37,8 @@ export default function AppointmentDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: session, isPending } = authClient.useSession();
+  const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const { data: appointment, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["appointment", id],
@@ -38,7 +51,8 @@ export default function AppointmentDetailPage() {
   const isPendingApproval = appointment?.status === "pending";
 
   const statusMutation = useMutation({
-    mutationFn: ({ status }: { status: string }) => updateAppointmentStatus(id!, { status }),
+    mutationFn: ({ status, rejectionReason }: { status: string; rejectionReason?: string }) =>
+      updateAppointmentStatus(id!, { status, rejectionReason }),
     onSuccess: () => {
       toast.success("Cập nhật trạng thái lịch hẹn thành công");
       queryClient.invalidateQueries({ queryKey: ["appointment", id] });
@@ -50,9 +64,9 @@ export default function AppointmentDetailPage() {
     },
   });
 
-  const handleStatusChange = (newStatus: string) => {
+  const handleStatusChange = (newStatus: string, reason?: string) => {
     if (!id) return;
-    statusMutation.mutate({ status: newStatus });
+    statusMutation.mutate({ status: newStatus, rejectionReason: reason });
   };
 
   if (isPending || isLoading) {
@@ -112,10 +126,13 @@ export default function AppointmentDetailPage() {
                   <Button
                     variant="destructive"
                     className="border-rose-500 text-rose-600 hover:bg-rose-50"
-                    onClick={() => handleStatusChange("cancelled")}
+                    onClick={() => {
+                      setRejectionReason("");
+                      setRejectionModalOpen(true);
+                    }}
                     disabled={statusMutation.isLoading}
                   >
-                    Hủy
+                    Từ chối
                   </Button>
                 </div>
               )}
@@ -188,6 +205,44 @@ export default function AppointmentDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Rejection Reason Dialog (Doctor) */}
+      <Dialog open={rejectionModalOpen} onOpenChange={setRejectionModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-rose-600">Từ chối lịch hẹn</DialogTitle>
+            <DialogDescription>
+              Vui lòng cho biết lý do bạn từ chối lịch hẹn này để bệnh nhân được rõ.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="detail-reason" className="text-sm font-bold">Lý do từ chối</Label>
+            <Textarea
+              id="detail-reason"
+              placeholder="Ví dụ: Bác sĩ có ca phẫu thuật đột xuất, vui lòng chọn giờ khác..."
+              className="mt-2 bg-muted/50"
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRejectionModalOpen(false)}>Quay lại</Button>
+            <Button
+              className="bg-rose-600 hover:bg-rose-700 font-bold"
+              onClick={() => {
+                if (!rejectionReason.trim()) {
+                  toast.error("Vui lòng nhập lý do từ chối");
+                  return;
+                }
+                handleStatusChange("cancelled", rejectionReason);
+                setRejectionModalOpen(false);
+              }}
+            >
+              Xác nhận từ chối
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
