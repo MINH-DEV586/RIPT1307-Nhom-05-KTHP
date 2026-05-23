@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, UserPlus, Activity, AlertCircle, FileText } from "lucide-react";
+import { Bell, UserPlus, Activity, AlertCircle, FileText, CalendarPlus, CalendarX, CheckCircle, FileCheck, MessageSquare, Pill, TestTubes } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchNotifications, markAsRead } from "@/lib/api";
 import type { User } from "better-auth";
@@ -34,7 +34,31 @@ export default function Notifications({ user }: { user: User }) {
     },
   });
 
-  const getIcon = (type: string) => {
+  const getIcon = (type: string, title?: string) => {
+    const lowerTitle = title?.toLowerCase() || "";
+    
+    if (lowerTitle.includes("hủy") || lowerTitle.includes("từ chối")) {
+      return <CalendarX className="h-4 w-4 text-red-500" />;
+    }
+    if (lowerTitle.includes("đặt lịch")) {
+      return <CalendarPlus className="h-4 w-4 text-blue-500" />;
+    }
+    if (lowerTitle.includes("xác nhận")) {
+      return <CheckCircle className="h-4 w-4 text-green-500" />;
+    }
+    if (lowerTitle.includes("tin nhắn")) {
+      return <MessageSquare className="h-4 w-4 text-sky-500" />;
+    }
+    if (lowerTitle.includes("đơn thuốc")) {
+      return <Pill className="h-4 w-4 text-teal-500" />;
+    }
+    if (lowerTitle.includes("xét nghiệm")) {
+      return <TestTubes className="h-4 w-4 text-purple-500" />;
+    }
+    if (lowerTitle.includes("kết quả")) {
+      return <FileCheck className="h-4 w-4 text-emerald-500" />;
+    }
+
     switch (type) {
       case "assignment":
         return <UserPlus className="h-4 w-4 text-indigo-500" />;
@@ -106,7 +130,7 @@ export default function Notifications({ user }: { user: User }) {
                     className="flex items-start gap-3 w-full"
                   >
                     <div className="mt-1 bg-white dark:bg-slate-800 p-2 rounded-full border shadow-sm shrink-0">
-                      {getIcon(notif.type)}
+                      {getIcon(notif.type, notif.title)}
                     </div>
                     <div className="flex-1 space-y-1">
                       <p
