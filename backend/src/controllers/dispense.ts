@@ -51,8 +51,19 @@ export const getPrescriptionForDispensing = async (req: Request, res: Response) 
       { projection: { password: 0, emailVerified: 0 } }
     );
 
+    const detailedItems = await Promise.all(
+      prescription.items.map(async (item: any) => {
+        const med = await Medicine.findById(item.medicineId).lean();
+        return {
+          ...item,
+          price: med ? med.price : 0,
+        };
+      })
+    );
+
     res.json({
       ...prescription,
+      items: detailedItems,
       patient,
       doctor
     });

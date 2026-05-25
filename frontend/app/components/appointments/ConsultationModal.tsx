@@ -509,7 +509,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                         </SelectTrigger>
                         <SelectContent>
                           {medicines.map(m => (
-                            <SelectItem key={m._id} value={m._id}>{m.name} ({m.unit}) - Tồn: {m.stock}</SelectItem>
+                            <SelectItem key={m._id} value={m._id}>{m.name} ({m.unit}) - Tồn: {m.stock} - {m.price.toLocaleString()} đ</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -536,7 +536,18 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                                   <div className="p-2 bg-white rounded-lg shadow-sm">
                                     <Pill className="w-5 h-5 text-indigo-500" />
                                   </div>
-                                  <span className="font-black text-slate-800">{item.medicineName}</span>
+                                  <div className="flex flex-col">
+                                    <span className="font-black text-slate-800">{item.medicineName}</span>
+                                    {(() => {
+                                      const med = medicines.find(m => m._id === item.medicineId);
+                                      if (!med) return null;
+                                      return (
+                                        <span className="text-xs text-muted-foreground font-semibold">
+                                          Đơn giá: {med.price.toLocaleString()} đ | Thành tiền: {((item.quantity || 0) * med.price).toLocaleString()} đ
+                                        </span>
+                                      );
+                                    })()}
+                                  </div>
                                 </div>
                                 <Button variant="ghost" size="sm" onClick={() => handleRemoveMedicine(idx)} className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0">
                                   <Trash2 className="w-4 h-4" />
@@ -596,6 +607,15 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                             </CardContent>
                           </Card>
                         ))}
+                        <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex justify-between items-center mt-4">
+                          <span className="font-bold text-slate-700">Tổng tiền đơn thuốc dự kiến:</span>
+                          <span className="font-black text-indigo-600 text-lg">
+                            {prescribedItems.reduce((acc, item) => {
+                              const med = medicines.find(m => m._id === item.medicineId);
+                              return acc + (med ? med.price * (item.quantity || 0) : 0);
+                            }, 0).toLocaleString()} VNĐ
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>

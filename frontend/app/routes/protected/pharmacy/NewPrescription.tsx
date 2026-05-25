@@ -201,9 +201,18 @@ export default function CreatePrescription() {
                     <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-background/40 border border-primary/10 group">
                       <div className="flex-1">
                         <p className="font-semibold text-primary">{item.medicineName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.dosage} | {item.frequency} | {item.duration}
-                        </p>
+                        {(() => {
+                          const med = medicines.find(m => m._id === item.medicineId);
+                          return med ? (
+                            <p className="text-xs text-muted-foreground">
+                              {item.dosage} | {item.frequency} | {item.duration} | Đơn giá: {med.price.toLocaleString()} đ | Thành tiền: {(item.quantity * med.price).toLocaleString()} đ
+                            </p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              {item.dosage} | {item.frequency} | {item.duration}
+                            </p>
+                          );
+                        })()}
                       </div>
                       <div className="flex items-center gap-4">
                         <span className="font-bold text-lg">x{item.quantity}</span>
@@ -244,7 +253,7 @@ export default function CreatePrescription() {
                   <SelectContent>
                     {medicines.map(m => (
                       <SelectItem key={m._id} value={m._id}>
-                        {m.name} ({m.stock} {m.unit})
+                        {m.name} ({m.stock} {m.unit}) - {m.price.toLocaleString()} đ
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -293,6 +302,16 @@ export default function CreatePrescription() {
                 <Plus className="mr-2 h-4 w-4" /> Thêm vào danh sách
               </Button>
             </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-xl bg-card/30 backdrop-blur-sm p-4 text-center">
+            <p className="text-sm font-medium text-muted-foreground">Tổng giá trị đơn thuốc dự kiến</p>
+            <h3 className="text-2xl font-black text-primary mt-1">
+              {formData.items.reduce((acc, item) => {
+                const med = medicines.find(m => m._id === item.medicineId);
+                return acc + (med ? med.price * item.quantity : 0);
+              }, 0).toLocaleString()} VNĐ
+            </h3>
           </Card>
 
           <Button 

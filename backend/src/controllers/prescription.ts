@@ -118,8 +118,18 @@ export const getPrescriptions = async (req: Request, res: Response) => {
           { _id: doctorQueryId },
           { projection: { name: 1 } }
         );
+        const detailedItems = await Promise.all(
+          p.items.map(async (item: any) => {
+            const med = await Medicine.findById(item.medicineId).lean();
+            return {
+              ...item,
+              price: med ? med.price : 0,
+            };
+          })
+        );
         return { 
           ...p, 
+          items: detailedItems,
           patientName: patient?.name || "N/A",
           doctorName: doctor?.name || "N/A"
         };
@@ -150,7 +160,17 @@ export const getPrescriptionById = async (req: Request, res: Response) => {
     const patient = await userCollection.findOne({ _id: patientQueryId });
     const doctor = await userCollection.findOne({ _id: doctorQueryId });
 
-    res.json({ ...prescription, patient, doctor });
+    const detailedItems = await Promise.all(
+      prescription.items.map(async (item: any) => {
+        const med = await Medicine.findById(item.medicineId).lean();
+        return {
+          ...item,
+          price: med ? med.price : 0,
+        };
+      })
+    );
+
+    res.json({ ...prescription, items: detailedItems, patient, doctor });
   } catch (error) {
     console.error("Error fetching prescription by ID:", error);
     res.status(500).json({ message: "Lỗi hệ thống" });

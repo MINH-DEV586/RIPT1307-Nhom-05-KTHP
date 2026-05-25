@@ -115,7 +115,14 @@ export default function Prescriptions() {
                       <div className="flex-1 space-y-1">
                         <div className="flex justify-between">
                           <h4 className="font-bold text-lg">{item.medicineName}</h4>
-                          <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">SL: {item.quantity}</span>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">SL: {item.quantity}</span>
+                            {item.price > 0 && (
+                              <span className="text-xs font-semibold text-emerald-600">
+                                {item.price.toLocaleString()} đ / viên
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-sm text-muted-foreground">
                           <div className="flex items-center gap-2">
@@ -126,14 +133,26 @@ export default function Prescriptions() {
                             <Activity className="w-3.5 h-3.5 text-blue-500" />
                             <span className="font-medium text-foreground">Tần suất:</span> {item.frequency}
                           </div>
-                          <div className="flex items-center gap-2 md:col-span-2">
+                          <div className="flex items-center gap-2">
                             <Clock className="w-3.5 h-3.5 text-emerald-500" />
                             <span className="font-medium text-foreground">Thời gian:</span> {item.duration}
                           </div>
+                          {item.price > 0 && (
+                            <div className="flex items-center gap-2 font-bold text-slate-700">
+                              <span>Thành tiền:</span>
+                              <span className="text-primary">{(item.price * item.quantity).toLocaleString()} đ</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
                   ))}
+                  <div className="p-4 bg-muted/40 rounded-xl border border-primary/5 flex justify-between items-center font-bold">
+                    <span className="text-sm text-slate-600">Tổng giá trị đơn thuốc:</span>
+                    <span className="text-lg text-primary">
+                      {prescription.items.reduce((acc: number, item: any) => acc + ((item.price || 0) * item.quantity), 0).toLocaleString()} VNĐ
+                    </span>
+                  </div>
                 </div>
 
                 {prescription.notes && (
