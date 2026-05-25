@@ -9,6 +9,9 @@ import mongoose from "mongoose";
 export const getMyActiveInvoice = async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
+    if (!patientId || typeof patientId !== "string") {
+      return res.status(400).json({ message: "ID bệnh nhân không hợp lệ" });
+    }
     let inv = await invoice
       .findOne({ patientId, status: { $in: ["draft", "pending_payment"] } })
       .sort({ createdAt: -1 });
@@ -61,7 +64,7 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
 
           if (prescriptionTotal > 0) {
             prescriptionItems.push({
-              description: `Chi phí đơn thuốc (Tạm tính) - Chẩn đoán: ${p.diagnosis} (${new Date(p.createdAt).toLocaleDateString("vi-VN")})`,
+              description: `Chi phí đơn thuốc (Tạm tính) - Chẩn đoán: ${p.diagnosis} (${new Date((p as any).createdAt).toLocaleDateString("vi-VN")})`,
               quantity: 1,
               unitPrice: prescriptionTotal,
               totalPrice: prescriptionTotal,
@@ -123,14 +126,19 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
           };
         }
 
-        return res.json(responseInvoice);
+        return res.json([responseInvoice]);
       }
     }
 
-    if (!inv) {
+    // Non-admitted patients: return all active invoices as an array
+    let invs = await invoice
+      .find({ patientId, status: { $in: ["draft", "pending_payment"] } })
+      .sort({ createdAt: -1 });
+
+    if (!invs || invs.length === 0) {
       return res.status(404).json({ message: "Không tìm thấy hóa đơn đang hoạt động" });
     }
-    res.json(inv);
+    res.json(invs);
   } catch (error) {
     console.error("Error fetching active invoice:", error);
     res.status(500).json({ message: "Lỗi hệ thống" });

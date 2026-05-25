@@ -105,6 +105,9 @@ export const admitPatientToBed = async (req: Request, res: Response) => {
 export const dischargePatientFromBed = async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
+    if (!patientId || typeof patientId !== "string") {
+      return res.status(400).json({ message: "ID bệnh nhân không hợp lệ" });
+    }
 
     // 1. Find the bed occupied by this patient
     const bed = await Bed.findOne({ patientId });
@@ -160,7 +163,7 @@ export const dischargePatientFromBed = async (req: Request, res: Response) => {
       }
 
       if (prescriptionTotal > 0) {
-        const desc = `Chi phí đơn thuốc - Chẩn đoán: ${p.diagnosis} (${new Date(p.createdAt).toLocaleDateString("vi-VN")})`;
+        const desc = `Chi phí đơn thuốc - Chẩn đoán: ${p.diagnosis} (${new Date((p as any).createdAt).toLocaleDateString("vi-VN")})`;
         prescriptionItems.push({
           description: desc,
           quantity: 1,

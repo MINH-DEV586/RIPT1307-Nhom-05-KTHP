@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import Prescription from "../models/prescription";
 import Medicine from "../models/medicine";
 import Dispense from "../models/dispense";
+import Invoice from "../models/invoice";
 import { logActivity } from "../lib/activity";
 import mongoose from "mongoose";
 
@@ -132,6 +133,45 @@ export const confirmDispense = async (req: Request, res: Response) => {
     // Update Prescription status
     prescription.status = "dispensed";
     await prescription.save({ session });
+
+    // Generate Invoice for outpatients
+    const userCollection = mongoose.connection.collection("user");
+    let patientUser = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(prescription.patientId) });
+    if (!patientUser && typeof prescription.patientId === "string") {
+      patientUser = await userCollection.findOne({ _id: prescription.patientId as any });
+    }
+    const isAdmitted = patientUser && patientUser.status === "admitted";
+
+    if (!isAdmitted) {
+      let totalPrescriptionFee = 0;
+      for (const item of prescription.items) {
+        const medicine = await Medicine.findById(item.medicineId).session(session);
+        const price = medicine ? medicine.price : 0;
+        totalPrescriptionFee += price * item.quantity;
+      }
+
+      if (totalPrescriptionFee > 0) {
+        const prescriptionInvoice = new Invoice({
+          patientId: prescription.patientId,
+          status: "pending_payment",
+          items: [
+            {
+              description: `Chi phí đơn thuốc - Chẩn đoán: ${prescription.diagnosis || "Khám bệnh"} (${new Date().toLocaleDateString("vi-VN")})`,
+              quantity: 1,
+              unitPrice: totalPrescriptionFee,
+              totalPrice: totalPrescriptionFee
+            }
+          ],
+          totalAmount: totalPrescriptionFee
+        });
+        await prescriptionInvoice.save({ session });
+        await logActivity(
+          dispensedBy,
+          "Tạo hóa đơn đơn thuốc ngoại trú",
+          `Đã tự động tạo hóa đơn đơn thuốc ${totalPrescriptionFee} cho bệnh nhân ID: ${prescription.patientId}`
+        );
+      }
+    }
 
     // Log activity
     await logActivity(

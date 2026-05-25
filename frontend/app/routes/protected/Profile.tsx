@@ -82,7 +82,7 @@ const Profile = () => {
   const isPatient = profileUser?.role === "patient";
   const isDischarged = profileUser?.status === "discharged";
 
-  const { data: invoice, isLoading: invoiceLoading } = useQuery({
+  const { data: invoices, isLoading: invoiceLoading } = useQuery<any[]>({
     queryKey: ["my-invoice", targetUserId],
     queryFn: () => getMyActiveInvoice(targetUserId!),
     enabled: !!targetUserId && isPatient && (isViewingOwnProfile || isAdmin),
@@ -345,56 +345,68 @@ const Profile = () => {
                         Số dư hiện tại
                       </CardTitle>
                       <CardDescription className="text-xs">
-                        Chi phí nội trú hiện tại
-                    </CardDescription>
-                  </div>
-                </div>
-                {invoice && (
-                  <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">
-                    {invoice.totalAmount.toLocaleString()} VNĐ
-                  </span>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              {!invoice ? (
-                <p className="text-center text-slate-500 text-sm py-2">
-                  Không có chi phí phát sinh.
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    {invoice.items
-                      ?.map((item: any, i: number) => (
-                        <div
-                          key={i}
-                          className="flex justify-between text-xs text-slate-400"
-                        >
-                          <span>{item.description}</span>
-                          <span>{item.totalPrice.toLocaleString()} VNĐ</span>
-                        </div>
-                      ))}
-                      {invoice.status === "paid" ? (
-                        <Badge className="w-full justify-center py-2 bg-green-50 text-green-700 border-green-200">
-                          Thanh toán hoàn tất
-                        </Badge>
-                      ) : (
-                        <Button
-                          className="w-full bg-blue-600 hover:bg-blue-700"
-                          disabled={!isDischarged || checkoutMutation.isPending}
-                          onClick={() => checkoutMutation.mutate(invoice._id)}
-                        >
-                          {checkoutMutation.isPending ? (
-                            <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                          ) : (
-                            <CreditCard className="mr-2 h-4 w-4" />
-                          )}
-                          {isDischarged
-                            ? "Thanh toán và hoàn tất"
-                            : "Đang chờ xuất viện"}
-                        </Button>
-                      )}
+                        Các chi phí cần thanh toán
+                      </CardDescription>
                     </div>
+                  </div>
+                  {invoices && invoices.length > 0 && (
+                    <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">
+                      {invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0).toLocaleString()} VNĐ
+                    </span>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                {!invoices || invoices.length === 0 ? (
+                  <p className="text-center text-slate-500 text-sm py-2">
+                    Không có chi phí phát sinh.
+                  </p>
+                ) : (
+                  <div className="space-y-6">
+                    {invoices.map((inv: any, index: number) => (
+                      <div key={inv._id || index} className="space-y-3 border-b last:border-0 pb-4 last:pb-0">
+                        <p className="font-bold text-xs text-indigo-600 dark:text-indigo-400">
+                          Hóa đơn #{inv._id?.slice(-6) || index + 1}
+                        </p>
+                        <div className="space-y-1">
+                          {inv.items?.map((item: any, i: number) => (
+                            <div
+                              key={i}
+                              className="flex justify-between text-xs text-slate-400"
+                            >
+                              <span>{item.description}</span>
+                              <span>{item.totalPrice.toLocaleString()} VNĐ</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="pt-2 flex justify-between items-center border-t border-dashed border-slate-100 dark:border-slate-800">
+                          <span className="text-xs font-bold">Tổng hóa đơn này:</span>
+                          <span className="text-sm font-black text-slate-800 dark:text-slate-200">
+                            {inv.totalAmount.toLocaleString()} VNĐ
+                          </span>
+                        </div>
+                        {inv.status === "paid" ? (
+                          <Badge className="w-full justify-center py-2 bg-green-50 text-green-700 border-green-200 mt-2">
+                            Thanh toán hoàn tất
+                          </Badge>
+                        ) : (
+                          <Button
+                            className="w-full bg-blue-600 hover:bg-blue-700 mt-2"
+                            disabled={(!isDischarged && profileUser?.status === "admitted") || checkoutMutation.isPending}
+                            onClick={() => checkoutMutation.mutate(inv._id)}
+                          >
+                            {checkoutMutation.isPending ? (
+                              <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                            ) : (
+                              <CreditCard className="mr-2 h-4 w-4" />
+                            )}
+                            {profileUser?.status === "admitted" && !isDischarged
+                              ? "Đang chờ xuất viện"
+                              : "Thanh toán ngay"}
+                          </Button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
