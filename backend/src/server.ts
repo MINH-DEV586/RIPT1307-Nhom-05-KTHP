@@ -37,6 +37,8 @@ import telemedicineRouter from "./routes/telemedicine";
 import appointmentRouter from "./routes/appointment";
 import bedRouter from "./routes/bed";
 import examHistoryRouter from "./routes/examHistory";
+import labTestRouter from "./routes/labTest";
+import { seedLabTests } from "./controllers/labTest";
 
 // Initialize Express application
 const app: Application = express();
@@ -108,6 +110,7 @@ app.use("/api/telemedicine", telemedicineRouter);
 app.use("/api/appointments", appointmentRouter);
 app.use("/api/beds", bedRouter);
 app.use("/api/exam-history", examHistoryRouter);
+app.use("/api/lab-tests", labTestRouter);
 // inngest API route
 app.use(
   "/api/inngest",
@@ -131,7 +134,9 @@ app.use((err: any, req: Request, res: Response, next: any) => {
 
 // Start the server
 connectDB()
-  .then(() => {
+  .then(async () => {
+    // Tự động seed dữ liệu xét nghiệm mẫu nếu DB trống
+    await seedLabTests();
     httpServer.listen(PORT, () => {
       console.log(
         `🚀 Server + Socket.IO running in ${process.env.NODE_ENV} mode on port ${PORT}`,

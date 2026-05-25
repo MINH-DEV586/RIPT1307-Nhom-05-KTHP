@@ -105,6 +105,7 @@ export const navConfig: {
       items: [
         { title: "Yêu cầu xét nghiệm", url: "/lab/requests" },
         { title: "Nhập kết quả", url: "/lab/results" },
+        { title: "Bảng giá xét nghiệm", url: "/lab/pricing", allowedRoles: ["admin"] },
       ],
     },
     {

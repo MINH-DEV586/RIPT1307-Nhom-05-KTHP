@@ -716,3 +716,56 @@ export const getExamHistoryById = async (id: string) => {
   return res.json();
 };
 
+// ===== LAB TESTS (Bảng giá xét nghiệm) =====
+
+export const getLabTests = async () => {
+  const res = await fetch(`${API_URL}/lab-tests`, { credentials: "include" });
+  if (!res.ok) throw new Error("Failed to fetch lab tests");
+  return res.json();
+};
+
+export const createLabTestRecord = async (data: {
+  name: string;
+  description?: string;
+  price: number;
+  category?: string;
+  duration?: string;
+}) => {
+  const res = await fetch(`${API_URL}/lab-tests`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || "Failed to create lab test");
+  }
+  return res.json();
+};
+
+export const updateLabTestRecord = async (id: string, data: Partial<{
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  duration: string;
+}>) => {
+  const res = await fetch(`${API_URL}/lab-tests/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update lab test");
+  return res.json();
+};
+
+export const deleteLabTestRecord = async (id: string) => {
+  const res = await fetch(`${API_URL}/lab-tests/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to delete lab test");
+  return res.json();
+};

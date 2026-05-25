@@ -39,6 +39,7 @@ export default [
       route("requests/create", "routes/protected/lab/NewLabRequest.tsx"),
       route("requests/:id/enter-results", "routes/protected/lab/InputLabResults.tsx"),
       route("results", "routes/protected/lab/ManageLabResults.tsx"),
+      route("pricing", "routes/protected/lab/LabPricing.tsx"),
     ]),
     route("telemedicine", "routes/protected/telemedicine/ConsultLayout.tsx", [
       index("routes/protected/telemedicine/SessionList.tsx"),
