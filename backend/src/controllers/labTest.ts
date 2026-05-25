@@ -15,12 +15,7 @@ const DEFAULT_LAB_TESTS = [
   { name: "Xét nghiệm phân", description: "Phân tích phân tổng quát", price: 70000, category: "Vi sinh", duration: "1 giờ" },
 ];
 
-/**
- * Gọi sau connectDB() — đảm bảo 10 loại XN mặc định luôn tồn tại.
- * - Nếu chưa có: tạo mới
- * - Nếu bị xóa (isActive=false): khôi phục lại
- * - Nếu đã có và admin đã sửa giá: GIỮ NGUYÊN giá (không ghi đè)
- */
+
 export const seedLabTests = async () => {
   for (const test of DEFAULT_LAB_TESTS) {
     await LabTest.findOneAndUpdate(

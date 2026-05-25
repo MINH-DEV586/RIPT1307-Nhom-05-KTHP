@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import Bed from "../models/bed";
 import Invoice from "../models/invoice";
+import Prescription from "../models/prescription";
+import Medicine from "../models/medicine";
 import mongoose from "mongoose";
 import { logActivity } from "../lib/activity";
 
@@ -139,7 +141,37 @@ export const dischargePatientFromBed = async (req: Request, res: Response) => {
 
     const totalFee = days * dailyRate;
 
-    // 4. Find/create active invoice and add the finalized bed item
+    // Find all prescriptions for this patient during their stay
+    const prescriptions = await Prescription.find({
+      patientId,
+      status: "dispensed",
+      createdAt: { $gte: admittedAt }
+    }).lean();
+
+    const prescriptionItems = [];
+    let totalPrescriptionFee = 0;
+
+    for (const p of prescriptions) {
+      let prescriptionTotal = 0;
+      for (const item of p.items) {
+        const med = await Medicine.findById(item.medicineId).lean();
+        const price = med ? med.price : 0;
+        prescriptionTotal += price * item.quantity;
+      }
+
+      if (prescriptionTotal > 0) {
+        const desc = `Chi phí đơn thuốc - Chẩn đoán: ${p.diagnosis} (${new Date(p.createdAt).toLocaleDateString("vi-VN")})`;
+        prescriptionItems.push({
+          description: desc,
+          quantity: 1,
+          unitPrice: prescriptionTotal,
+          totalPrice: prescriptionTotal
+        });
+        totalPrescriptionFee += prescriptionTotal;
+      }
+    }
+
+    // 4. Find/create active invoice and add the finalized bed & prescription items
     let inv = await Invoice.findOne({ 
       patientId, 
       status: { $in: ["draft", "pending_payment"] } 
@@ -148,37 +180,54 @@ export const dischargePatientFromBed = async (req: Request, res: Response) => {
     const bedItemDescription = `Phí giường bệnh nội trú (${bedTypeLabel} - ${days} ngày)`;
 
     if (inv) {
-      // Avoid duplicate bed charges in invoice if already added
-      const existingItemIndex = inv.items.findIndex(item => item.description.startsWith("Phí giường bệnh nội trú"));
-      if (existingItemIndex > -1) {
-        inv.totalAmount -= inv.items[existingItemIndex].totalPrice;
-        inv.items[existingItemIndex] = {
-          description: bedItemDescription,
-          quantity: 1,
-          unitPrice: totalFee,
-          totalPrice: totalFee
-        };
-      } else {
-        inv.items.push({
-          description: bedItemDescription,
-          quantity: 1,
-          unitPrice: totalFee,
-          totalPrice: totalFee
-        });
+      // Filter out existing bed and prescription items from this stay to avoid duplicates
+      const filteredItems = inv.items.filter(item => 
+        !item.description.startsWith("Phí giường bệnh nội trú") &&
+        !item.description.startsWith("Chi phí đơn thuốc - Chẩn đoán:") &&
+        !item.description.startsWith("Chi phí đơn thuốc (Tạm tính)")
+      );
+      
+      // Calculate total amount of remaining items
+      let newTotal = filteredItems.reduce((sum, item) => sum + item.totalPrice, 0);
+      
+      // Add the new bed item
+      filteredItems.push({
+        description: bedItemDescription,
+        quantity: 1,
+        unitPrice: totalFee,
+        totalPrice: totalFee
+      });
+      newTotal += totalFee;
+      
+      // Add the new prescription items
+      for (const item of prescriptionItems) {
+        filteredItems.push(item);
+        newTotal += item.totalPrice;
       }
-      inv.totalAmount += totalFee;
+      
+      inv.items = filteredItems;
+      inv.totalAmount = newTotal;
       await inv.save();
     } else {
+      const items = [{
+        description: bedItemDescription,
+        quantity: 1,
+        unitPrice: totalFee,
+        totalPrice: totalFee
+      }];
+      
+      let newTotal = totalFee;
+      
+      for (const item of prescriptionItems) {
+        items.push(item);
+        newTotal += item.totalPrice;
+      }
+      
       inv = new Invoice({
         patientId,
         status: "pending_payment",
-        items: [{
-          description: bedItemDescription,
-          quantity: 1,
-          unitPrice: totalFee,
-          totalPrice: totalFee
-        }],
-        totalAmount: totalFee
+        items,
+        totalAmount: newTotal
       });
       await inv.save();
     }

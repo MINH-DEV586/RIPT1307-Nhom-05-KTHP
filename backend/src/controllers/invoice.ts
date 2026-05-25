@@ -1,5 +1,7 @@
 import invoice from "../models/invoice";
 import Bed from "../models/bed";
+import Prescription from "../models/prescription";
+import Medicine from "../models/medicine";
 import type { Request, Response } from "express";
 import { logActivity } from "../lib/activity";
 import mongoose from "mongoose";
@@ -39,6 +41,36 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
 
         const totalFee = days * dailyRate;
 
+        // Fetch all prescriptions dispensed during their stay
+        const prescriptions = await Prescription.find({
+          patientId,
+          status: "dispensed",
+          createdAt: { $gte: admittedAt }
+        }).lean();
+
+        const prescriptionItems = [];
+        let totalPrescriptionFee = 0;
+
+        for (const p of prescriptions) {
+          let prescriptionTotal = 0;
+          for (const item of p.items) {
+            const med = await Medicine.findById(item.medicineId).lean();
+            const price = med ? med.price : 0;
+            prescriptionTotal += price * item.quantity;
+          }
+
+          if (prescriptionTotal > 0) {
+            prescriptionItems.push({
+              description: `Chi phí đơn thuốc (Tạm tính) - Chẩn đoán: ${p.diagnosis} (${new Date(p.createdAt).toLocaleDateString("vi-VN")})`,
+              quantity: 1,
+              unitPrice: prescriptionTotal,
+              totalPrice: prescriptionTotal,
+              isEstimated: true
+            });
+            totalPrescriptionFee += prescriptionTotal;
+          }
+        }
+
         // If no active invoice exists in the DB, mock a draft one so we can show the bed fee
         let responseInvoice: any;
         if (!inv) {
@@ -46,47 +78,47 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
             _id: "temp-bed-invoice",
             patientId,
             status: "draft",
-            items: [{
-              description: `Phí giường bệnh nội trú (Tạm tính - ${bedTypeLabel} - ${days} ngày)`,
-              quantity: 1,
-              unitPrice: totalFee,
-              totalPrice: totalFee,
-              isEstimated: true
-            }],
-            totalAmount: totalFee,
+            items: [
+              {
+                description: `Phí giường bệnh nội trú (Tạm tính - ${bedTypeLabel} - ${days} ngày)`,
+                quantity: 1,
+                unitPrice: totalFee,
+                totalPrice: totalFee,
+                isEstimated: true
+              },
+              ...prescriptionItems
+            ],
+            totalAmount: totalFee + totalPrescriptionFee,
             createdAt: admittedAt,
             updatedAt: new Date(),
             isEstimatedInvoice: true
           };
         } else {
-          // If invoice exists, clone items and append the estimated bed item
-          const updatedItems = [...inv.items];
-          // Check if a permanent bed item already exists (though it shouldn't until discharge)
-          const bedItemIndex = updatedItems.findIndex(item => item.description.startsWith("Phí giường bệnh nội trú"));
+          // Filter out existing stay items to avoid duplicates
+          const baseItems = inv.items.filter(item => 
+            !item.description.startsWith("Phí giường bệnh nội trú") &&
+            !item.description.startsWith("Chi phí đơn thuốc (Tạm tính)") &&
+            !item.description.startsWith("Chi phí đơn thuốc - Chẩn đoán:")
+          );
           
-          if (bedItemIndex > -1) {
-            // Replace with updated stay calculation
-            updatedItems[bedItemIndex] = {
-              description: `Phí giường bệnh nội trú (Tạm tính - ${bedTypeLabel} - ${days} ngày)`,
-              quantity: 1,
-              unitPrice: totalFee,
-              totalPrice: totalFee
-            };
-          } else {
-            updatedItems.push({
-              description: `Phí giường bệnh nội trú (Tạm tính - ${bedTypeLabel} - ${days} ngày)`,
-              quantity: 1,
-              unitPrice: totalFee,
-              totalPrice: totalFee
-            });
-          }
+          const baseTotal = baseItems.reduce((sum, item) => sum + item.totalPrice, 0);
 
-          const extraFee = bedItemIndex > -1 ? (totalFee - inv.items[bedItemIndex].totalPrice) : totalFee;
+          const updatedItems = [
+            ...baseItems,
+            {
+              description: `Phí giường bệnh nội trú (Tạm tính - ${bedTypeLabel} - ${days} ngày)`,
+              quantity: 1,
+              unitPrice: totalFee,
+              totalPrice: totalFee,
+              isEstimated: true
+            },
+            ...prescriptionItems
+          ];
 
           responseInvoice = {
             ...inv.toObject(),
             items: updatedItems,
-            totalAmount: inv.totalAmount + extraFee,
+            totalAmount: baseTotal + totalFee + totalPrescriptionFee,
             isEstimatedInvoice: true
           };
         }
