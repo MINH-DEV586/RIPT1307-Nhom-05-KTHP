@@ -372,6 +372,36 @@ export default function BedManagementPage() {
                                 <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Bệnh nhân nội trú</p>
                               </div>
                             </div>
+                            {/* Inpatient details & stay cost */}
+                            <div className="text-[11px] space-y-1 py-1.5 border-t border-b border-dashed border-slate-200 dark:border-slate-800 text-slate-500">
+                              <div className="flex justify-between">
+                                <span>Ngày nhập viện:</span>
+                                <span className="font-bold text-slate-700 dark:text-slate-300">
+                                  {patient.admittedAt ? new Date(patient.admittedAt).toLocaleDateString("vi-VN") : "---"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Số ngày nằm:</span>
+                                <span className="font-bold text-slate-700 dark:text-slate-300">
+                                  {(() => {
+                                    const admittedAt = patient.admittedAt ? new Date(patient.admittedAt) : new Date(patient.createdAt || Date.now());
+                                    const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
+                                    return `${days} ngày`;
+                                  })()}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-indigo-600 dark:text-indigo-400 font-bold">
+                                <span>Tạm tính chi phí:</span>
+                                <span>
+                                  {(() => {
+                                    const admittedAt = patient.admittedAt ? new Date(patient.admittedAt) : new Date(patient.createdAt || Date.now());
+                                    const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
+                                    const dailyRate = bed.type === "vip" ? 500000 : bed.type === "emergency" ? 300000 : 200000;
+                                    return `${(days * dailyRate).toLocaleString()} VNĐ`;
+                                  })()}
+                                </span>
+                              </div>
+                            </div>
                             <div className="flex gap-2">
                               <Button 
                                 size="sm" 
@@ -426,6 +456,7 @@ export default function BedManagementPage() {
                         <th className="p-4 font-black text-sm">Loại</th>
                         <th className="p-4 font-black text-sm">Khoa</th>
                         <th className="p-4 font-black text-sm">Bệnh nhân</th>
+                        <th className="p-4 font-black text-sm">Thời gian / Tạm tính</th>
                         <th className="p-4 font-black text-sm">Trạng thái</th>
                         <th className="p-4 font-black text-sm text-right">Thao tác</th>
                       </tr>
@@ -451,6 +482,27 @@ export default function BedManagementPage() {
                                      <AvatarFallback className="text-[8px]">{patient.name?.charAt(0)}</AvatarFallback>
                                    </Avatar>
                                    <span className="text-sm font-medium">{patient.name}</span>
+                                 </div>
+                               ) : "-"}
+                             </td>
+                             <td className="p-4">
+                               {patient ? (
+                                 <div className="flex flex-col text-xs text-muted-foreground">
+                                   <span className="font-bold text-slate-700 dark:text-slate-300">
+                                     {(() => {
+                                       const admittedAt = patient.admittedAt ? new Date(patient.admittedAt) : new Date(patient.createdAt || Date.now());
+                                       const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
+                                       return `${days} ngày`;
+                                     })()}
+                                   </span>
+                                   <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                                     {(() => {
+                                       const admittedAt = patient.admittedAt ? new Date(patient.admittedAt) : new Date(patient.createdAt || Date.now());
+                                       const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
+                                       const dailyRate = bed.type === "vip" ? 500000 : bed.type === "emergency" ? 300000 : 200000;
+                                       return `${(days * dailyRate).toLocaleString()} VNĐ`;
+                                     })()}
+                                   </span>
                                  </div>
                                ) : "-"}
                              </td>

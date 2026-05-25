@@ -69,6 +69,7 @@ export interface User {
   phoneNumber?: string;
   address?: string;
   insuranceId?: string;
+  admittedAt?: string;
 }
 
 export interface Bed {

@@ -7,6 +7,7 @@ import {
   createCheckoutSession,
   getBillingHistory,
   updateUser,
+  getAllBeds,
 } from "@/lib/api";
 import {
   Card,
@@ -35,6 +36,7 @@ import {
   Calendar,
   ShieldCheck,
   FileText,
+  BedDouble,
 } from "lucide-react";
 import { toast } from "sonner";
 import { STATUS_CONFIG } from "@/components/users/statusBadge";
@@ -91,6 +93,13 @@ const Profile = () => {
     queryFn: () => getBillingHistory(targetUserId!),
     enabled: !!targetUserId && isPatient && (isViewingOwnProfile || isAdmin),
   });
+
+  const { data: beds = [] } = useQuery<any[]>({
+    queryKey: ["beds", "all"],
+    queryFn: () => getAllBeds(),
+    enabled: isPatient && profileUser?.status === "admitted",
+  });
+  const myBed = beds.find((b: any) => b.patientId === profileUser?._id || b._id === profileUser?.assignedBedId);
 
   const checkoutMutation = useMutation({
     mutationFn: createCheckoutSession,
@@ -156,7 +165,7 @@ const Profile = () => {
             </div>
 
             { (isViewingOwnProfile || isAdmin || (loggedInUser?.role === 'doctor' && isPatient)) && (
-              <EditProfileModal user={profileUser} viewerRole={loggedInUser?.role} />
+              <EditProfileModal user={profileUser} viewerRole={loggedInUser?.role || undefined} />
             )}
 
             {/* Quick Actions for Profile */}
@@ -232,6 +241,64 @@ const Profile = () => {
 
           {isPatient && (
             <>
+              {/* Card: Thông tin điều trị nội trú */}
+              {profileUser.status === "admitted" && myBed && (
+                <Card className="card shadow-sm border-l-4 border-l-amber-500 bg-amber-50/10 dark:bg-amber-950/10">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                      <BedDouble className="h-5 w-5" />
+                      Thông tin điều trị nội trú
+                    </CardTitle>
+                    <CardDescription>Bệnh nhân đang nằm viện và điều trị nội trú tại cơ sở.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
+                    <DetailItem 
+                      label="Số giường" 
+                      value={`Giường #${myBed.bedNumber}`} 
+                      icon={<BedDouble className="w-3.5 h-3.5" />} 
+                    />
+                    <DetailItem 
+                      label="Loại giường" 
+                      value={myBed.type === "vip" ? "Phòng VIP (500,000 đ/ngày)" : myBed.type === "emergency" ? "Cấp cứu (300,000 đ/ngày)" : "Thường (200,000 đ/ngày)"} 
+                      icon={<Zap className="w-3.5 h-3.5 text-amber-500" />} 
+                    />
+                    <DetailItem 
+                      label="Khoa / Tầng" 
+                      value={`${myBed.department} - Tầng ${myBed.floor}`} 
+                      icon={<Building2 className="w-3.5 h-3.5" />} 
+                    />
+                    <DetailItem 
+                      label="Ngày nhập viện" 
+                      value={profileUser.admittedAt ? new Date(profileUser.admittedAt).toLocaleString("vi-VN") : new Date(profileUser.createdAt).toLocaleString("vi-VN")} 
+                      icon={<Calendar className="w-3.5 h-3.5" />} 
+                    />
+                    <div className="col-span-2 p-3 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl flex items-center justify-between border border-amber-100 dark:border-amber-900/30">
+                      <div>
+                        <p className="text-xs text-amber-700 dark:text-amber-400 font-bold uppercase tracking-wider">Thời gian nằm viện tạm tính</p>
+                        <p className="text-sm font-medium mt-0.5">
+                          {(() => {
+                            const admittedAt = profileUser.admittedAt ? new Date(profileUser.admittedAt) : new Date(profileUser.createdAt);
+                            const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
+                            return `${days} ngày`;
+                          })()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-amber-700 dark:text-amber-400 font-bold uppercase tracking-wider">Chi phí giường tạm tính</p>
+                        <p className="text-lg font-black text-amber-700 dark:text-amber-400">
+                          {(() => {
+                            const admittedAt = profileUser.admittedAt ? new Date(profileUser.admittedAt) : new Date(profileUser.createdAt);
+                            const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
+                            const rate = myBed.type === "vip" ? 500000 : myBed.type === "emergency" ? 300000 : 200000;
+                            return `${(days * rate).toLocaleString()} VNĐ`;
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Card: Hồ sơ bệnh án nội trú */}
               <Card id="medical-records" className="card shadow-sm scroll-mt-20">
                 <div className="p-6 space-y-4">
@@ -279,35 +346,34 @@ const Profile = () => {
                       </CardTitle>
                       <CardDescription className="text-xs">
                         Chi phí nội trú hiện tại
-                      </CardDescription>
-                    </div>
+                    </CardDescription>
                   </div>
-                  {invoice && (
-                    <span className="text-xl font-black">
-                      ${(invoice.totalAmount / 100).toFixed(2)}
-                    </span>
-                  )}
                 </div>
-              </CardHeader>
-              <CardContent className="p-6">
-                {!invoice ? (
-                  <p className="text-center text-slate-500 text-sm py-2">
-                    Không có chi phí phát sinh.
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      {invoice.items
-                        ?.slice(0, 2)
-                        .map((item: any, i: number) => (
-                          <div
-                            key={i}
-                            className="flex justify-between text-xs text-slate-400"
-                          >
-                            <span>{item.description}</span>
-                            <span>${(item.totalPrice / 100).toFixed(2)}</span>
-                          </div>
-                        ))}
+                {invoice && (
+                  <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">
+                    {invoice.totalAmount.toLocaleString()} VNĐ
+                  </span>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              {!invoice ? (
+                <p className="text-center text-slate-500 text-sm py-2">
+                  Không có chi phí phát sinh.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    {invoice.items
+                      ?.map((item: any, i: number) => (
+                        <div
+                          key={i}
+                          className="flex justify-between text-xs text-slate-400"
+                        >
+                          <span>{item.description}</span>
+                          <span>{item.totalPrice.toLocaleString()} VNĐ</span>
+                        </div>
+                      ))}
                       {invoice.status === "paid" ? (
                         <Badge className="w-full justify-center py-2 bg-green-50 text-green-700 border-green-200">
                           Thanh toán hoàn tất
@@ -367,7 +433,7 @@ const Profile = () => {
                           </div>
                           <div>
                             <p className="text-sm font-bold">
-                              ${(pastInv.totalAmount / 100).toFixed(2)}
+                              {pastInv.totalAmount.toLocaleString()} VNĐ
                             </p>
                             <p className="text-[10px] text-slate-500 uppercase tracking-wide">
                               Đã trả vào ngày{" "}
