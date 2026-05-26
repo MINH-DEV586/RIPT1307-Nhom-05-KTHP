@@ -358,46 +358,57 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
               doctor = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.doctorId) });
             }
             
-            const items = [];
-            let totalAmount = 0;
+            let patientUser = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(appointment.patientId) });
+            if (!patientUser && typeof appointment.patientId === "string") {
+              patientUser = await userCollection.findOne({ _id: appointment.patientId as any });
+            }
+            const isAdmitted = patientUser && patientUser.status === "admitted";
 
             const consultationFee = billing?.consultationFee || doctor?.consultationFee || 200000;
-            items.push({
-              description: `Phí khám bệnh - ${doctor?.name || "Bác sĩ"}`,
-              quantity: 1,
-              unitPrice: consultationFee,
-              totalPrice: consultationFee
-            });
-            totalAmount += consultationFee;
 
-            if (billing?.labFee && billing.labFee > 0) {
-              items.push({
-                description: "Chi phí xét nghiệm & Cận lâm sàng",
-                quantity: 1,
-                unitPrice: billing.labFee,
-                totalPrice: billing.labFee
+            if (isAdmitted) {
+              // Consolidated invoice for inpatients (to be finalized at discharge)
+              const items = [
+                {
+                  description: `Phí khám bệnh - ${doctor?.name || "Bác sĩ"}`,
+                  quantity: 1,
+                  unitPrice: consultationFee,
+                  totalPrice: consultationFee
+                }
+              ];
+              let totalAmount = consultationFee;
+
+
+
+              const newInvoice = new Invoice({
+                patientId: appointment.patientId,
+                status: "pending_payment",
+                items,
+                totalAmount
               });
-              totalAmount += billing.labFee;
-            }
-
-            if (billing?.prescriptionFee && billing.prescriptionFee > 0) {
-              items.push({
-                description: "Chi phí đơn thuốc",
-                quantity: 1,
-                unitPrice: billing.prescriptionFee,
-                totalPrice: billing.prescriptionFee
+              await newInvoice.save();
+              await logActivity(userId, "Tạo hóa đơn chi tiết nội trú", `Đã tạo hóa đơn tạm tính tổng cộng ${totalAmount} cho bệnh nhân ID: ${appointment.patientId}`);
+            } else {
+              // Separate invoices for outpatients (non-admitted)
+              // 1. Consultation fee invoice
+              const consultationInvoice = new Invoice({
+                patientId: appointment.patientId,
+                status: "pending_payment",
+                items: [
+                  {
+                    description: `Phí khám bệnh - ${doctor?.name || "Bác sĩ"}`,
+                    quantity: 1,
+                    unitPrice: consultationFee,
+                    totalPrice: consultationFee
+                  }
+                ],
+                totalAmount: consultationFee
               });
-              totalAmount += billing.prescriptionFee;
-            }
+              await consultationInvoice.save();
+              await logActivity(userId, "Tạo hóa đơn khám bệnh ngoại trú", `Đã tạo hóa đơn phí khám ${consultationFee} cho bệnh nhân ID: ${appointment.patientId}`);
 
-            const newInvoice = new Invoice({
-              patientId: appointment.patientId,
-              status: "pending_payment",
-              items,
-              totalAmount
-            });
-            await newInvoice.save();
-            await logActivity(userId, "Tạo hóa đơn chi tiết", `Đã tạo hóa đơn tổng cộng ${totalAmount} cho bệnh nhân ID: ${appointment.patientId}`);
+
+            }
             
             // Notify patient about completed appointment and results
             await Notification.create({
@@ -547,7 +558,9 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
 
 // Helper functions for time parsing
 function parseTime(timeStr: string): Date {
-  const [hours, minutes] = timeStr.split(":").map(Number);
+  const parts = timeStr.split(":").map(Number);
+  const hours = parts[0] || 0;
+  const minutes = parts[1] || 0;
   const date = new Date();
   date.setHours(hours, minutes, 0, 0);
   return date;

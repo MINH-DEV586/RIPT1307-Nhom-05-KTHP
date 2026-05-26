@@ -15,7 +15,7 @@ export default function PatientInvoices() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
 
-  const { data: activeInvoice, isLoading: loadingActive } = useQuery({
+  const { data: activeInvoices, isLoading: loadingActive } = useQuery<any[]>({
     queryKey: ["active-invoice", userId],
     queryFn: () => getMyActiveInvoice(userId!),
     enabled: !!userId,
@@ -29,10 +29,8 @@ export default function PatientInvoices() {
 
   const paymentMutation = useMutation({
     mutationFn: (id: string) => createCheckoutSession(id),
-    onSuccess: () => {
-      toast.success("Thanh toán thành công!");
-      queryClient.invalidateQueries({ queryKey: ["active-invoice"] });
-      queryClient.invalidateQueries({ queryKey: ["billing-history"] });
+    onSuccess: (data) => {
+      window.location.href = data.checkoutUrl;
     },
     onError: () => {
       toast.error("Lỗi khi xử lý thanh toán.");
@@ -40,6 +38,10 @@ export default function PatientInvoices() {
   });
 
   if (loadingActive || loadingHistory) return <div className="h-[60vh] flex items-center justify-center"><Loader label="Đang tải thông tin thanh toán..." /></div>;
+
+  const totalAmountPending = activeInvoices && Array.isArray(activeInvoices)
+    ? activeInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0)
+    : 0;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-20">
@@ -57,19 +59,19 @@ export default function PatientInvoices() {
             <CardTitle className="text-white/80 text-sm font-bold uppercase tracking-wider">Tổng phí cần trả</CardTitle>
           </CardHeader>
           <CardContent>
-            <h2 className="text-4xl font-black">{activeInvoice?.totalAmount?.toLocaleString() || 0} <span className="text-xl">VNĐ</span></h2>
+            <h2 className="text-4xl font-black">{totalAmountPending.toLocaleString()} <span className="text-xl">VNĐ</span></h2>
             <div className="mt-6 p-4 bg-white/10 rounded-2xl flex items-center gap-3">
               <Wallet className="w-5 h-5 text-indigo-200" />
-              <p className="text-xs font-medium text-indigo-100">Bạn có {activeInvoice ? 1 : 0} hóa đơn đang chờ thanh toán.</p>
+              <p className="text-xs font-medium text-indigo-100">Bạn có {activeInvoices?.length || 0} hóa đơn đang chờ thanh toán.</p>
             </div>
           </CardContent>
           <CardFooter>
             <Button 
-              disabled={!activeInvoice} 
-              onClick={() => paymentMutation.mutate(activeInvoice._id)}
+              disabled={!activeInvoices || activeInvoices.length === 0} 
+              onClick={() => activeInvoices?.[0] && paymentMutation.mutate(activeInvoices[0]._id)}
               className="w-full bg-white text-indigo-600 hover:bg-indigo-50 font-black py-6 rounded-xl"
             >
-              Thanh toán ngay
+              {activeInvoices && activeInvoices.length > 1 ? "Thanh toán hóa đơn đầu tiên" : "Thanh toán ngay"}
             </Button>
           </CardFooter>
         </Card>
@@ -83,33 +85,46 @@ export default function PatientInvoices() {
             </TabsList>
 
             <TabsContent value="pending" className="pt-6">
-              {activeInvoice ? (
-                <Card className="card shadow-xl border-none bg-card/40 backdrop-blur-md">
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <Receipt className="w-5 h-5 text-indigo-500" />
-                        <CardTitle className="text-lg">Chi tiết hóa đơn</CardTitle>
-                      </div>
-                      <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200">Chưa thanh toán</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {activeInvoice.items.map((item: any, idx: number) => (
-                      <div key={idx} className="flex justify-between items-center py-3 border-b last:border-0 border-border/50">
-                        <div>
-                          <p className="font-bold text-sm">{item.description}</p>
-                          <p className="text-xs text-muted-foreground">Số lượng: {item.quantity}</p>
+              {activeInvoices && activeInvoices.length > 0 ? (
+                <div className="space-y-6">
+                  {activeInvoices.map((inv: any) => (
+                    <Card key={inv._id} className="card shadow-xl border-none bg-card/40 backdrop-blur-md">
+                      <CardHeader>
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <Receipt className="w-5 h-5 text-indigo-500" />
+                            <CardTitle className="text-lg">Chi tiết hóa đơn</CardTitle>
+                          </div>
+                          <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200">Chưa thanh toán</Badge>
                         </div>
-                        <p className="font-bold text-sm">{item.totalPrice.toLocaleString()} VNĐ</p>
-                      </div>
-                    ))}
-                  </CardContent>
-                  <CardFooter className="bg-muted/30 pt-4 flex justify-between items-center">
-                    <p className="text-xs text-muted-foreground">Ngày tạo: {format(new Date(activeInvoice.createdAt), "dd/MM/yyyy HH:mm")}</p>
-                    <p className="font-black text-lg text-primary">{activeInvoice.totalAmount.toLocaleString()} VNĐ</p>
-                  </CardFooter>
-                </Card>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {inv.items.map((item: any, idx: number) => (
+                          <div key={idx} className="flex justify-between items-center py-3 border-b last:border-0 border-border/50">
+                            <div>
+                              <p className="font-bold text-sm">{item.description}</p>
+                              <p className="text-xs text-muted-foreground">Số lượng: {item.quantity}</p>
+                            </div>
+                            <p className="font-bold text-sm">{item.totalPrice.toLocaleString()} VNĐ</p>
+                          </div>
+                        ))}
+                      </CardContent>
+                      <CardFooter className="bg-muted/30 pt-4 flex justify-between items-center">
+                        <p className="text-xs text-muted-foreground">Ngày tạo: {format(new Date(inv.createdAt), "dd/MM/yyyy HH:mm")}</p>
+                        <div className="flex items-center gap-3">
+                          <p className="font-black text-lg text-primary">{inv.totalAmount.toLocaleString()} VNĐ</p>
+                          <Button 
+                            disabled={paymentMutation.isPending}
+                            onClick={() => paymentMutation.mutate(inv._id)}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
+                          >
+                            <CreditCard className="w-4 h-4 mr-2" /> Thanh toán
+                          </Button>
+                        </div>
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-muted/20 rounded-3xl border border-dashed">
                   <div className="p-4 bg-muted rounded-full opacity-40">

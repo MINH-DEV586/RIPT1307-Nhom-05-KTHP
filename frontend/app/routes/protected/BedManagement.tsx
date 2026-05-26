@@ -25,6 +25,9 @@ import {
   UserPlus,
   ShieldCheck,
   Zap,
+  Crown,
+  Star,
+  Flame,
 } from "lucide-react";
 import Loader from "@/components/global/Loader";
 import {
@@ -68,12 +71,25 @@ const DEPARTMENTS = [
 ];
 
 const BED_TYPES = {
-  normal: { label: "Thường", color: "bg-slate-100 text-slate-700" },
-  emergency: { label: "Cấp cứu", color: "bg-red-100 text-red-700" },
-  rehab: { label: "Phục hồi", color: "bg-blue-100 text-blue-700" },
-  disability: { label: "Khuyết tật", color: "bg-purple-100 text-purple-700" },
-  vip: { label: "Phòng VIP", color: "bg-amber-100 text-amber-700" },
+  normal:     { label: "Giường thường",  color: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",  price: 200000, icon: null },
+  emergency:  { label: "Cấp cứu",        color: "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300",     price: 300000, icon: "flame" },
+  rehab:      { label: "Phục hồi",       color: "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300", price: 200000, icon: null },
+  disability: { label: "Khuyết tật",     color: "bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300", price: 200000, icon: null },
+  vip:        { label: "Phòng VIP",      color: "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300",  price: 500000, icon: "crown" },
 };
+
+function BedTypeBadge({ type, showPrice = false }: { type: string; showPrice?: boolean }) {
+  const info = BED_TYPES[type as keyof typeof BED_TYPES];
+  if (!info) return null;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold ${info.color}`}>
+      {info.icon === "crown" && <Crown className="w-3 h-3" />}
+      {info.icon === "flame" && <Flame className="w-3 h-3" />}
+      {info.label}
+      {showPrice && <span className="opacity-70 ml-1">{info.price.toLocaleString()}đ/ngày</span>}
+    </span>
+  );
+}
 
 function BedIcon({ status, type }: { status: string, type: string }) {
   const isVip = type === "vip";
@@ -328,6 +344,21 @@ export default function BedManagementPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bảng đơn giá giường */}
+          <Card className="card shadow-xl border-none">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Đơn giá giường/ngày</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 pt-0">
+              {(Object.entries(BED_TYPES) as [string, typeof BED_TYPES[keyof typeof BED_TYPES]][]).map(([key, info]) => (
+                <div key={key} className="flex items-center justify-between">
+                  <BedTypeBadge type={key} />
+                  <span className="text-xs font-bold text-muted-foreground">{info.price.toLocaleString()}đ</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Main Grid/List View */}
@@ -349,12 +380,10 @@ export default function BedManagementPage() {
                           <BedIcon status={bed.status} type={bed.type} />
                           <div>
                             <p className="font-black text-xl leading-none">#{bed.bedNumber}</p>
-                            <p className="text-xs text-muted-foreground mt-1">{bed.floor} · {bed.department}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Tầng {bed.floor} · {bed.department}</p>
                           </div>
                         </div>
-                        <Badge className={`rounded-lg font-bold ${BED_TYPES[bed.type as keyof typeof BED_TYPES]?.color}`}>
-                          {BED_TYPES[bed.type as keyof typeof BED_TYPES]?.label}
-                        </Badge>
+                        <BedTypeBadge type={bed.type} showPrice />
                       </div>
 
                       <div className="space-y-4">
@@ -370,6 +399,36 @@ export default function BedManagementPage() {
                               <div>
                                 <p className="text-sm font-black">{patient.name}</p>
                                 <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Bệnh nhân nội trú</p>
+                              </div>
+                            </div>
+                            {/* Inpatient details & stay cost */}
+                            <div className="text-[11px] space-y-1 py-1.5 border-t border-b border-dashed border-slate-200 dark:border-slate-800 text-slate-500">
+                              <div className="flex justify-between">
+                                <span>Ngày nhập viện:</span>
+                                <span className="font-bold text-slate-700 dark:text-slate-300">
+                                  {patient.admittedAt ? new Date(patient.admittedAt).toLocaleDateString("vi-VN") : "---"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Số ngày nằm:</span>
+                                <span className="font-bold text-slate-700 dark:text-slate-300">
+                                  {(() => {
+                                    const admittedAt = patient.admittedAt ? new Date(patient.admittedAt) : new Date(patient.createdAt || Date.now());
+                                    const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
+                                    return `${days} ngày`;
+                                  })()}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-indigo-600 dark:text-indigo-400 font-bold">
+                                <span>Tạm tính chi phí:</span>
+                                <span>
+                                  {(() => {
+                                    const admittedAt = patient.admittedAt ? new Date(patient.admittedAt) : new Date(patient.createdAt || Date.now());
+                                    const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
+                                    const dailyRate = bed.type === "vip" ? 500000 : bed.type === "emergency" ? 300000 : 200000;
+                                    return `${(days * dailyRate).toLocaleString()} VNĐ`;
+                                  })()}
+                                </span>
                               </div>
                             </div>
                             <div className="flex gap-2">
@@ -424,8 +483,8 @@ export default function BedManagementPage() {
                       <tr className="border-b bg-muted/30">
                         <th className="p-4 font-black text-sm">Số giường</th>
                         <th className="p-4 font-black text-sm">Loại</th>
-                        <th className="p-4 font-black text-sm">Khoa</th>
                         <th className="p-4 font-black text-sm">Bệnh nhân</th>
+                        <th className="p-4 font-black text-sm">Thời gian / Tạm tính</th>
                         <th className="p-4 font-black text-sm">Trạng thái</th>
                         <th className="p-4 font-black text-sm text-right">Thao tác</th>
                       </tr>
@@ -438,11 +497,18 @@ export default function BedManagementPage() {
                              <td className="p-4">
                                <div className="flex items-center gap-2">
                                  <BedIcon status={bed.status} type={bed.type} />
-                                 <span className="font-bold">#{bed.bedNumber}</span>
+                                 <div>
+                                   <div className="flex items-center gap-1">
+                                     <span className="font-bold">#{bed.bedNumber}</span>
+                                     {bed.type === 'vip' && <Crown className="w-3 h-3 text-amber-500" />}
+                                   </div>
+                                   <p className="text-[10px] text-muted-foreground">{bed.department} · Tầng {bed.floor}</p>
+                                 </div>
                                </div>
                              </td>
-                             <td className="p-4 text-sm">{BED_TYPES[bed.type as keyof typeof BED_TYPES]?.label}</td>
-                             <td className="p-4 text-sm">{bed.department}</td>
+                              <td className="p-4 text-sm">
+                                <BedTypeBadge type={bed.type} showPrice />
+                              </td>
                              <td className="p-4">
                                {patient ? (
                                  <div className="flex items-center gap-2">
@@ -451,6 +517,27 @@ export default function BedManagementPage() {
                                      <AvatarFallback className="text-[8px]">{patient.name?.charAt(0)}</AvatarFallback>
                                    </Avatar>
                                    <span className="text-sm font-medium">{patient.name}</span>
+                                 </div>
+                               ) : "-"}
+                             </td>
+                             <td className="p-4">
+                               {patient ? (
+                                 <div className="flex flex-col text-xs text-muted-foreground">
+                                   <span className="font-bold text-slate-700 dark:text-slate-300">
+                                     {(() => {
+                                       const admittedAt = patient.admittedAt ? new Date(patient.admittedAt) : new Date(patient.createdAt || Date.now());
+                                       const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
+                                       return `${days} ngày`;
+                                     })()}
+                                   </span>
+                                   <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                                     {(() => {
+                                       const admittedAt = patient.admittedAt ? new Date(patient.admittedAt) : new Date(patient.createdAt || Date.now());
+                                       const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
+                                       const dailyRate = bed.type === "vip" ? 500000 : bed.type === "emergency" ? 300000 : 200000;
+                                       return `${(days * dailyRate).toLocaleString()} VNĐ`;
+                                     })()}
+                                   </span>
                                  </div>
                                ) : "-"}
                              </td>

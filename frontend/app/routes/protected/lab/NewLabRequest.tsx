@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { createLabRequest, getUsers } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { createLabRequest, getUsers, getLabTests } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,18 +23,11 @@ export default function CreateLabRequest() {
     notes: ""
   });
 
-  const testTypes = [
-    "Xét nghiệm máu (CBC)",
-    "Xét nghiệm nước tiểu",
-    "Sinh hóa máu",
-    "Chức năng gan (LFT)",
-    "Chức năng thận (KFT)",
-    "Đường huyết",
-    "Xét nghiệm phân",
-    "X-Quang",
-    "Siêu âm",
-    "MRI/CT Scan"
-  ];
+  // Tải danh sách loại xét nghiệm từ API (động, đồng bộ với bảng giá)
+  const { data: labTests = [] } = useQuery<any[]>({
+    queryKey: ["lab-tests"],
+    queryFn: getLabTests,
+  });
 
   useEffect(() => {
     fetchPatients();
@@ -119,10 +113,15 @@ export default function CreateLabRequest() {
                   <SelectValue placeholder="Chọn loại xét nghiệm..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {testTypes.map(t => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  {labTests.map((t: any) => (
+                    <SelectItem key={t._id} value={t.name}>
+                      <span>{t.name}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {t.price.toLocaleString("vi-VN")}đ
+                      </span>
+                    </SelectItem>
                   ))}
-                  <SelectItem value="Other">Khác (Ghi chú chi tiết)</SelectItem>
+                  <SelectItem value="Khác">Khác (Ghi chú chi tiết)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

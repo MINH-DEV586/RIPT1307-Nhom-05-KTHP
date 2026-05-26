@@ -10,6 +10,6 @@ const router = express.Router();
 
 router.get("/", checkRole(["pharmacist", "admin", "doctor"]), getAllPrescriptions);
 router.get("/:prescriptionId", checkRole(["pharmacist", "admin", "doctor"]), getPrescriptionForDispensing);
-router.post("/confirm", checkRole(["pharmacist", "admin"]), confirmDispense);
+router.post("/confirm", checkRole(["pharmacist", "admin", "doctor"]), confirmDispense);
 
 export default router;

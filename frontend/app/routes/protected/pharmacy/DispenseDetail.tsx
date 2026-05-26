@@ -119,6 +119,8 @@ export default function DispenseDetail() {
                       <TableHead>Tên thuốc</TableHead>
                       <TableHead>Liều lượng</TableHead>
                       <TableHead className="text-center">Số lượng</TableHead>
+                      <TableHead className="text-right">Đơn giá</TableHead>
+                      <TableHead className="text-right">Thành tiền</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -132,8 +134,16 @@ export default function DispenseDetail() {
                         </TableCell>
                         <TableCell>{item.dosage}</TableCell>
                         <TableCell className="text-center font-bold text-primary">{item.quantity}</TableCell>
+                        <TableCell className="text-right">{item.price ? `${item.price.toLocaleString()} đ` : "---"}</TableCell>
+                        <TableCell className="text-right font-semibold">{item.price ? `${(item.price * item.quantity).toLocaleString()} đ` : "---"}</TableCell>
                       </TableRow>
                     ))}
+                    <TableRow className="bg-primary/5 hover:bg-primary/5 font-bold">
+                      <TableCell colSpan={4} className="text-right">Tổng giá trị đơn thuốc:</TableCell>
+                      <TableCell className="text-right text-primary font-black">
+                        {prescription.items.reduce((acc: number, item: any) => acc + ((item.price || 0) * item.quantity), 0).toLocaleString()} đ
+                      </TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </div>

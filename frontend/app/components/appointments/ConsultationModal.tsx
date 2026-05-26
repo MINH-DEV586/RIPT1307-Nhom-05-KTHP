@@ -12,6 +12,7 @@ import {
   getAllBeds,
   admitPatientToBed,
   updatePatientStatus,
+  getLabTests,
 } from "@/lib/api";
 
 import {
@@ -106,6 +107,19 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
     queryFn: () => getPatientLabResults(appointment.patientId),
     enabled: isOpen,
   });
+
+  // Tải danh sách xét nghiệm + giá từ API (động thay vì cứng)
+  const { data: labTestCatalog = [] } = useQuery<any[]>({
+    queryKey: ["lab-tests"],
+    queryFn: getLabTests,
+    enabled: isOpen,
+  });
+
+  // Tính tổng phí xét nghiệm từ giá thực trong DB
+  const labFee = selectedTests.reduce((sum, name) => {
+    const found = labTestCatalog.find((t: any) => t.name === name);
+    return sum + (found ? found.price : 50000);
+  }, 0);
 
   // Mutations
   const medicalRecordMutation = useMutation({
@@ -219,7 +233,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
 
         onComplete({
           consultationFee: appointment.doctor?.consultationFee || 200000,
-          labFee: selectedTests.length * 50000,
+          labFee,
           prescriptionFee: prescriptionTotal
         });
         toast.success("Ca khám ngoại trú đã hoàn thành và lưu lịch sử khám!");
@@ -255,7 +269,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
 
         onComplete({
           consultationFee: appointment.doctor?.consultationFee || 200000,
-          labFee: selectedTests.length * 50000,
+          labFee,
           prescriptionFee: prescriptionTotal
         });
         toast.success("Bệnh nhân đã được nhập viện! Đang chuyển sang hồ sơ bệnh nhân...");
@@ -412,11 +426,30 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                               {beds.length === 0 ? (
                                 <div className="p-4 text-center text-sm text-muted-foreground">Không có giường trống</div>
                               ) : (
-                                beds.map((bed: any) => (
-                                  <SelectItem key={bed._id} value={bed._id}>
-                                    [{bed.department}] - Giường {bed.bedNumber} (Tầng {bed.floor})
-                                  </SelectItem>
-                                ))
+                                beds.map((bed: any) => {
+                                  const bedTypeMap: Record<string, { label: string; price: number; emoji: string }> = {
+                                    vip:        { label: "VIP",        price: 500000, emoji: "👑" },
+                                    emergency:  { label: "Cấp cứu",   price: 300000, emoji: "🚨" },
+                                    rehab:      { label: "Phục hồi",  price: 200000, emoji: "💪" },
+                                    disability: { label: "Khuyết tật",price: 200000, emoji: "♿" },
+                                    normal:     { label: "Thường",    price: 200000, emoji: "🛏️" },
+                                  };
+                                  const typeInfo = bedTypeMap[bed.type] || bedTypeMap.normal;
+                                  return (
+                                    <SelectItem key={bed._id} value={bed._id}>
+                                      <span className="flex items-center gap-2">
+                                        <span>{typeInfo.emoji}</span>
+                                        <span className="font-bold">Giường {bed.bedNumber}</span>
+                                        <span className="text-muted-foreground">·</span>
+                                        <span>{bed.department}</span>
+                                        <span className="text-muted-foreground">· Tầng {bed.floor}</span>
+                                        <span className="ml-auto text-xs font-bold text-amber-600">
+                                          [{typeInfo.label} · {typeInfo.price.toLocaleString()}đ/ngày]
+                                        </span>
+                                      </span>
+                                    </SelectItem>
+                                  );
+                                })
                               )}
                             </SelectContent>
                           </Select>
@@ -448,9 +481,10 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
               {/* --- LAB TAB --- */}
               <TabsContent value="lab" className="mt-0 space-y-6">
                 <div className="space-y-6">
+                  {/* Ô nhập thêm xét nghiệm không có trong danh mục */}
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Nhập loại xét nghiệm (Vd: Xét nghiệm máu, X-Quang...)"
+                      placeholder="Thêm xét nghiệm khác ngoài danh mục..."
                       value={customTest}
                       onChange={(e) => setCustomTest(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddTest()}
@@ -461,19 +495,39 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                     </Button>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    {["Công thức máu", "Nước tiểu", "Siêu âm bụng", "X-Quang Ngực", "Đường huyết", "Chức năng gan"].map(t => (
-                      <Badge
-                        key={t}
-                        variant={selectedTests.includes(t) ? "default" : "outline"}
-                        className={`cursor-pointer px-4 py-1.5 rounded-lg font-medium transition-all ${selectedTests.includes(t) ? "bg-indigo-600" : "hover:bg-indigo-50"}`}
-                        onClick={() => selectedTests.includes(t) ? setSelectedTests(selectedTests.filter(st => st !== t)) : setSelectedTests([...selectedTests, t])}
-                      >
-                        {t}
-                      </Badge>
-                    ))}
+                  {/* Danh sách xét nghiệm từ API — hiển thị giá */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Chọn nhanh từ danh mục</h4>
+                    {labTestCatalog.length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">Đang tải danh mục xét nghiệm...</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {labTestCatalog.map((t: any) => (
+                          <Badge
+                            key={t._id}
+                            variant={selectedTests.includes(t.name) ? "default" : "outline"}
+                            className={`cursor-pointer px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 ${
+                              selectedTests.includes(t.name) ? "bg-indigo-600 text-white" : "hover:bg-indigo-50"
+                            }`}
+                            onClick={() =>
+                              selectedTests.includes(t.name)
+                                ? setSelectedTests(selectedTests.filter(st => st !== t.name))
+                                : setSelectedTests([...selectedTests, t.name])
+                            }
+                          >
+                            {t.name}
+                            <span className={`text-[10px] font-bold ${
+                              selectedTests.includes(t.name) ? "text-indigo-200" : "text-indigo-500"
+                            }`}>
+                              {t.price.toLocaleString("vi-VN")}đ
+                            </span>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
+                  {/* Danh sách đã chọn + tổng phí */}
                   <div className="space-y-3">
                     <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                       <FlaskConical className="w-4 h-4" /> Chỉ định hiện tại ({selectedTests.length})
@@ -484,14 +538,33 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 gap-2">
-                        {selectedTests.map((t, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl group border border-slate-100">
-                            <span className="font-bold text-slate-700">{t}</span>
-                            <Button variant="ghost" size="sm" onClick={() => setSelectedTests(selectedTests.filter(st => st !== t))} className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
+                        {selectedTests.map((t, idx) => {
+                          const info = labTestCatalog.find((lt: any) => lt.name === t);
+                          return (
+                            <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl group border border-slate-100">
+                              <div>
+                                <span className="font-bold text-slate-700">{t}</span>
+                                {info && (
+                                  <span className="ml-3 text-xs font-bold text-indigo-600">
+                                    {info.price.toLocaleString("vi-VN")}đ
+                                  </span>
+                                )}
+                              </div>
+                              <Button variant="ghost" size="sm"
+                                onClick={() => setSelectedTests(selectedTests.filter(st => st !== t))}
+                                className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                        {/* Tổng phí xét nghiệm */}
+                        <div className="flex justify-between items-center p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                          <span className="text-sm font-black text-indigo-700">Tổng phí xét nghiệm</span>
+                          <span className="text-lg font-black text-indigo-600">
+                            {labFee.toLocaleString("vi-VN")}đ
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -509,7 +582,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                         </SelectTrigger>
                         <SelectContent>
                           {medicines.map(m => (
-                            <SelectItem key={m._id} value={m._id}>{m.name} ({m.unit}) - Tồn: {m.stock}</SelectItem>
+                            <SelectItem key={m._id} value={m._id}>{m.name} ({m.unit}) - Tồn: {m.stock} - {m.price.toLocaleString()} đ</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -536,7 +609,18 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                                   <div className="p-2 bg-white rounded-lg shadow-sm">
                                     <Pill className="w-5 h-5 text-indigo-500" />
                                   </div>
-                                  <span className="font-black text-slate-800">{item.medicineName}</span>
+                                  <div className="flex flex-col">
+                                    <span className="font-black text-slate-800">{item.medicineName}</span>
+                                    {(() => {
+                                      const med = medicines.find(m => m._id === item.medicineId);
+                                      if (!med) return null;
+                                      return (
+                                        <span className="text-xs text-muted-foreground font-semibold">
+                                          Đơn giá: {med.price.toLocaleString()} đ | Thành tiền: {((item.quantity || 0) * med.price).toLocaleString()} đ
+                                        </span>
+                                      );
+                                    })()}
+                                  </div>
                                 </div>
                                 <Button variant="ghost" size="sm" onClick={() => handleRemoveMedicine(idx)} className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0">
                                   <Trash2 className="w-4 h-4" />
@@ -596,6 +680,15 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                             </CardContent>
                           </Card>
                         ))}
+                        <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex justify-between items-center mt-4">
+                          <span className="font-bold text-slate-700">Tổng tiền đơn thuốc dự kiến:</span>
+                          <span className="font-black text-indigo-600 text-lg">
+                            {prescribedItems.reduce((acc, item) => {
+                              const med = medicines.find(m => m._id === item.medicineId);
+                              return acc + (med ? med.price * (item.quantity || 0) : 0);
+                            }, 0).toLocaleString()} VNĐ
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
