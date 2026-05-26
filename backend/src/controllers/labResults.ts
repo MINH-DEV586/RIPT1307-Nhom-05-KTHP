@@ -1,5 +1,7 @@
 import labResults from "../models/labResults";
 import LabRequest from "../models/labRequest";
+import LabTest from "../models/labTest";
+import Invoice from "../models/invoice";
 import type { Request, Response } from "express";
 import { logActivity } from "../lib/activity";
 import { inngest } from "../inngest/client";
@@ -36,9 +38,49 @@ export const createLabResult = async (req: Request, res: Response) => {
 
     await newLabResult.save();
 
-    // Update linked LabRequest status if exists
+    // Update linked LabRequest status if exists & create lab fee invoice
     if (labRequestId) {
-      await LabRequest.findByIdAndUpdate(labRequestId, { status: "completed" });
+      const labReq = await LabRequest.findByIdAndUpdate(labRequestId, { status: "completed" }, { new: true });
+      
+      if (labReq) {
+        // Look up the price of this test type from LabTest collection
+        const labTestRecord = await LabTest.findOne({ name: labReq.testType, isActive: true });
+        const labFee = labTestRecord?.price || 0;
+
+        if (labFee > 0) {
+          // Check patient admission status to avoid double-billing for inpatients
+          const mongoose = (await import("mongoose")).default;
+          const userCollection = mongoose.connection.collection("user");
+          let patientUser = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(patientId) });
+          if (!patientUser) {
+            patientUser = await userCollection.findOne({ _id: patientId as any });
+          }
+          const isAdmitted = patientUser && patientUser.status === "admitted";
+
+          if (!isAdmitted) {
+            // Create a separate lab fee invoice for outpatients
+            const labInvoice = new Invoice({
+              patientId,
+              status: "pending_payment",
+              items: [
+                {
+                  description: `Chi phí xét nghiệm - ${labReq.testType} (${new Date().toLocaleDateString("vi-VN")})`,
+                  quantity: 1,
+                  unitPrice: labFee,
+                  totalPrice: labFee
+                }
+              ],
+              totalAmount: labFee
+            });
+            await labInvoice.save();
+            await logActivity(
+              createdBy,
+              "Tạo hóa đơn xét nghiệm",
+              `Đã tạo hóa đơn xét nghiệm ${labReq.testType} - ${labFee.toLocaleString("vi-VN")}đ cho bệnh nhân ID: ${patientId}`
+            );
+          }
+        }
+      }
     }
 
     // AI Analysis trigger for scans

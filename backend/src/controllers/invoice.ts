@@ -2,6 +2,8 @@ import invoice from "../models/invoice";
 import Bed from "../models/bed";
 import Prescription from "../models/prescription";
 import Medicine from "../models/medicine";
+import LabRequest from "../models/labRequest";
+import LabTest from "../models/labTest";
 import type { Request, Response } from "express";
 import { logActivity } from "../lib/activity";
 import mongoose from "mongoose";
@@ -74,6 +76,31 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
           }
         }
 
+        // Fetch all completed lab requests during their stay
+        const labRequests = await LabRequest.find({
+          patientId,
+          status: "completed",
+          createdAt: { $gte: admittedAt }
+        }).lean();
+
+        const labItems = [];
+        let totalLabFee = 0;
+
+        for (const lr of labRequests) {
+          const labTest = await LabTest.findOne({ name: lr.testType, isActive: true }).lean();
+          const labFee = labTest?.price || 0;
+          if (labFee > 0) {
+            labItems.push({
+              description: `Chi phí xét nghiệm (Tạm tính) - ${lr.testType} (${new Date((lr as any).createdAt).toLocaleDateString("vi-VN")})`,
+              quantity: 1,
+              unitPrice: labFee,
+              totalPrice: labFee,
+              isEstimated: true
+            });
+            totalLabFee += labFee;
+          }
+        }
+
         // If no active invoice exists in the DB, mock a draft one so we can show the bed fee
         let responseInvoice: any;
         if (!inv) {
@@ -89,21 +116,23 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
                 totalPrice: totalFee,
                 isEstimated: true
               },
-              ...prescriptionItems
+              ...prescriptionItems,
+              ...labItems
             ],
-            totalAmount: totalFee + totalPrescriptionFee,
+            totalAmount: totalFee + totalPrescriptionFee + totalLabFee,
             createdAt: admittedAt,
             updatedAt: new Date(),
             isEstimatedInvoice: true
           };
         } else {
           // Filter out existing stay items to avoid duplicates
-          const baseItems = inv.items.filter(item => 
+          const baseItems = inv.items.filter(item =>
             !item.description.startsWith("Phí giường bệnh nội trú") &&
             !item.description.startsWith("Chi phí đơn thuốc (Tạm tính)") &&
-            !item.description.startsWith("Chi phí đơn thuốc - Chẩn đoán:")
+            !item.description.startsWith("Chi phí đơn thuốc - Chẩn đoán:") &&
+            !item.description.startsWith("Chi phí xét nghiệm (Tạm tính)")
           );
-          
+
           const baseTotal = baseItems.reduce((sum, item) => sum + item.totalPrice, 0);
 
           const updatedItems = [
@@ -115,13 +144,14 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
               totalPrice: totalFee,
               isEstimated: true
             },
-            ...prescriptionItems
+            ...prescriptionItems,
+            ...labItems
           ];
 
           responseInvoice = {
             ...inv.toObject(),
             items: updatedItems,
-            totalAmount: baseTotal + totalFee + totalPrescriptionFee,
+            totalAmount: baseTotal + totalFee + totalPrescriptionFee + totalLabFee,
             isEstimatedInvoice: true
           };
         }

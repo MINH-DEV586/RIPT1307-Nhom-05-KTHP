@@ -3,6 +3,8 @@ import Bed from "../models/bed";
 import Invoice from "../models/invoice";
 import Prescription from "../models/prescription";
 import Medicine from "../models/medicine";
+import LabRequest from "../models/labRequest";
+import LabTest from "../models/labTest";
 import mongoose from "mongoose";
 import { logActivity } from "../lib/activity";
 
@@ -174,25 +176,50 @@ export const dischargePatientFromBed = async (req: Request, res: Response) => {
       }
     }
 
-    // 4. Find/create active invoice and add the finalized bed & prescription items
-    let inv = await Invoice.findOne({ 
-      patientId, 
-      status: { $in: ["draft", "pending_payment"] } 
+    // Find all completed lab requests for this patient during their stay
+    const labRequests = await LabRequest.find({
+      patientId,
+      status: "completed",
+      createdAt: { $gte: admittedAt }
+    }).lean();
+
+    const labItems: any[] = [];
+    let totalLabFee = 0;
+
+    for (const lr of labRequests) {
+      const labTest = await LabTest.findOne({ name: lr.testType, isActive: true }).lean();
+      const labFee = labTest?.price || 0;
+      if (labFee > 0) {
+        labItems.push({
+          description: `Chi phí xét nghiệm - ${lr.testType} (${new Date((lr as any).createdAt).toLocaleDateString("vi-VN")})`,
+          quantity: 1,
+          unitPrice: labFee,
+          totalPrice: labFee
+        });
+        totalLabFee += labFee;
+      }
+    }
+
+    // 4. Find/create active invoice and add the finalized bed, prescription & lab items
+    let inv = await Invoice.findOne({
+      patientId,
+      status: { $in: ["draft", "pending_payment"] }
     }).sort({ createdAt: -1 });
 
     const bedItemDescription = `Phí giường bệnh nội trú (${bedTypeLabel} - ${days} ngày)`;
 
     if (inv) {
-      // Filter out existing bed and prescription items from this stay to avoid duplicates
-      const filteredItems = inv.items.filter(item => 
+      // Filter out existing bed, prescription and lab items from this stay to avoid duplicates
+      const filteredItems = inv.items.filter(item =>
         !item.description.startsWith("Phí giường bệnh nội trú") &&
         !item.description.startsWith("Chi phí đơn thuốc - Chẩn đoán:") &&
-        !item.description.startsWith("Chi phí đơn thuốc (Tạm tính)")
+        !item.description.startsWith("Chi phí đơn thuốc (Tạm tính)") &&
+        !item.description.startsWith("Chi phí xét nghiệm")
       );
-      
+
       // Calculate total amount of remaining items
       let newTotal = filteredItems.reduce((sum, item) => sum + item.totalPrice, 0);
-      
+
       // Add the new bed item
       filteredItems.push({
         description: bedItemDescription,
@@ -201,31 +228,42 @@ export const dischargePatientFromBed = async (req: Request, res: Response) => {
         totalPrice: totalFee
       });
       newTotal += totalFee;
-      
-      // Add the new prescription items
+
+      // Add the prescription items
       for (const item of prescriptionItems) {
         filteredItems.push(item);
         newTotal += item.totalPrice;
       }
-      
+
+      // Add the lab items
+      for (const item of labItems) {
+        filteredItems.push(item);
+        newTotal += item.totalPrice;
+      }
+
       inv.items = filteredItems;
       inv.totalAmount = newTotal;
       await inv.save();
     } else {
-      const items = [{
+      const items: any[] = [{
         description: bedItemDescription,
         quantity: 1,
         unitPrice: totalFee,
         totalPrice: totalFee
       }];
-      
+
       let newTotal = totalFee;
-      
+
       for (const item of prescriptionItems) {
         items.push(item);
         newTotal += item.totalPrice;
       }
-      
+
+      for (const item of labItems) {
+        items.push(item);
+        newTotal += item.totalPrice;
+      }
+
       inv = new Invoice({
         patientId,
         status: "pending_payment",
