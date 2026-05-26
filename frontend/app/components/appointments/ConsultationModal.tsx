@@ -426,11 +426,30 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                               {beds.length === 0 ? (
                                 <div className="p-4 text-center text-sm text-muted-foreground">Không có giường trống</div>
                               ) : (
-                                beds.map((bed: any) => (
-                                  <SelectItem key={bed._id} value={bed._id}>
-                                    [{bed.department}] - Giường {bed.bedNumber} (Tầng {bed.floor})
-                                  </SelectItem>
-                                ))
+                                beds.map((bed: any) => {
+                                  const bedTypeMap: Record<string, { label: string; price: number; emoji: string }> = {
+                                    vip:        { label: "VIP",        price: 500000, emoji: "👑" },
+                                    emergency:  { label: "Cấp cứu",   price: 300000, emoji: "🚨" },
+                                    rehab:      { label: "Phục hồi",  price: 200000, emoji: "💪" },
+                                    disability: { label: "Khuyết tật",price: 200000, emoji: "♿" },
+                                    normal:     { label: "Thường",    price: 200000, emoji: "🛏️" },
+                                  };
+                                  const typeInfo = bedTypeMap[bed.type] || bedTypeMap.normal;
+                                  return (
+                                    <SelectItem key={bed._id} value={bed._id}>
+                                      <span className="flex items-center gap-2">
+                                        <span>{typeInfo.emoji}</span>
+                                        <span className="font-bold">Giường {bed.bedNumber}</span>
+                                        <span className="text-muted-foreground">·</span>
+                                        <span>{bed.department}</span>
+                                        <span className="text-muted-foreground">· Tầng {bed.floor}</span>
+                                        <span className="ml-auto text-xs font-bold text-amber-600">
+                                          [{typeInfo.label} · {typeInfo.price.toLocaleString()}đ/ngày]
+                                        </span>
+                                      </span>
+                                    </SelectItem>
+                                  );
+                                })
                               )}
                             </SelectContent>
                           </Select>

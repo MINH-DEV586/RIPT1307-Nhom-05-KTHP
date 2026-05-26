@@ -25,6 +25,9 @@ import {
   UserPlus,
   ShieldCheck,
   Zap,
+  Crown,
+  Star,
+  Flame,
 } from "lucide-react";
 import Loader from "@/components/global/Loader";
 import {
@@ -68,12 +71,25 @@ const DEPARTMENTS = [
 ];
 
 const BED_TYPES = {
-  normal: { label: "Thường", color: "bg-slate-100 text-slate-700" },
-  emergency: { label: "Cấp cứu", color: "bg-red-100 text-red-700" },
-  rehab: { label: "Phục hồi", color: "bg-blue-100 text-blue-700" },
-  disability: { label: "Khuyết tật", color: "bg-purple-100 text-purple-700" },
-  vip: { label: "Phòng VIP", color: "bg-amber-100 text-amber-700" },
+  normal:     { label: "Giường thường",  color: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",  price: 200000, icon: null },
+  emergency:  { label: "Cấp cứu",        color: "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300",     price: 300000, icon: "flame" },
+  rehab:      { label: "Phục hồi",       color: "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300", price: 200000, icon: null },
+  disability: { label: "Khuyết tật",     color: "bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300", price: 200000, icon: null },
+  vip:        { label: "Phòng VIP",      color: "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300",  price: 500000, icon: "crown" },
 };
+
+function BedTypeBadge({ type, showPrice = false }: { type: string; showPrice?: boolean }) {
+  const info = BED_TYPES[type as keyof typeof BED_TYPES];
+  if (!info) return null;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold ${info.color}`}>
+      {info.icon === "crown" && <Crown className="w-3 h-3" />}
+      {info.icon === "flame" && <Flame className="w-3 h-3" />}
+      {info.label}
+      {showPrice && <span className="opacity-70 ml-1">{info.price.toLocaleString()}đ/ngày</span>}
+    </span>
+  );
+}
 
 function BedIcon({ status, type }: { status: string, type: string }) {
   const isVip = type === "vip";
@@ -328,6 +344,21 @@ export default function BedManagementPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bảng đơn giá giường */}
+          <Card className="card shadow-xl border-none">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Đơn giá giường/ngày</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 pt-0">
+              {(Object.entries(BED_TYPES) as [string, typeof BED_TYPES[keyof typeof BED_TYPES]][]).map(([key, info]) => (
+                <div key={key} className="flex items-center justify-between">
+                  <BedTypeBadge type={key} />
+                  <span className="text-xs font-bold text-muted-foreground">{info.price.toLocaleString()}đ</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Main Grid/List View */}
@@ -349,12 +380,10 @@ export default function BedManagementPage() {
                           <BedIcon status={bed.status} type={bed.type} />
                           <div>
                             <p className="font-black text-xl leading-none">#{bed.bedNumber}</p>
-                            <p className="text-xs text-muted-foreground mt-1">{bed.floor} · {bed.department}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Tầng {bed.floor} · {bed.department}</p>
                           </div>
                         </div>
-                        <Badge className={`rounded-lg font-bold ${BED_TYPES[bed.type as keyof typeof BED_TYPES]?.color}`}>
-                          {BED_TYPES[bed.type as keyof typeof BED_TYPES]?.label}
-                        </Badge>
+                        <BedTypeBadge type={bed.type} showPrice />
                       </div>
 
                       <div className="space-y-4">
@@ -454,7 +483,6 @@ export default function BedManagementPage() {
                       <tr className="border-b bg-muted/30">
                         <th className="p-4 font-black text-sm">Số giường</th>
                         <th className="p-4 font-black text-sm">Loại</th>
-                        <th className="p-4 font-black text-sm">Khoa</th>
                         <th className="p-4 font-black text-sm">Bệnh nhân</th>
                         <th className="p-4 font-black text-sm">Thời gian / Tạm tính</th>
                         <th className="p-4 font-black text-sm">Trạng thái</th>
@@ -469,11 +497,18 @@ export default function BedManagementPage() {
                              <td className="p-4">
                                <div className="flex items-center gap-2">
                                  <BedIcon status={bed.status} type={bed.type} />
-                                 <span className="font-bold">#{bed.bedNumber}</span>
+                                 <div>
+                                   <div className="flex items-center gap-1">
+                                     <span className="font-bold">#{bed.bedNumber}</span>
+                                     {bed.type === 'vip' && <Crown className="w-3 h-3 text-amber-500" />}
+                                   </div>
+                                   <p className="text-[10px] text-muted-foreground">{bed.department} · Tầng {bed.floor}</p>
+                                 </div>
                                </div>
                              </td>
-                             <td className="p-4 text-sm">{BED_TYPES[bed.type as keyof typeof BED_TYPES]?.label}</td>
-                             <td className="p-4 text-sm">{bed.department}</td>
+                              <td className="p-4 text-sm">
+                                <BedTypeBadge type={bed.type} showPrice />
+                              </td>
                              <td className="p-4">
                                {patient ? (
                                  <div className="flex items-center gap-2">
