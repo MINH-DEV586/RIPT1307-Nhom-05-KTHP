@@ -70,9 +70,11 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
 
           if (prescriptionTotal > 0) {
             // Check if this prescription is already billed in any database invoice
+            const diagStr = p.diagnosis || "Khám bệnh";
             const isBilled = existingInvoices.some(inv =>
               inv.items.some(item =>
-                item.description.includes(p.diagnosis) &&
+                item.description.startsWith("Chi phí đơn thuốc") &&
+                item.description.includes(`Chẩn đoán: ${diagStr}`) &&
                 item.totalPrice === prescriptionTotal
               )
             );
@@ -90,11 +92,12 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
           }
         }
 
-        // Fetch all completed lab requests during their stay
+        // Fetch all completed lab requests during their stay (allow up to 6h before admission to catch consultation lab requests)
+        const labRequestSince = new Date(admittedAt.getTime() - 6 * 60 * 60 * 1000);
         const labRequests = await LabRequest.find({
           patientId,
           status: "completed",
-          createdAt: { $gte: admittedAt }
+          createdAt: { $gte: labRequestSince }
         }).lean();
 
         const labItems = [];

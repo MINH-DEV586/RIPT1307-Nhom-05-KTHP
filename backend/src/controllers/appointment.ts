@@ -378,15 +378,7 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
               ];
               let totalAmount = consultationFee;
 
-              if (billing?.labFee && billing.labFee > 0) {
-                items.push({
-                  description: "Chi phí xét nghiệm & Cận lâm sàng",
-                  quantity: 1,
-                  unitPrice: billing.labFee,
-                  totalPrice: billing.labFee
-                });
-                totalAmount += billing.labFee;
-              }
+
 
               const newInvoice = new Invoice({
                 patientId: appointment.patientId,
@@ -415,24 +407,7 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
               await consultationInvoice.save();
               await logActivity(userId, "Tạo hóa đơn khám bệnh ngoại trú", `Đã tạo hóa đơn phí khám ${consultationFee} cho bệnh nhân ID: ${appointment.patientId}`);
 
-              // 2. Lab fee invoice (if any)
-              if (billing?.labFee && billing.labFee > 0) {
-                const labInvoice = new Invoice({
-                  patientId: appointment.patientId,
-                  status: "pending_payment",
-                  items: [
-                    {
-                      description: "Chi phí xét nghiệm & Cận lâm sàng",
-                      quantity: 1,
-                      unitPrice: billing.labFee,
-                      totalPrice: billing.labFee
-                    }
-                  ],
-                  totalAmount: billing.labFee
-                });
-                await labInvoice.save();
-                await logActivity(userId, "Tạo hóa đơn xét nghiệm ngoại trú", `Đã tạo hóa đơn xét nghiệm ${billing.labFee} cho bệnh nhân ID: ${appointment.patientId}`);
-              }
+
             }
             
             // Notify patient about completed appointment and results
