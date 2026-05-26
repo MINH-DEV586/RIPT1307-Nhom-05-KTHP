@@ -107,14 +107,29 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
           const labTest = await LabTest.findOne({ name: lr.testType, isActive: true }).lean();
           const labFee = labTest?.price || 0;
           if (labFee > 0) {
-            labItems.push({
-              description: `Chi phí xét nghiệm (Tạm tính) - ${lr.testType} (${new Date((lr as any).createdAt).toLocaleDateString("vi-VN")})`,
-              quantity: 1,
-              unitPrice: labFee,
-              totalPrice: labFee,
-              isEstimated: true
-            });
-            totalLabFee += labFee;
+            const lrDateStr = new Date((lr as any).createdAt).toLocaleDateString("vi-VN");
+            // Check if this lab request is already billed in any other database invoice
+            const isBilled = existingInvoices.some(existingInv =>
+              (!inv || existingInv._id.toString() !== inv._id.toString()) &&
+              existingInv.items.some(item =>
+                (item.description.startsWith("Chi phí xét nghiệm -") ||
+                 item.description.startsWith("Chi phí xét nghiệm (Tạm tính) -") ||
+                 item.description.startsWith("Chi phí xét nghiệm & Cận lâm sàng")) &&
+                item.description.includes(lr.testType) &&
+                item.description.includes(lrDateStr)
+              )
+            );
+
+            if (!isBilled) {
+              labItems.push({
+                description: `Chi phí xét nghiệm (Tạm tính) - ${lr.testType} (${new Date((lr as any).createdAt).toLocaleDateString("vi-VN")})`,
+                quantity: 1,
+                unitPrice: labFee,
+                totalPrice: labFee,
+                isEstimated: true
+              });
+              totalLabFee += labFee;
+            }
           }
         }
 

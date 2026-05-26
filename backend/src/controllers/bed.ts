@@ -149,6 +149,12 @@ export const dischargePatientFromBed = async (req: Request, res: Response) => {
     // Fetch all existing invoices for this patient to filter out already-billed prescriptions
     const existingInvoices = await Invoice.find({ patientId }).lean();
 
+    // 4. Find active invoice
+    let inv = await Invoice.findOne({
+      patientId,
+      status: { $in: ["draft", "pending_payment"] }
+    }).sort({ createdAt: -1 });
+
     // Find all prescriptions for this patient during their stay (allow up to 6h before admission)
     const prescriptionSince = new Date(admittedAt.getTime() - 6 * 60 * 60 * 1000);
     const prescriptions = await Prescription.find({
@@ -207,21 +213,32 @@ export const dischargePatientFromBed = async (req: Request, res: Response) => {
       const labTest = await LabTest.findOne({ name: lr.testType, isActive: true }).lean();
       const labFee = labTest?.price || 0;
       if (labFee > 0) {
-        labItems.push({
-          description: `Chi phí xét nghiệm - ${lr.testType} (${new Date((lr as any).createdAt).toLocaleDateString("vi-VN")})`,
-          quantity: 1,
-          unitPrice: labFee,
-          totalPrice: labFee
-        });
-        totalLabFee += labFee;
+        const lrDateStr = new Date((lr as any).createdAt).toLocaleDateString("vi-VN");
+        // Check if this lab request is already billed in any other database invoice
+        const isBilled = existingInvoices.some(existingInv =>
+          (!inv || existingInv._id.toString() !== inv._id.toString()) &&
+          existingInv.items.some(item =>
+            (item.description.startsWith("Chi phí xét nghiệm -") ||
+             item.description.startsWith("Chi phí xét nghiệm (Tạm tính) -") ||
+             item.description.startsWith("Chi phí xét nghiệm & Cận lâm sàng")) &&
+            item.description.includes(lr.testType) &&
+            item.description.includes(lrDateStr)
+          )
+        );
+
+        if (!isBilled) {
+          labItems.push({
+            description: `Chi phí xét nghiệm - ${lr.testType} (${new Date((lr as any).createdAt).toLocaleDateString("vi-VN")})`,
+            quantity: 1,
+            unitPrice: labFee,
+            totalPrice: labFee
+          });
+          totalLabFee += labFee;
+        }
       }
     }
 
-    // 4. Find/create active invoice and add the finalized bed, prescription & lab items
-    let inv = await Invoice.findOne({
-      patientId,
-      status: { $in: ["draft", "pending_payment"] }
-    }).sort({ createdAt: -1 });
+    // 4. Finalize bed, prescription & lab items on active invoice
 
     const bedItemDescription = `Phí giường bệnh nội trú (${bedTypeLabel} - ${days} ngày)`;
 
