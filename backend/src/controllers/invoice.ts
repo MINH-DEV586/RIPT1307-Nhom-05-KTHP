@@ -46,11 +46,15 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
 
         const totalFee = days * dailyRate;
 
-        // Fetch all prescriptions dispensed during their stay
+        // Fetch all existing invoices for this patient to filter out already-billed prescriptions
+        const existingInvoices = await invoice.find({ patientId }).lean();
+
+        // Fetch all prescriptions dispensed during their stay (allow up to 6h before admission to catch consultation prescriptions)
+        const prescriptionSince = new Date(admittedAt.getTime() - 6 * 60 * 60 * 1000);
         const prescriptions = await Prescription.find({
           patientId,
           status: "dispensed",
-          createdAt: { $gte: admittedAt }
+          createdAt: { $gte: prescriptionSince }
         }).lean();
 
         const prescriptionItems = [];
@@ -65,14 +69,24 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
           }
 
           if (prescriptionTotal > 0) {
-            prescriptionItems.push({
-              description: `Chi phí đơn thuốc (Tạm tính) - Chẩn đoán: ${p.diagnosis} (${new Date((p as any).createdAt).toLocaleDateString("vi-VN")})`,
-              quantity: 1,
-              unitPrice: prescriptionTotal,
-              totalPrice: prescriptionTotal,
-              isEstimated: true
-            });
-            totalPrescriptionFee += prescriptionTotal;
+            // Check if this prescription is already billed in any database invoice
+            const isBilled = existingInvoices.some(inv =>
+              inv.items.some(item =>
+                item.description.includes(p.diagnosis) &&
+                item.totalPrice === prescriptionTotal
+              )
+            );
+
+            if (!isBilled) {
+              prescriptionItems.push({
+                description: `Chi phí đơn thuốc  - Chẩn đoán: ${p.diagnosis} (${new Date((p as any).createdAt).toLocaleDateString("vi-VN")})`,
+                quantity: 1,
+                unitPrice: prescriptionTotal,
+                totalPrice: prescriptionTotal,
+                isEstimated: true
+              });
+              totalPrescriptionFee += prescriptionTotal;
+            }
           }
         }
 

@@ -146,11 +146,15 @@ export const dischargePatientFromBed = async (req: Request, res: Response) => {
 
     const totalFee = days * dailyRate;
 
-    // Find all prescriptions for this patient during their stay
+    // Fetch all existing invoices for this patient to filter out already-billed prescriptions
+    const existingInvoices = await Invoice.find({ patientId }).lean();
+
+    // Find all prescriptions for this patient during their stay (allow up to 6h before admission)
+    const prescriptionSince = new Date(admittedAt.getTime() - 6 * 60 * 60 * 1000);
     const prescriptions = await Prescription.find({
       patientId,
       status: "dispensed",
-      createdAt: { $gte: admittedAt }
+      createdAt: { $gte: prescriptionSince }
     }).lean();
 
     const prescriptionItems = [];
@@ -165,14 +169,24 @@ export const dischargePatientFromBed = async (req: Request, res: Response) => {
       }
 
       if (prescriptionTotal > 0) {
-        const desc = `Chi phí đơn thuốc - Chẩn đoán: ${p.diagnosis} (${new Date((p as any).createdAt).toLocaleDateString("vi-VN")})`;
-        prescriptionItems.push({
-          description: desc,
-          quantity: 1,
-          unitPrice: prescriptionTotal,
-          totalPrice: prescriptionTotal
-        });
-        totalPrescriptionFee += prescriptionTotal;
+        // Check if this prescription is already billed in any database invoice
+        const isBilled = existingInvoices.some(inv =>
+          inv.items.some(item =>
+            item.description.includes(p.diagnosis) &&
+            item.totalPrice === prescriptionTotal
+          )
+        );
+
+        if (!isBilled) {
+          const desc = `Chi phí đơn thuốc - Chẩn đoán: ${p.diagnosis} (${new Date((p as any).createdAt).toLocaleDateString("vi-VN")})`;
+          prescriptionItems.push({
+            description: desc,
+            quantity: 1,
+            unitPrice: prescriptionTotal,
+            totalPrice: prescriptionTotal
+          });
+          totalPrescriptionFee += prescriptionTotal;
+        }
       }
     }
 
