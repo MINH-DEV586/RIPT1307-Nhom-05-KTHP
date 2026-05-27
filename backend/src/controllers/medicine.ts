@@ -70,3 +70,28 @@ export const deleteMedicine = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Lỗi khi xóa thuốc" });
   }
 };
+
+export const createMedicinesBulk = async (req: Request, res: Response) => {
+  try {
+    const medicinesData = req.body;
+    if (!Array.isArray(medicinesData) || medicinesData.length === 0) {
+      return res.status(400).json({ message: "Dữ liệu không hợp lệ hoặc rỗng" });
+    }
+
+    const newMedicines = await Medicine.insertMany(medicinesData);
+
+    await logActivity(
+      (req as any).user.id,
+      "Import thuốc hàng loạt",
+      `Đã import ${newMedicines.length} loại thuốc mới`
+    );
+
+    res.status(201).json({
+      message: `Đã import thành công ${newMedicines.length} loại thuốc`,
+      data: newMedicines
+    });
+  } catch (error) {
+    console.error("Error creating medicines bulk:", error);
+    res.status(500).json({ message: "Lỗi khi import thuốc hàng loạt" });
+  }
+};

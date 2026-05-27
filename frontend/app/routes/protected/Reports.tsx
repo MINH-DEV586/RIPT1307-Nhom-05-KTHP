@@ -178,7 +178,7 @@ export default function ReportsPage() {
           <h1 className="text-3xl font-black tracking-tight">Báo cáo & Phân tích</h1>
           <p className="text-muted-foreground">Tổng quan toàn diện về hoạt động và tài chính bệnh viện.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 no-print">
           {TIME_RANGES.map((r) => (
             <Button
               key={r.months}
@@ -190,7 +190,7 @@ export default function ReportsPage() {
               {r.label}
             </Button>
           ))}
-          <Button size="sm" variant="outline" className="gap-2">
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => window.print()}>
             <Download className="w-4 h-4" /> Xuất PDF
           </Button>
         </div>

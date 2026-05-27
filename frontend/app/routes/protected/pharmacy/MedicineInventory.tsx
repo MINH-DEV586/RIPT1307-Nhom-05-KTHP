@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   getAllMedicines,
   createMedicineRecord,
   updateMedicineRecord,
   deleteMedicineRecord,
+  importMedicinesBulk,
 } from "@/lib/api";
+import * as xlsx from "xlsx";
 import {
   Table,
   TableBody,
@@ -46,6 +48,10 @@ export default function Inventory() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMed, setEditingMed] = useState<any>(null);
 
+  const [importPreview, setImportPreview] = useState<any[]>([]);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     name: "",
     category: "",
@@ -67,6 +73,78 @@ export default function Inventory() {
       toast.error("Không thể tải danh sách thuốc");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExport = () => {
+    const exportData = medicines.map(m => ({
+      "Tên thuốc": m.name,
+      "Danh mục": m.category,
+      "Tồn kho": m.stock,
+      "Đơn vị": m.unit,
+      "Đơn giá": m.price,
+      "Hạn sử dụng": new Date(m.expiryDate).toLocaleDateString("vi-VN")
+    }));
+    const ws = xlsx.utils.json_to_sheet(exportData);
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, "Kho Dược");
+    const dateStr = new Date().toLocaleDateString("vi-VN").replace(/\//g, "-");
+    xlsx.writeFile(wb, `KhoDuoc_Medflow_${dateStr}.xlsx`);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = xlsx.read(bstr, { type: "binary" });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = xlsx.utils.sheet_to_json(ws);
+        
+        const formattedData = data.map((row: any) => {
+          let expDate = row["Hạn sử dụng"];
+          if (typeof expDate === 'number') {
+             expDate = new Date(Math.round((expDate - 25569)*86400*1000));
+          } else {
+             const parts = String(expDate).split(/[-/]/);
+             if (parts.length === 3) {
+               expDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+             } else {
+               expDate = new Date(expDate);
+             }
+          }
+          return {
+            name: row["Tên thuốc"] || "",
+            category: row["Danh mục"] || "Khác",
+            stock: Number(row["Tồn kho"]) || 0,
+            unit: row["Đơn vị"] || "viên",
+            price: Number(row["Đơn giá"]) || 0,
+            expiryDate: expDate
+          };
+        });
+
+        setImportPreview(formattedData);
+        setIsPreviewOpen(true);
+      } catch (error) {
+        toast.error("File Excel không hợp lệ hoặc sai định dạng");
+      }
+    };
+    reader.readAsBinaryString(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const confirmImport = async () => {
+    try {
+      await importMedicinesBulk(importPreview);
+      toast.success("Đã import thành công dữ liệu kho");
+      setIsPreviewOpen(false);
+      fetchMedicines();
+    } catch (error) {
+      toast.error("Lỗi khi import dữ liệu");
     }
   };
 
@@ -142,12 +220,52 @@ export default function Inventory() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="hidden md:flex">
+          <input type="file" ref={fileInputRef} hidden accept=".xlsx,.xls,.csv" onChange={handleFileUpload} />
+          <Button variant="outline" className="hidden md:flex" onClick={() => fileInputRef.current?.click()}>
             <Upload className="w-4 h-4 mr-2" /> Import
           </Button>
-          <Button variant="outline" className="hidden md:flex">
+          <Button variant="outline" className="hidden md:flex" onClick={handleExport}>
             <Download className="w-4 h-4 mr-2" /> Export
           </Button>
+
+          <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+            <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Xác nhận Import Dữ Liệu</DialogTitle>
+                <CardDescription>Tìm thấy {importPreview.length} loại thuốc từ file Excel.</CardDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tên thuốc</TableHead>
+                      <TableHead>Tồn kho</TableHead>
+                      <TableHead>Đơn giá</TableHead>
+                      <TableHead>Hạn dùng</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {importPreview.slice(0, 5).map((m, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell>{m.name}</TableCell>
+                        <TableCell>{m.stock} {m.unit}</TableCell>
+                        <TableCell>{m.price.toLocaleString()} đ</TableCell>
+                        <TableCell>{new Date(m.expiryDate).toLocaleDateString("vi-VN")}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {importPreview.length > 5 && (
+                  <p className="text-sm text-muted-foreground mt-2 text-center">... và {importPreview.length - 5} loại thuốc khác</p>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>Hủy</Button>
+                <Button onClick={confirmImport}>Xác nhận Import</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => { setEditingMed(null); setFormData({ name: "", category: "", stock: 0, unit: "viên", price: 0, expiryDate: "" }); }} className="shadow-lg shadow-primary/20">

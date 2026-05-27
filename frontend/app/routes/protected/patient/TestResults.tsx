@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { getPatientLabResults, explainLabResult } from "@/lib/api";
+import { printMedicalDoc } from "@/lib/print";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -72,6 +73,58 @@ export default function TestResults() {
       setIsDialogOpen(false);
     } finally {
       setExplaining(null);
+    }
+  };
+
+  const handleDownloadOrPrint = (result: any) => {
+    if (result.imageUrl) {
+      const a = document.createElement("a");
+      a.href = result.imageUrl;
+      a.target = "_blank";
+      a.download = `KetQua_${result.testType}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else if (result.indicators && result.indicators.length > 0) {
+      const dateStr = format(new Date(result.createdAt), "dd/MM/yyyy", { locale: vi });
+      
+      let indicatorsHtml = result.indicators.map((ind: any, idx: number) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><strong>${ind.name}</strong></td>
+          <td>${ind.value}</td>
+          <td>${ind.unit || ""}</td>
+          <td>${ind.referenceRange || ""}</td>
+        </tr>
+      `).join('');
+
+      const html = `
+        <div style="margin-bottom: 20px;">
+          <p><strong>Bệnh nhân:</strong> ${session?.user?.name || "Bệnh nhân"}</p>
+          <p><strong>Loại xét nghiệm:</strong> ${result.testType}</p>
+          <p><strong>Ngày thực hiện:</strong> ${dateStr}</p>
+          ${result.doctorNotes ? `<p><strong>Ghi chú của bác sĩ:</strong> ${result.doctorNotes}</p>` : ""}
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>STT</th>
+              <th>Tên chỉ số</th>
+              <th>Giá trị</th>
+              <th>Đơn vị</th>
+              <th>Khoảng tham chiếu</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${indicatorsHtml}
+          </tbody>
+        </table>
+      `;
+
+      printMedicalDoc("KẾT QUẢ XÉT NGHIỆM", html);
+    } else {
+      toast.error("Không có dữ liệu để tải xuống hoặc in");
     }
   };
 
@@ -198,11 +251,9 @@ export default function TestResults() {
                       </a>
                     </Button>
                   )}
-                  <Button variant="outline" className="flex-1 gap-2 bg-background/50" asChild>
-                    <a href={result.imageUrl} download>
-                      <Download className="w-4 h-4" />
-                      Tải PDF/Ảnh
-                    </a>
+                  <Button variant="outline" className="flex-1 gap-2 bg-background/50" onClick={() => handleDownloadOrPrint(result)}>
+                    <Download className="w-4 h-4" />
+                    Tải PDF/Ảnh
                   </Button>
                 </div>
               </CardContent>

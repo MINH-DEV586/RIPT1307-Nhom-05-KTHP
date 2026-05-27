@@ -381,6 +381,20 @@ export const deleteMedicineRecord = async (id: string): Promise<any> => {
   return res.json();
 };
 
+export const importMedicinesBulk = async (medicinesData: any[]): Promise<any> => {
+  const res = await fetch(`${API_URL}/medicines/bulk`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(medicinesData),
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || "Failed to import medicines");
+  }
+  return res.json();
+};
+
 export const createLabRequest = async (data: any): Promise<any> => {
   const res = await fetch(`${API_URL}/lab-requests`, {
     method: "POST",

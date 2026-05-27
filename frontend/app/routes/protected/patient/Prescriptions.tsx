@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { getAllPrescriptionsList } from "@/lib/api";
+import { printMedicalDoc } from "@/lib/print";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -45,6 +46,64 @@ export default function Prescriptions() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePrintPrescription = (prescription: any) => {
+    const dateStr = format(new Date(prescription.createdAt), "dd/MM/yyyy", { locale: vi });
+    const total = prescription.items.reduce((acc: number, item: any) => acc + ((item.price || 0) * item.quantity), 0);
+    
+    let itemsHtml = prescription.items.map((item: any, idx: number) => `
+      <tr>
+        <td>${idx + 1}</td>
+        <td><strong>${item.medicineName}</strong></td>
+        <td>${item.quantity} ${item.unit || "viên"}</td>
+        <td>
+          Liều lượng: ${item.dosage}<br>
+          Tần suất: ${item.frequency}<br>
+          Thời gian: ${item.duration}
+        </td>
+        <td>${(item.price || 0).toLocaleString()} đ</td>
+        <td>${((item.price || 0) * item.quantity).toLocaleString()} đ</td>
+      </tr>
+    `).join('');
+
+    const html = `
+      <div style="margin-bottom: 20px;">
+        <p><strong>Bệnh nhân:</strong> ${session?.user?.name || "Bệnh nhân"}</p>
+        <p><strong>Chẩn đoán:</strong> ${prescription.diagnosis}</p>
+        <p><strong>Bác sĩ kê đơn:</strong> ${prescription.doctorName}</p>
+        <p><strong>Ngày kê:</strong> ${dateStr}</p>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>Tên thuốc</th>
+            <th>Số lượng</th>
+            <th>Hướng dẫn sử dụng</th>
+            <th>Đơn giá</th>
+            <th>Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
+
+      <div style="text-align: right; margin-top: 15px; font-size: 18px;">
+        <strong>Tổng tiền: <span style="color: #0056b3;">${total.toLocaleString()} VNĐ</span></strong>
+      </div>
+
+      ${prescription.notes ? `
+        <div style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #0056b3;">
+          <strong>Lời dặn của bác sĩ:</strong><br>
+          ${prescription.notes}
+        </div>
+      ` : ''}
+    `;
+
+    printMedicalDoc("ĐƠN THUỐC ĐIỆN TỬ", html);
   };
 
   if (loading) return <div className="h-[60vh] flex items-center justify-center"><Loader label="Đang tải đơn thuốc..." /></div>;
@@ -99,7 +158,7 @@ export default function Prescriptions() {
                       Bác sĩ: {prescription.doctorName}
                     </CardDescription>
                   </div>
-                  <Button variant="outline" size="sm" className="bg-background/50 hover:bg-background">
+                  <Button variant="outline" size="sm" className="bg-background/50 hover:bg-background" onClick={() => handlePrintPrescription(prescription)}>
                     <Printer className="w-4 h-4 mr-2" />
                     In đơn thuốc
                   </Button>
