@@ -22,7 +22,7 @@ export default function AllSchedules() {
   return (
     <div className="space-y-8 pb-10">
       <div className="flex flex-col gap-2">
-        <h1 className="text-4xl font-black tracking-tight">Lịch làm việc bác sĩ</h1>
+        <h1 className="text-3xl font-black tracking-tight">Lịch làm việc bác sĩ</h1>
         <p className="text-muted-foreground text-lg">
           Quản lý và theo dõi lịch trình làm việc của tất cả bác sĩ trong hệ thống.
         </p>

@@ -82,7 +82,7 @@ function PatientDashboardView({ user }: { user: any }) {
     <div className="space-y-8 pb-10">
       {/* Welcome Header */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-4xl font-black tracking-tight text-primary">
+        <h1 className="text-3xl font-black tracking-tight text-primary">
           Chào mừng trở lại, {user.name} 👋
         </h1>
         <p className="text-muted-foreground text-lg">

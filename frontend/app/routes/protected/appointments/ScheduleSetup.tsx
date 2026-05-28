@@ -76,54 +76,110 @@ export default function ScheduleSetup() {
   if (isLoading) return <div className="h-[60vh] flex items-center justify-center"><Loader label="Đang tải lịch làm việc..." /></div>;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-20">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-4xl font-black tracking-tight">Thiết lập lịch làm việc</h1>
-        <p className="text-muted-foreground text-lg">
-          Quản lý thời gian khám bệnh, khung giờ nghỉ và số lượng bệnh nhân tối đa.
-        </p>
+    <div className="space-y-8 pb-10">
+      {/* Header and Save Button */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold tracking-tight">Thiết lập lịch làm việc</h1>
+          <p className="text-muted-foreground">
+            Quản lý thời gian khám bệnh, khung giờ nghỉ và số lượng bệnh nhân tối đa.
+          </p>
+        </div>
+        <Button 
+          onClick={handleSave} 
+          className="h-11 px-8 text-base font-semibold bg-indigo-600 hover:bg-indigo-700 shadow-sm gap-2 whitespace-nowrap"
+          disabled={mutation.isPending}
+        >
+          <Save className="w-5 h-5" />
+          {mutation.isPending ? "Đang lưu..." : "Lưu cài đặt"}
+        </Button>
       </div>
 
-      <div className="grid gap-6">
-        {/* Working Days */}
-        <Card className="card shadow-xl overflow-hidden border-none bg-card/50 backdrop-blur-md">
-          <CardHeader className="bg-indigo-600/10 border-b">
-            <CardTitle className="flex items-center gap-2">
-              <CalendarDays className="w-5 h-5 text-indigo-600" />
-              Ngày làm việc trong tuần
-            </CardTitle>
-            <CardDescription>Chọn những ngày bạn sẵn sàng tiếp nhận bệnh nhân.</CardDescription>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="flex flex-wrap gap-4">
-              {DAYS.map((day) => {
-                const isSelected = formData.workingDays.includes(day.id);
-                return (
-                  <div 
-                    key={day.id}
-                    onClick={() => toggleDay(day.id)}
-                    className={`
-                      flex flex-col items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all w-28
-                      ${isSelected 
-                        ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/30" 
-                        : "bg-background border-border hover:border-indigo-300"}
-                    `}
-                  >
-                    <span className="text-sm font-bold">{day.label}</span>
-                    <Checkbox checked={isSelected} className="mt-2 border-white/50" />
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* Left Column: 8/12 Width */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Working Days */}
+          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 bg-card overflow-hidden">
+            <CardHeader className="bg-slate-50/50 dark:bg-slate-900/10 border-b border-slate-100 dark:border-slate-800">
+              <CardTitle className="flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                Ngày làm việc trong tuần
+              </CardTitle>
+              <CardDescription>Chọn những ngày bạn sẵn sàng tiếp nhận bệnh nhân.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {DAYS.map((day) => {
+                  const isSelected = formData.workingDays.includes(day.id);
+                  return (
+                    <div 
+                      key={day.id}
+                      className={`flex items-center space-x-3 p-4 rounded-md border transition-colors ${
+                        isSelected 
+                          ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20" 
+                          : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50"
+                      }`}
+                    >
+                      <Checkbox 
+                        id={`day-${day.id}`}
+                        checked={isSelected} 
+                        onCheckedChange={() => toggleDay(day.id)}
+                        className={isSelected ? "data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600" : ""}
+                      />
+                      <Label 
+                        htmlFor={`day-${day.id}`}
+                        className="text-sm font-medium leading-none cursor-pointer flex-1"
+                      >
+                        {day.label}
+                      </Label>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Working Hours */}
-          <Card className="card shadow-xl overflow-hidden border-none bg-card/50 backdrop-blur-md">
-            <CardHeader className="bg-emerald-600/10 border-b">
+          {/* Limits */}
+          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 bg-card overflow-hidden">
+            <CardHeader className="bg-slate-50/50 dark:bg-slate-900/10 border-b border-slate-100 dark:border-slate-800">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Clock className="w-4 h-4 text-emerald-600" />
+                <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                Giới hạn & Định dạng ca khám
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>Số bệnh nhân tối đa / ngày</Label>
+                  <Input 
+                    type="number" 
+                    value={formData.maxPatientsPerDay}
+                    onChange={(e) => setFormData({...formData, maxPatientsPerDay: parseInt(e.target.value)})}
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Thời gian mỗi ca khám (phút)</Label>
+                  <Input 
+                    type="number" 
+                    value={formData.slotDuration}
+                    onChange={(e) => setFormData({...formData, slotDuration: parseInt(e.target.value)})}
+                    className="h-11"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column: 4/12 Width */}
+        <div className="lg:col-span-4 space-y-6">
+          {/* Working Hours */}
+          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 bg-card overflow-hidden">
+            <CardHeader className="bg-slate-50/50 dark:bg-slate-900/10 border-b border-slate-100 dark:border-slate-800">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 Thời gian làm việc
               </CardTitle>
             </CardHeader>
@@ -135,6 +191,7 @@ export default function ScheduleSetup() {
                     type="time" 
                     value={formData.workingHours.start}
                     onChange={(e) => setFormData({...formData, workingHours: {...formData.workingHours, start: e.target.value}})}
+                    className="h-11"
                   />
                 </div>
                 <div className="space-y-2">
@@ -143,6 +200,7 @@ export default function ScheduleSetup() {
                     type="time" 
                     value={formData.workingHours.end}
                     onChange={(e) => setFormData({...formData, workingHours: {...formData.workingHours, end: e.target.value}})}
+                    className="h-11"
                   />
                 </div>
               </div>
@@ -150,10 +208,10 @@ export default function ScheduleSetup() {
           </Card>
 
           {/* Break Time */}
-          <Card className="card shadow-xl overflow-hidden border-none bg-card/50 backdrop-blur-md">
-            <CardHeader className="bg-amber-600/10 border-b">
+          <Card className="shadow-sm border border-slate-200 dark:border-slate-800 bg-card overflow-hidden">
+            <CardHeader className="bg-slate-50/50 dark:bg-slate-900/10 border-b border-slate-100 dark:border-slate-800">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Coffee className="w-4 h-4 text-amber-600" />
+                <Coffee className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                 Thời gian nghỉ trưa
               </CardTitle>
             </CardHeader>
@@ -165,6 +223,7 @@ export default function ScheduleSetup() {
                     type="time" 
                     value={formData.breakTime.start}
                     onChange={(e) => setFormData({...formData, breakTime: {...formData.breakTime, start: e.target.value}})}
+                    className="h-11"
                   />
                 </div>
                 <div className="space-y-2">
@@ -173,60 +232,24 @@ export default function ScheduleSetup() {
                     type="time" 
                     value={formData.breakTime.end}
                     onChange={(e) => setFormData({...formData, breakTime: {...formData.breakTime, end: e.target.value}})}
+                    className="h-11"
                   />
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-lg border border-blue-100 dark:border-blue-900 flex gap-3 items-start">
+            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+            <p className="text-sm text-blue-800 dark:text-blue-300">
+              Việc cập nhật lịch làm việc sẽ không ảnh hưởng đến các lịch hẹn đã được xác nhận trước đó. 
+              Hệ thống sẽ tự động tính toán các slot trống dựa trên cài đặt này.
+            </p>
+          </div>
         </div>
 
-        {/* Limits */}
-        <Card className="card shadow-xl overflow-hidden border-none bg-card/50 backdrop-blur-md">
-          <CardHeader className="bg-blue-600/10 border-b">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Users className="w-4 h-4 text-blue-600" />
-              Giới hạn & Định dạng
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label>Số bệnh nhân tối đa / ngày</Label>
-                <Input 
-                  type="number" 
-                  value={formData.maxPatientsPerDay}
-                  onChange={(e) => setFormData({...formData, maxPatientsPerDay: parseInt(e.target.value)})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Thời gian mỗi ca khám (phút)</Label>
-                <Input 
-                  type="number" 
-                  value={formData.slotDuration}
-                  onChange={(e) => setFormData({...formData, slotDuration: parseInt(e.target.value)})}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="bg-blue-500/10 p-4 rounded-2xl border border-blue-200 flex gap-3 items-start">
-          <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-          <p className="text-sm text-blue-800 font-medium">
-            Việc cập nhật lịch làm việc sẽ không ảnh hưởng đến các lịch hẹn đã được xác nhận trước đó. 
-            Hệ thống sẽ tự động tính toán các slot trống dựa trên cài đặt này.
-          </p>
-        </div>
-
-        <Button 
-          onClick={handleSave} 
-          className="w-full py-8 text-lg font-black bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-500/20 gap-2"
-          disabled={mutation.isPending}
-        >
-          <Save className="w-6 h-6" />
-          {mutation.isPending ? "Đang lưu..." : "Lưu cài đặt lịch làm việc"}
-        </Button>
       </div>
     </div>
   );
 }
+

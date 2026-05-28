@@ -71,11 +71,11 @@ const DEPARTMENTS = [
 ];
 
 const BED_TYPES = {
-  normal:     { label: "Giường thường",  color: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",  price: 200000, icon: null },
-  emergency:  { label: "Cấp cứu",        color: "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300",     price: 300000, icon: "flame" },
-  rehab:      { label: "Phục hồi",       color: "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300", price: 200000, icon: null },
-  disability: { label: "Khuyết tật",     color: "bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300", price: 200000, icon: null },
-  vip:        { label: "Phòng VIP",      color: "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300",  price: 500000, icon: "crown" },
+  normal: { label: "Giường thường", color: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300", price: 200000, icon: null },
+  emergency: { label: "Cấp cứu", color: "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300", price: 300000, icon: "flame" },
+  rehab: { label: "Phục hồi", color: "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300", price: 200000, icon: null },
+  disability: { label: "Khuyết tật", color: "bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300", price: 200000, icon: null },
+  vip: { label: "Phòng VIP", color: "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300", price: 500000, icon: "crown" },
 };
 
 function BedTypeBadge({ type, showPrice = false }: { type: string; showPrice?: boolean }) {
@@ -224,13 +224,13 @@ export default function BedManagementPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black tracking-tight">Quản lý giường bệnh</h1>
+          <h1 className="text-3xl font-black tracking-tight">Quản lý giường bệnh</h1>
           <p className="text-muted-foreground text-lg">Hệ thống quản lý vị trí nội trú và phân loại giường thực tế.</p>
         </div>
         <div className="flex gap-2">
           {(session?.user.role === "admin" || session?.user.role === "doctor") && (
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               className="bg-indigo-600 hover:bg-indigo-700 gap-2 rounded-xl h-9"
               onClick={() => setCreateBedDialogOpen(true)}
             >
@@ -304,7 +304,7 @@ export default function BedManagementPage() {
                         <Cell key={entry.name} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                     />
                   </PieChart>
@@ -368,7 +368,7 @@ export default function BedManagementPage() {
               {beds.map((bed) => {
                 const patient = patients.find(p => p._id === bed.patientId);
                 const isVip = bed.type === "vip";
-                
+
                 return (
                   <Card
                     key={bed._id}
@@ -432,17 +432,17 @@ export default function BedManagementPage() {
                               </div>
                             </div>
                             <div className="flex gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
+                              <Button
+                                size="sm"
+                                variant="outline"
                                 className="flex-1 text-xs h-8 rounded-lg"
                                 onClick={() => window.location.href = `/profile/${patient._id}`}
                               >
                                 Hồ sơ
                               </Button>
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
+                              <Button
+                                size="sm"
+                                variant="ghost"
                                 className="text-red-500 hover:text-red-600 hover:bg-red-50 text-[10px] h-8 rounded-lg p-1"
                                 onClick={() => handleDischarge(patient._id)}
                                 title="Cho xuất viện & Giải phóng giường"
@@ -454,8 +454,8 @@ export default function BedManagementPage() {
                         ) : bed.status === "available" ? (
                           <div className="py-6 flex flex-col items-center justify-center border-2 border-dashed border-emerald-500/20 rounded-2xl bg-emerald-50/10">
                             <p className="text-xs font-bold text-emerald-600 mb-3 uppercase tracking-widest">Giường trống</p>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               className="bg-emerald-600 hover:bg-emerald-700 rounded-xl gap-2 h-9 px-4"
                               onClick={() => handleAdmitClick(bed)}
                             >
@@ -491,76 +491,76 @@ export default function BedManagementPage() {
                     </thead>
                     <tbody className="divide-y">
                       {beds.map((bed) => {
-                         const patient = patients.find(p => p._id === bed.patientId);
-                         return (
-                           <tr key={bed._id} className="hover:bg-muted/10 transition-colors">
-                             <td className="p-4">
-                               <div className="flex items-center gap-2">
-                                 <BedIcon status={bed.status} type={bed.type} />
-                                 <div>
-                                   <div className="flex items-center gap-1">
-                                     <span className="font-bold">#{bed.bedNumber}</span>
-                                     {bed.type === 'vip' && <Crown className="w-3 h-3 text-amber-500" />}
-                                   </div>
-                                   <p className="text-[10px] text-muted-foreground">{bed.department} · Tầng {bed.floor}</p>
-                                 </div>
-                               </div>
-                             </td>
-                              <td className="p-4 text-sm">
-                                <BedTypeBadge type={bed.type} showPrice />
-                              </td>
-                             <td className="p-4">
-                               {patient ? (
-                                 <div className="flex items-center gap-2">
-                                   <Avatar className="h-6 w-6">
-                                     <AvatarImage src={patient.image || ""} />
-                                     <AvatarFallback className="text-[8px]">{patient.name?.charAt(0)}</AvatarFallback>
-                                   </Avatar>
-                                   <span className="text-sm font-medium">{patient.name}</span>
-                                 </div>
-                               ) : "-"}
-                             </td>
-                             <td className="p-4">
-                               {patient ? (
-                                 <div className="flex flex-col text-xs text-muted-foreground">
-                                   <span className="font-bold text-slate-700 dark:text-slate-300">
-                                     {(() => {
-                                       const admittedAt = patient.admittedAt ? new Date(patient.admittedAt) : new Date(patient.createdAt || Date.now());
-                                       const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
-                                       return `${days} ngày`;
-                                     })()}
-                                   </span>
-                                   <span className="text-indigo-600 dark:text-indigo-400 font-bold">
-                                     {(() => {
-                                       const admittedAt = patient.admittedAt ? new Date(patient.admittedAt) : new Date(patient.createdAt || Date.now());
-                                       const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
-                                       const dailyRate = bed.type === "vip" ? 500000 : bed.type === "emergency" ? 300000 : 200000;
-                                       return `${(days * dailyRate).toLocaleString()} VNĐ`;
-                                     })()}
-                                   </span>
-                                 </div>
-                               ) : "-"}
-                             </td>
-                             <td className="p-4">
-                               <Badge 
-                                 className={`rounded-full px-3 py-0.5 text-[10px] uppercase tracking-wider
+                        const patient = patients.find(p => p._id === bed.patientId);
+                        return (
+                          <tr key={bed._id} className="hover:bg-muted/10 transition-colors">
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                <BedIcon status={bed.status} type={bed.type} />
+                                <div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="font-bold">#{bed.bedNumber}</span>
+                                    {bed.type === 'vip' && <Crown className="w-3 h-3 text-amber-500" />}
+                                  </div>
+                                  <p className="text-[10px] text-muted-foreground">{bed.department} · Tầng {bed.floor}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-4 text-sm">
+                              <BedTypeBadge type={bed.type} showPrice />
+                            </td>
+                            <td className="p-4">
+                              {patient ? (
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarImage src={patient.image || ""} />
+                                    <AvatarFallback className="text-[8px]">{patient.name?.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-sm font-medium">{patient.name}</span>
+                                </div>
+                              ) : "-"}
+                            </td>
+                            <td className="p-4">
+                              {patient ? (
+                                <div className="flex flex-col text-xs text-muted-foreground">
+                                  <span className="font-bold text-slate-700 dark:text-slate-300">
+                                    {(() => {
+                                      const admittedAt = patient.admittedAt ? new Date(patient.admittedAt) : new Date(patient.createdAt || Date.now());
+                                      const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
+                                      return `${days} ngày`;
+                                    })()}
+                                  </span>
+                                  <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                                    {(() => {
+                                      const admittedAt = patient.admittedAt ? new Date(patient.admittedAt) : new Date(patient.createdAt || Date.now());
+                                      const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
+                                      const dailyRate = bed.type === "vip" ? 500000 : bed.type === "emergency" ? 300000 : 200000;
+                                      return `${(days * dailyRate).toLocaleString()} VNĐ`;
+                                    })()}
+                                  </span>
+                                </div>
+                              ) : "-"}
+                            </td>
+                            <td className="p-4">
+                              <Badge
+                                className={`rounded-full px-3 py-0.5 text-[10px] uppercase tracking-wider
                                    ${bed.status === "available" ? "bg-emerald-100 text-emerald-700" : ""}
                                    ${bed.status === "occupied" ? "bg-indigo-100 text-indigo-700" : ""}
                                    ${bed.status === "maintenance" ? "bg-amber-100 text-amber-700" : ""}
                                  `}
-                               >
-                                 {bed.status === "available" ? "Trống" : bed.status === "occupied" ? "Đã dùng" : "Bảo trì"}
-                               </Badge>
-                             </td>
-                             <td className="p-4 text-right">
-                               {bed.status === "available" ? (
-                                 <Button size="sm" variant="ghost" className="text-emerald-600 font-bold" onClick={() => handleAdmitClick(bed)}>Nhập viện</Button>
-                               ) : bed.status === "occupied" ? (
-                                 <Button size="sm" variant="ghost" className="text-red-500 font-bold" onClick={() => handleDischarge(bed.patientId!)}>Xuất viện</Button>
-                               ) : null}
-                             </td>
-                           </tr>
-                         );
+                              >
+                                {bed.status === "available" ? "Trống" : bed.status === "occupied" ? "Đã dùng" : "Bảo trì"}
+                              </Badge>
+                            </td>
+                            <td className="p-4 text-right">
+                              {bed.status === "available" ? (
+                                <Button size="sm" variant="ghost" className="text-emerald-600 font-bold" onClick={() => handleAdmitClick(bed)}>Nhập viện</Button>
+                              ) : bed.status === "occupied" ? (
+                                <Button size="sm" variant="ghost" className="text-red-500 font-bold" onClick={() => handleDischarge(bed.patientId!)}>Xuất viện</Button>
+                              ) : null}
+                            </td>
+                          </tr>
+                        );
                       })}
                     </tbody>
                   </table>
@@ -580,7 +580,7 @@ export default function BedManagementPage() {
               Gán bệnh nhân vào giường <span className="font-bold text-primary">#{selectedBed?.bedNumber}</span> ({selectedBed?.department})
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-6 py-4">
             <div className="space-y-2">
               <Label htmlFor="patient" className="font-bold">Chọn bệnh nhân</Label>
@@ -621,9 +621,9 @@ export default function BedManagementPage() {
 
             <div className="space-y-2">
               <Label htmlFor="reason" className="font-bold">Lý do nhập viện</Label>
-              <Input 
-                id="reason" 
-                placeholder="Ví dụ: Theo dõi hậu phẫu, suy hô hấp..." 
+              <Input
+                id="reason"
+                placeholder="Ví dụ: Theo dõi hậu phẫu, suy hô hấp..."
                 className="h-12 rounded-xl"
                 value={admissionReason}
                 onChange={(e) => setAdmissionReason(e.target.value)}
@@ -633,7 +633,7 @@ export default function BedManagementPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setAdmitDialogOpen(false)} className="rounded-xl h-11 px-6">Hủy</Button>
-            <Button 
+            <Button
               className="bg-indigo-600 hover:bg-indigo-700 rounded-xl h-11 px-8 font-bold"
               disabled={!selectedPatientId || admitMutation.isPending}
               onClick={() => admitMutation.mutate({
@@ -659,24 +659,24 @@ export default function BedManagementPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="font-bold">Số giường</Label>
-                <Input 
-                  placeholder="Vd: F1R1B1" 
+                <Input
+                  placeholder="Vd: F1R1B1"
                   value={newBedData.bedNumber}
-                  onChange={(e) => setNewBedData({...newBedData, bedNumber: e.target.value})}
+                  onChange={(e) => setNewBedData({ ...newBedData, bedNumber: e.target.value })}
                   className="rounded-xl"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="font-bold">Loại giường</Label>
-                <Select 
+                <Select
                   value={newBedData.type}
-                  onValueChange={(v) => setNewBedData({...newBedData, type: v})}
+                  onValueChange={(v) => setNewBedData({ ...newBedData, type: v })}
                 >
                   <SelectTrigger className="rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(BED_TYPES).map(([val, {label}]) => (
+                    {Object.entries(BED_TYPES).map(([val, { label }]) => (
                       <SelectItem key={val} value={val}>{label}</SelectItem>
                     ))}
                   </SelectContent>
@@ -686,9 +686,9 @@ export default function BedManagementPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="font-bold">Khoa</Label>
-                <Select 
+                <Select
                   value={newBedData.department}
-                  onValueChange={(v) => setNewBedData({...newBedData, department: v})}
+                  onValueChange={(v) => setNewBedData({ ...newBedData, department: v })}
                 >
                   <SelectTrigger className="rounded-xl">
                     <SelectValue />
@@ -702,10 +702,10 @@ export default function BedManagementPage() {
               </div>
               <div className="space-y-2">
                 <Label className="font-bold">Tầng</Label>
-                <Input 
+                <Input
                   type="number"
                   value={newBedData.floor}
-                  onChange={(e) => setNewBedData({...newBedData, floor: e.target.value})}
+                  onChange={(e) => setNewBedData({ ...newBedData, floor: e.target.value })}
                   className="rounded-xl"
                 />
               </div>
@@ -713,7 +713,7 @@ export default function BedManagementPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateBedDialogOpen(false)} className="rounded-xl h-11">Hủy</Button>
-            <Button 
+            <Button
               className="bg-indigo-600 hover:bg-indigo-700 rounded-xl h-11 px-8 font-bold"
               onClick={() => createBedMutation.mutate(newBedData)}
               disabled={!newBedData.bedNumber || createBedMutation.isPending}

@@ -101,7 +101,7 @@ export default function AppointmentsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black tracking-tight">
+          <h1 className="text-3xl font-black tracking-tight">
             {isAdmin ? "Quản lý toàn bộ lịch hẹn" : "Lịch hẹn của bạn"}
           </h1>
           <p className="text-muted-foreground text-lg">
@@ -398,15 +398,15 @@ function AppointmentCard({
 
       {/* Cancellation Confirmation Modal (Patient) */}
       <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
-        <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden">
+        <DialogContent className="sm:max-w-md border-none shadow-xl overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-rose-500" />
           <DialogHeader className="p-2">
             <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-2xl bg-rose-50 flex items-center justify-center shrink-0">
+              <div className="h-12 w-12 rounded-lg bg-rose-50 flex items-center justify-center shrink-0">
                 <AlertCircle className="w-6 h-6 text-rose-500" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-black tracking-tight text-slate-900 dark:text-white">Xác nhận hủy lịch?</DialogTitle>
+                <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Xác nhận hủy lịch?</DialogTitle>
                 <DialogDescription className="text-sm font-medium text-slate-500 mt-1 leading-relaxed">
                   Bạn có chắc chắn muốn hủy lịch hẹn này không? Hành động này không thể hoàn tác.
                 </DialogDescription>
@@ -417,7 +417,7 @@ function AppointmentCard({
             <Button 
               variant="ghost" 
               onClick={() => setIsCancelDialogOpen(false)}
-              className="rounded-xl font-bold h-11"
+              className="rounded-lg font-medium h-10"
             >
               Quay lại
             </Button>
@@ -427,7 +427,7 @@ function AppointmentCard({
                 onStatusUpdate?.("cancelled");
                 setIsCancelDialogOpen(false);
               }}
-              className="rounded-xl font-black h-11 px-8 shadow-lg shadow-rose-500/20 bg-rose-600 hover:bg-rose-700 border-none transition-all active:scale-95"
+              className="rounded-lg font-semibold h-10 px-6 shadow-sm bg-rose-600 hover:bg-rose-700 border-none transition-all active:scale-95"
             >
               Xác nhận hủy
             </Button>
@@ -439,7 +439,7 @@ function AppointmentCard({
 }
 function EmptyState({ title }: { title: string }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-muted/20 rounded-3xl border border-dashed">
+    <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-muted/20 rounded-xl border border-dashed">
       <div className="p-6 bg-muted rounded-full opacity-40">
         <CalendarDays className="w-12 h-12" />
       </div>

@@ -46,7 +46,7 @@ export default function PatientInvoices() {
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-20">
       <div className="flex flex-col gap-2">
-        <h1 className="text-4xl font-black tracking-tight">Hóa đơn & Thanh toán</h1>
+        <h1 className="text-3xl font-black tracking-tight">Hóa đơn & Thanh toán</h1>
         <p className="text-muted-foreground text-lg">
           Theo dõi các khoản phí khám bệnh và thực hiện thanh toán trực tuyến.
         </p>

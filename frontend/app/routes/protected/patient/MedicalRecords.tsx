@@ -78,7 +78,7 @@ export default function PatientMedicalRecords() {
     <div className="max-w-5xl mx-auto space-y-8 pb-10">
       {/* Header */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-4xl font-bold tracking-tight text-primary flex items-center gap-3">
+        <h1 className="text-3xl font-bold tracking-tight text-primary flex items-center gap-3">
           <div className="p-2 bg-primary/10 rounded-xl">
             <ClipboardList className="w-8 h-8 text-primary" />
           </div>

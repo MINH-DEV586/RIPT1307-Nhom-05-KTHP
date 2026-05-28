@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Zap, MessageCircle, HeartPulse, ShieldCheck, Sparkles } from "lucide-react";
+import { Search, MessageCircle, HeartPulse, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import Loader from "@/components/global/Loader";
 import { Input } from "@/components/ui/input";
@@ -71,7 +71,6 @@ export default function TelemedicineHome() {
           <div className="w-32 h-32 bg-indigo-100 dark:bg-indigo-950/50 rounded-full flex items-center justify-center animate-pulse">
             <MessageCircle className="w-16 h-16 text-indigo-600" />
           </div>
-          <Sparkles className="absolute -top-2 -right-2 w-8 h-8 text-amber-400 animate-bounce" />
         </div>
         <div className="space-y-3 max-w-md">
           <h2 className="text-3xl font-black tracking-tighter">Chào bác sĩ {currentUser?.name}!</h2>
@@ -80,13 +79,13 @@ export default function TelemedicineHome() {
           </p>
         </div>
         <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
-           <div className="p-5 rounded-3xl bg-indigo-50/50 border border-indigo-100 flex flex-col items-center gap-2">
+           <div className="p-5 rounded-xl bg-indigo-50/50 border border-indigo-100 flex flex-col items-center gap-2">
               <ShieldCheck className="w-6 h-6 text-indigo-600" />
-              <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700">Bảo mật</span>
+              <span className="text-[11px] font-semibold tracking-wide text-indigo-700">Bảo mật</span>
            </div>
-           <div className="p-5 rounded-3xl bg-emerald-50/50 border border-emerald-100 flex flex-col items-center gap-2">
+           <div className="p-5 rounded-xl bg-emerald-50/50 border border-emerald-100 flex flex-col items-center gap-2">
               <HeartPulse className="w-6 h-6 text-emerald-600" />
-              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">Tức thời</span>
+              <span className="text-[11px] font-semibold tracking-wide text-emerald-700">Tức thời</span>
            </div>
         </div>
       </div>
@@ -107,14 +106,14 @@ export default function TelemedicineHome() {
           <Badge className="bg-indigo-100 text-indigo-700 border-none mb-3 px-3 py-1 font-black text-[10px] tracking-widest uppercase">
             Available Now
           </Badge>
-          <h2 className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white">Bắt đầu tư vấn mới</h2>
+          <h2 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white">Bắt đầu tư vấn mới</h2>
           <p className="text-slate-500 font-medium mt-2">Kết nối ngay với đội ngũ bác sĩ chuyên khoa hàng đầu qua hệ thống tin nhắn bảo mật.</p>
         </div>
         <div className="relative w-full md:w-80 shrink-0">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input 
             placeholder="Tìm bác sĩ hoặc chuyên khoa..." 
-            className="pl-12 h-12 rounded-2xl border-slate-200 bg-white shadow-xl shadow-indigo-500/5 focus-visible:ring-indigo-500 transition-all"
+            className="pl-12 h-11 rounded-lg border-slate-200 bg-white shadow-sm focus-visible:ring-indigo-500 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -125,35 +124,32 @@ export default function TelemedicineHome() {
         {filteredDoctors.map((doctor) => (
           <Card 
             key={doctor._id}
-            className="group relative overflow-hidden card border-none shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 p-8 flex flex-col items-center text-center space-y-6 bg-white dark:bg-slate-900"
+            className="group relative overflow-hidden card border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col items-center text-center space-y-5 bg-white dark:bg-slate-900"
           >
-            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-               <Sparkles className="w-5 h-5 text-indigo-400 animate-pulse" />
-            </div>
             
             <div className="relative">
-              <Avatar className="h-28 w-28 border-4 border-white dark:border-slate-800 shadow-2xl ring-4 ring-indigo-50 transition-transform duration-500 group-hover:scale-110">
+              <Avatar className="h-20 w-20 border-2 border-white dark:border-slate-800 shadow-md ring-2 ring-indigo-100 transition-transform duration-300 group-hover:scale-105">
                 <AvatarImage src={doctor.image} />
-                <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-indigo-700 text-white font-black text-3xl">
+                <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-indigo-700 text-white font-bold text-2xl">
                   {doctor.name[0].toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="absolute bottom-1 right-1 w-6 h-6 bg-emerald-500 border-4 border-white dark:border-slate-900 rounded-full shadow-lg" />
+              <div className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full shadow-sm" />
             </div>
             
             <div className="space-y-1">
-              <h3 className="font-black text-xl text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors tracking-tight">{doctor.name}</h3>
-              <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-none text-[11px] font-black uppercase tracking-wider px-3">
+              <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors tracking-tight">{doctor.name}</h3>
+              <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-none text-[11px] font-semibold px-3">
                 {doctor.specialization || "Bác sĩ chuyên khoa"}
               </Badge>
             </div>
 
             <Button 
-              className="w-full rounded-2xl bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-500/30 gap-3 font-black h-12 transition-all active:scale-95 group"
+              className="w-full rounded-lg bg-indigo-600 hover:bg-indigo-700 shadow-sm gap-2 font-semibold h-10 transition-all active:scale-95"
               onClick={() => handleStartInstantConsult(doctor._id)}
             >
-              <Zap className="w-5 h-5 fill-white group-hover:animate-pulse" />
-              TƯ VẤN NGAY
+              <MessageCircle className="w-4 h-4" />
+              Tư vấn ngay
             </Button>
           </Card>
         ))}

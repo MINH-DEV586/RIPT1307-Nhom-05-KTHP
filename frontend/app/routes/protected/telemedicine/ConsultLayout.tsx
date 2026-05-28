@@ -106,7 +106,7 @@ export default function TelemedicineLayout() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-100px)] w-full overflow-hidden rounded-3xl border bg-card/30 backdrop-blur-md shadow-2xl animate-page-in">
+    <div className="flex h-[calc(100vh-100px)] w-full overflow-hidden rounded-xl border bg-card/30 backdrop-blur-md shadow-md animate-page-in">
       {/* Sidebar - Messenger Style */}
       <div className="w-80 md:w-96 border-r flex flex-col min-h-0 bg-background/40 backdrop-blur-xl">
         <div className="p-6 space-y-6">
@@ -119,7 +119,7 @@ export default function TelemedicineLayout() {
               size="icon" 
               variant="ghost" 
               onClick={() => navigate("/dashboard")}
-              className="rounded-full hover:bg-indigo-50 text-indigo-600"
+              className="rounded-lg hover:bg-indigo-50 text-indigo-600"
             >
               <LayoutDashboard className="w-5 h-5" />
             </Button>
@@ -129,7 +129,7 @@ export default function TelemedicineLayout() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-indigo-500" />
             <Input 
               placeholder="Tìm người hội thoại..." 
-              className="pl-10 h-11 bg-muted/50 border-none rounded-2xl focus-visible:ring-2 focus-visible:ring-indigo-500/20 transition-all"
+              className="pl-10 h-10 bg-muted/50 border-none rounded-lg focus-visible:ring-2 focus-visible:ring-indigo-500/20 transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -159,9 +159,9 @@ export default function TelemedicineLayout() {
                     key={s._id}
                     onClick={() => navigate(`/telemedicine/sessions/${s._id}/chat`)}
                     className={cn(
-                      "flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all duration-300 group relative",
+                      "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 group relative",
                       isActive 
-                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 translate-x-1" 
+                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20" 
                         : "hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
                     )}
                   >
@@ -210,12 +210,12 @@ export default function TelemedicineLayout() {
         </ScrollArea>
         
         {isPatient && (
-          <div className="p-5 border-t bg-background/20">
+          <div className="p-4 border-t bg-background/20">
             <Button 
-              className="w-full rounded-2xl gap-2 font-black h-12 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-95" 
+              className="w-full rounded-lg gap-2 font-semibold h-10 bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-all active:scale-95" 
               onClick={() => navigate("/telemedicine")}
             >
-              <Plus className="w-5 h-5" /> TƯ VẤN MỚI
+              <Plus className="w-4 h-4" /> Tư vấn mới
             </Button>
           </div>
         )}
@@ -228,15 +228,15 @@ export default function TelemedicineLayout() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!sessionToDelete} onOpenChange={(open) => !open && setSessionToDelete(null)}>
-        <DialogContent className="sm:max-w-md border-none shadow-2xl overflow-hidden">
+        <DialogContent className="sm:max-w-md border-none shadow-xl overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-red-500" />
           <DialogHeader className="p-2">
             <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-2xl bg-red-50 flex items-center justify-center shrink-0">
+              <div className="h-12 w-12 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
                 <AlertCircle className="w-6 h-6 text-red-500" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-black tracking-tight text-slate-900 dark:text-white">Xóa cuộc hội thoại?</DialogTitle>
+                <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Xóa cuộc hội thoại?</DialogTitle>
                 <DialogDescription className="text-sm font-medium text-slate-500 mt-1 leading-relaxed">
                   Hành động này sẽ xóa vĩnh viễn toàn bộ lịch sử tin nhắn. Bạn không thể hoàn tác thao tác này.
                 </DialogDescription>
@@ -247,7 +247,7 @@ export default function TelemedicineLayout() {
             <Button 
               variant="ghost" 
               onClick={() => setSessionToDelete(null)}
-              className="rounded-xl font-bold h-11"
+              className="rounded-lg font-medium h-10"
               disabled={isDeleting}
             >
               Hủy bỏ
@@ -256,7 +256,7 @@ export default function TelemedicineLayout() {
               variant="destructive" 
               onClick={handleDeleteSession}
               disabled={isDeleting}
-              className="rounded-xl font-black h-11 px-8 shadow-lg shadow-red-500/20 bg-red-500 hover:bg-red-600 border-none transition-all active:scale-95"
+              className="rounded-lg font-semibold h-10 px-6 shadow-sm bg-red-500 hover:bg-red-600 border-none transition-all active:scale-95"
             >
               {isDeleting ? "Đang xóa..." : "Xác nhận xóa"}
             </Button>

@@ -18,7 +18,6 @@ import {
   Clock,
   Star,
   Zap,
-  Sparkles,
   Lock,
   Globe,
   Database
@@ -123,24 +122,24 @@ export default function Home() {
       {/* ── NAVIGATION ── */}
       <nav className="fixed top-0 inset-x-0 z-50 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="glass rounded-full px-6 py-3 flex items-center justify-between shadow-2xl">
+          <div className="glass rounded-2xl px-6 py-3 flex items-center justify-between shadow-lg">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-500/20">
                 <Zap className="w-5 h-5 text-white" />
               </div>
-              <span className="font-black text-xl tracking-tighter text-white">MedFlow <span className="text-indigo-400">AI</span></span>
+              <span className="font-bold text-xl tracking-tight text-white">MedFlow <span className="text-indigo-400">AI</span></span>
             </div>
             
-            <div className="hidden md:flex items-center gap-8 text-[13px] font-bold uppercase tracking-widest text-slate-400">
+            <div className="hidden md:flex items-center gap-8 text-[13px] font-medium text-slate-400">
               <a href="#features" className="hover:text-white transition-colors">Công nghệ</a>
               <a href="#roles" className="hover:text-white transition-colors">Vai trò</a>
               <a href="#cta" className="hover:text-white transition-colors">Trải nghiệm</a>
             </div>
 
             <div className="flex items-center gap-4">
-              <Link to="/login" className="text-sm font-bold text-slate-300 hover:text-white transition-colors">Đăng nhập</Link>
-              <Button asChild className="bg-white text-slate-900 hover:bg-slate-100 rounded-full font-black px-6 h-10">
-                <Link to="/register">BẮT ĐẦU NGAY</Link>
+              <Link to="/login" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Đăng nhập</Link>
+              <Button asChild className="bg-white text-slate-900 hover:bg-slate-100 rounded-lg font-semibold px-5 h-9">
+                <Link to="/register">Bắt đầu ngay</Link>
               </Button>
             </div>
           </div>
@@ -159,8 +158,8 @@ export default function Home() {
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center space-y-12">
           <div className="space-y-8">
             <div className="flex justify-center">
-              <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 px-4 py-1 rounded-full font-black text-[10px] uppercase tracking-[0.2em]">
-                <Sparkles className="w-3 h-3 mr-2" /> Thế hệ quản lý mới
+              <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 px-3 py-1 rounded-md font-semibold text-[11px] tracking-wide">
+                Thế hệ quản lý mới
               </Badge>
             </div>
             <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85] text-white">
@@ -170,13 +169,13 @@ export default function Home() {
             <p className="max-w-2xl mx-auto text-lg md:text-xl text-slate-400 leading-relaxed font-medium">
               Trải nghiệm hệ thống quản lý bệnh viện thông minh nhất hiện nay. Kết nối bác sĩ và bệnh nhân qua trí tuệ nhân tạo và dữ liệu thời gian thực.
             </p>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <Button asChild size="lg" className="h-16 px-10 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xl shadow-2xl shadow-indigo-500/40 transition-all hover:scale-105 active:scale-95">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button asChild size="lg" className="h-12 px-8 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-base shadow-lg shadow-indigo-500/30 transition-all hover:scale-[1.02] active:scale-95">
                 <Link to="/register">
-                  Đăng ký Bệnh nhân <ArrowRight className="ml-2 w-6 h-6" />
+                  Đăng ký Bệnh nhân <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="h-16 px-10 rounded-2xl border-slate-800 bg-white/5 hover:bg-white/10 text-white font-black text-xl backdrop-blur-md">
+              <Button asChild size="lg" variant="outline" className="h-12 px-8 rounded-lg border-slate-700 bg-white/5 hover:bg-white/10 text-white font-semibold text-base backdrop-blur-md">
                 <Link to="/login">Cổng nội bộ</Link>
               </Button>
             </div>
@@ -214,7 +213,7 @@ export default function Home() {
               <div 
                 key={i} 
                 className={cn(
-                  "relative glass rounded-[32px] p-8 overflow-hidden group hover:border-white/20 transition-all duration-500",
+                  "relative glass rounded-xl p-8 overflow-hidden group hover:border-white/20 transition-all duration-300",
                   f.className
                 )}
               >
@@ -258,7 +257,7 @@ export default function Home() {
             {roles.map((r, i) => (
               <div 
                 key={i} 
-                className="group relative h-64 glass rounded-[32px] p-6 flex flex-col justify-end overflow-hidden hover:-translate-y-2 transition-all duration-500 cursor-pointer"
+                className="group relative h-64 glass rounded-xl p-6 flex flex-col justify-end overflow-hidden hover:-translate-y-1 transition-all duration-300 cursor-pointer"
               >
                 <div className={cn("absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-t", r.color)} />
                 <div className={cn("w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center mb-4 shadow-xl", r.color)}>
@@ -274,23 +273,23 @@ export default function Home() {
 
       {/* ── CTA MESH SECTION ── */}
       <section id="cta" className="py-32 px-6">
-        <div className="max-w-6xl mx-auto relative rounded-[48px] overflow-hidden bg-indigo-600 shadow-2xl shadow-indigo-600/30">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2)_0%,transparent_50%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(0,0,0,0.2)_0%,transparent_50%)]" />
+        <div className="max-w-6xl mx-auto relative rounded-2xl overflow-hidden bg-indigo-600 shadow-xl shadow-indigo-600/25">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15)_0%,transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(0,0,0,0.15)_0%,transparent_50%)]" />
           
-          <div className="relative z-10 py-24 px-12 text-center space-y-10">
-            <h2 className="text-5xl md:text-7xl font-black tracking-tighter text-white">
+          <div className="relative z-10 py-20 px-12 text-center space-y-8">
+            <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white">
               Bắt đầu hành trình <br /> y tế mới ngay hôm nay
             </h2>
-            <p className="text-indigo-100 text-lg max-w-xl mx-auto font-medium">
+            <p className="text-indigo-100 text-base max-w-xl mx-auto font-medium">
               Đăng ký tài khoản miễn phí và trải nghiệm hệ thống quản lý bệnh viện hiện đại nhất.
             </p>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <Button asChild size="lg" className="h-16 px-10 rounded-2xl bg-white text-indigo-700 hover:bg-slate-50 font-black text-xl shadow-2xl transition-all hover:scale-105 active:scale-95">
-                <Link to="/register">ĐĂNG KÝ MIỄN PHÍ</Link>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button asChild size="lg" className="h-12 px-8 rounded-lg bg-white text-indigo-700 hover:bg-slate-50 font-semibold text-base shadow-lg transition-all hover:scale-[1.02] active:scale-95">
+                <Link to="/register">Đăng ký miễn phí</Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="h-16 px-10 rounded-2xl border-white/30 bg-white/10 hover:bg-white/20 text-white font-black text-xl backdrop-blur-md">
-                <Link to="/login">ĐĂNG NHẬP</Link>
+              <Button asChild size="lg" variant="outline" className="h-12 px-8 rounded-lg border-white/30 bg-white/10 hover:bg-white/20 text-white font-semibold text-base backdrop-blur-md">
+                <Link to="/login">Đăng nhập</Link>
               </Button>
             </div>
           </div>

@@ -117,7 +117,7 @@ export default function BookAppointment() {
           <ArrowLeft className="w-4 h-4" /> Quay lại
         </Button>
         <div className="flex flex-col gap-2">
-          <h1 className="text-4xl font-black tracking-tight text-primary">
+          <h1 className="text-3xl font-black tracking-tight text-primary">
             Tìm kiếm bác sĩ & Đặt lịch
           </h1>
           <p className="text-muted-foreground text-lg">

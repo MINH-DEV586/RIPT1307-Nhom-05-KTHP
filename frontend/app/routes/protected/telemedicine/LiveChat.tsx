@@ -162,7 +162,7 @@ export default function EmbeddedChat() {
       <ScrollArea className="flex-1 min-h-0 p-8">
         <div className="space-y-8 pb-4">
           <div className="flex flex-col items-center justify-center text-center py-10 opacity-40">
-            <div className="p-4 bg-indigo-50 rounded-3xl mb-4 border border-indigo-100 shadow-sm">
+            <div className="p-4 bg-indigo-50 rounded-xl mb-4 border border-indigo-100 shadow-sm">
                <ShieldCheck className="w-8 h-8 text-indigo-600" />
             </div>
             <p className="text-xs font-black uppercase tracking-widest text-slate-500">Kênh tư vấn bảo mật MedChat</p>
@@ -170,10 +170,10 @@ export default function EmbeddedChat() {
               Cuộc trò chuyện này được mã hóa đầu cuối. Mọi thông tin y tế trao đổi tại đây sẽ được lưu trữ trong hồ sơ bệnh án điện tử của bạn.
             </p>
             {consultation?.isAppointment && (
-              <div className="mt-6 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex flex-col items-center gap-2 max-w-[400px]">
+              <div className="mt-6 p-4 bg-amber-50 rounded-xl border border-amber-100 flex flex-col items-center gap-2 max-w-[400px]">
                 <div className="flex items-center gap-2 text-amber-700">
                   <AlertCircle className="w-4 h-4" />
-                  <span className="text-[11px] font-black uppercase tracking-tight">Thông tin lịch hẹn</span>
+                  <span className="text-[11px] font-semibold">Thông tin lịch hẹn</span>
                 </div>
                 <p className="text-[10px] text-amber-600 font-medium">
                   Đây là phòng chat đi kèm với lịch hẹn khám đã xác nhận. Bạn không thể xóa cuộc hội thoại này trừ khi lịch hẹn bị hủy hoặc hoàn thành.
@@ -181,10 +181,10 @@ export default function EmbeddedChat() {
                 <Button 
                   variant="link" 
                   size="sm" 
-                  className="text-[10px] font-black text-amber-700 h-auto p-0 underline decoration-amber-300"
+                  className="text-[11px] font-semibold text-amber-700 h-auto p-0 underline decoration-amber-300"
                   onClick={() => navigate("/appointments")}
                 >
-                  QUẢN LÝ LỊCH HẸN TẠI ĐÂY
+                  Quản lý lịch hẹn tại đây
                 </Button>
               </div>
             )}
@@ -200,7 +200,7 @@ export default function EmbeddedChat() {
                   style={{ animationDelay: `${index * 5}ms` }}
                 >
                   <div className={cn(
-                    "max-w-[75%] px-5 py-3 rounded-3xl text-sm shadow-sm transition-all duration-300 relative",
+                    "max-w-[75%] px-4 py-2.5 rounded-2xl text-sm shadow-sm transition-all duration-300 relative",
                     isMe 
                       ? "bg-indigo-600 text-white rounded-tr-none hover:bg-indigo-700" 
                       : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-tl-none hover:border-indigo-200"
@@ -228,15 +228,15 @@ export default function EmbeddedChat() {
             placeholder="Nhập nội dung trao đổi y khoa..."
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            className="flex-1 bg-muted/50 border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 shadow-inner rounded-2xl h-14 px-6 text-sm"
+            className="flex-1 bg-muted/50 border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 shadow-inner rounded-lg h-12 px-5 text-sm"
           />
           <Button
             type="submit"
             size="icon"
             disabled={!inputText.trim()}
-            className="h-14 w-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-500/30 shrink-0 transition-all hover:scale-105 active:scale-95"
+            className="h-12 w-12 rounded-lg bg-indigo-600 hover:bg-indigo-700 shadow-sm shrink-0 transition-all active:scale-95"
           >
-            <Send className="w-6 h-6" />
+            <Send className="w-5 h-5" />
           </Button>
         </form>
       </div>
