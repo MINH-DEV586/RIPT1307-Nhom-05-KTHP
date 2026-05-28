@@ -173,61 +173,73 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
           }
         }
 
-        // If no active invoice exists in the DB, mock a draft one so we can show the bed fee
-        let responseInvoice: any;
+        // Instead of mocking, we save these dynamic items to the actual invoice in the DB
         if (!inv) {
-          responseInvoice = {
-            _id: "temp-bed-invoice",
+          inv = new invoice({
             patientId,
-            status: "draft",
-            items: [
-              {
-                description: `Phí giường bệnh nội trú (Tạm tính - ${bedTypeLabel} - ${days} ngày)`,
-                quantity: 1,
-                unitPrice: totalFee,
-                totalPrice: totalFee,
-                isEstimated: true
-              },
-              ...prescriptionItems,
-              ...labItems
-            ],
-            totalAmount: totalFee + totalPrescriptionFee + totalLabFee,
-            createdAt: admittedAt,
-            updatedAt: new Date(),
-            isEstimatedInvoice: true
-          };
-        } else {
-          // Filter out existing stay items to avoid duplicates
-          const baseItems = inv.items.filter(item =>
-            !item.description.startsWith("Phí giường bệnh nội trú") &&
-            !item.description.startsWith("Chi phí đơn thuốc") &&
-            !item.description.startsWith("Chi phí xét nghiệm")
-          );
-
-          const baseTotal = baseItems.reduce((sum, item) => sum + item.totalPrice, 0);
-
-          const updatedItems = [
-            ...baseItems,
-            {
-              description: `Phí giường bệnh nội trú (Tạm tính - ${bedTypeLabel} - ${days} ngày)`,
-              quantity: 1,
-              unitPrice: totalFee,
-              totalPrice: totalFee,
-              isEstimated: true
-            },
-            ...prescriptionItems,
-            ...labItems
-          ];
-
-          responseInvoice = {
-            ...inv.toObject(),
-            items: updatedItems,
-            totalAmount: baseTotal + totalFee + totalPrescriptionFee + totalLabFee,
-            isEstimatedInvoice: true
-          };
+            status: "pending_payment",
+            items: [],
+            totalAmount: 0,
+          });
         }
 
-        return res.json([responseInvoice]);
+        // Calculate already billed bed fees
+        let billedBedFee = 0;
+        for (const existingInv of existingInvoices) {
+          if (inv && existingInv._id.toString() === inv._id.toString()) continue;
+          for (const item of existingInv.items) {
+            if (item.description.startsWith("Phí giường bệnh nội trú")) {
+              billedBedFee += item.totalPrice;
+            }
+          }
+        }
+
+        const remainingBedFee = Math.max(0, totalFee - billedBedFee);
+
+        // Filter out old estimated items to avoid duplicates
+        const baseItems = inv.items ? inv.items.filter((item: any) =>
+          !item.description.startsWith("Phí giường bệnh nội trú") &&
+          !item.description.startsWith("Chi phí đơn thuốc") &&
+          !item.description.startsWith("Chi phí xét nghiệm")
+        ) : [];
+
+        const baseTotal = baseItems.reduce((sum: number, item: any) => sum + item.totalPrice, 0);
+
+        const updatedItems = [...baseItems, ...prescriptionItems, ...labItems];
+
+        if (remainingBedFee > 0) {
+          updatedItems.push({
+            description: `Phí giường bệnh nội trú (Tạm tính phần mới - ${bedTypeLabel} - ${days} ngày)`,
+            quantity: 1,
+            unitPrice: remainingBedFee,
+            totalPrice: remainingBedFee,
+            isEstimated: true
+          });
+        }
+
+        inv.items = updatedItems;
+        inv.totalAmount = baseTotal + remainingBedFee + totalPrescriptionFee + totalLabFee;
+        inv.isEstimatedInvoice = true;
+        
+        // Only save if there's actually something to pay, or if it already existed in the DB with a real ID
+        if (inv.totalAmount > 0 || !inv.isNew) {
+          await inv.save();
+        }
+
+        const otherInvs = await invoice
+          .find({
+            patientId,
+            status: { $in: ["draft", "pending_payment"] },
+            _id: { $ne: inv._id }
+          })
+          .sort({ createdAt: -1 });
+
+        const invoicesToReturn = [...otherInvs];
+        if (inv.totalAmount > 0 || !inv.isNew) {
+          invoicesToReturn.unshift(inv);
+        }
+
+        return res.json(invoicesToReturn);
       }
     }
 
