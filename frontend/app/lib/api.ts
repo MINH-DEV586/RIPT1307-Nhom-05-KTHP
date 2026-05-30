@@ -231,6 +231,38 @@ export const createCheckoutSession = async (invoiceId: string) => {
   return res.json();
 };
 
+export const createVNPayCheckout = async (invoiceId: string): Promise<{
+  txnRef: string;
+  qrContent: string;
+  amount: number;
+  invoiceId: string;
+}> => {
+  const res = await fetch(`${API_URL}/invoices/${invoiceId}/vnpay-checkout`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to create VNPay QR");
+  return res.json();
+};
+
+export const confirmVNPayPayment = async (invoiceId: string, txnRef: string): Promise<{
+  message: string;
+  invoiceId: string;
+  txnRef: string;
+}> => {
+  const res = await fetch(`${API_URL}/invoices/${invoiceId}/confirm-payment`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ txnRef }),
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to confirm payment");
+  }
+  return res.json();
+};
+
 export const getBillingHistory = async (userId: string) => {
   const res = await fetch(`${API_URL}/invoices/history/${userId}`, {
     credentials: "include",

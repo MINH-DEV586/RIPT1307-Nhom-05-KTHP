@@ -7,6 +7,8 @@ import LabTest from "../models/labTest";
 import type { Request, Response } from "express";
 import { logActivity } from "../lib/activity";
 import mongoose from "mongoose";
+import { getIO } from "../lib/socket";
+import crypto from "crypto";
 
 export const getMyActiveInvoice = async (req: Request, res: Response) => {
   try {
@@ -349,6 +351,111 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error creating checkout session:", error);
+    res.status(500).json({ message: "Lỗi hệ thống" });
+  }
+};
+
+// ============================================================
+// VNPay QR Payment (Giả lập / Simulation)
+// ============================================================
+
+/**
+ * POST /api/invoices/:id/vnpay-checkout
+ * Tạo dữ liệu QR giả lập VNPay và trả về cho frontend hiển thị
+ */
+export const createVNPayCheckout = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const inv = await invoice.findById(id);
+
+    if (!inv) {
+      return res.status(404).json({ message: "Không tìm thấy hóa đơn" });
+    }
+
+    if (inv.status === "paid") {
+      return res.status(400).json({ message: "Hóa đơn đã được thanh toán" });
+    }
+
+    // Tạo mã giao dịch giả lập
+    const txnRef = crypto.randomBytes(8).toString("hex").toUpperCase();
+    inv.vnpayTxnRef = txnRef;
+    await inv.save();
+
+    // Nội dung QR: chuỗi giả lập VNPay định dạng VNPAYQR
+    const qrContent = [
+      `VNPAYQR`,
+      `TxnRef:${txnRef}`,
+      `Amount:${inv.totalAmount}`,
+      `OrderInfo:Thanh toan hoa don benh vien`,
+      `InvoiceId:${id}`,
+    ].join("|");
+
+    res.json({
+      txnRef,
+      qrContent,
+      amount: inv.totalAmount,
+      invoiceId: id,
+      message: "QR tạo thành công",
+    });
+  } catch (error) {
+    console.error("Error creating VNPay checkout:", error);
+    res.status(500).json({ message: "Lỗi hệ thống" });
+  }
+};
+
+/**
+ * POST /api/invoices/:id/confirm-payment
+ * Xác nhận thanh toán thành công (giả lập) + emit socket event
+ */
+export const confirmVNPayPayment = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { txnRef } = req.body;
+
+    const inv = await invoice.findById(id);
+    if (!inv) {
+      return res.status(404).json({ message: "Không tìm thấy hóa đơn" });
+    }
+
+    // Kiểm tra mã giao dịch khớp
+    if (inv.vnpayTxnRef && inv.vnpayTxnRef !== txnRef) {
+      return res.status(400).json({ message: "Mã giao dịch không hợp lệ" });
+    }
+
+    if (inv.status === "paid") {
+      return res.status(400).json({ message: "Hóa đơn đã được thanh toán" });
+    }
+
+    inv.status = "paid";
+    await inv.save();
+
+    await logActivity(
+      (req as any).user.id,
+      "Thanh toán VNPay QR",
+      `Hóa đơn ${id} đã được thanh toán qua VNPay QR (mã: ${txnRef})`,
+    );
+
+    // Emit socket event để frontend cập nhật real-time
+    try {
+      const io = getIO();
+      // Gửi tới bệnh nhân theo patientId (socket room "user_<patientId>" nếu có, hoặc broadcast)
+      io.emit("payment_confirmed", {
+        invoiceId: id,
+        patientId: inv.patientId,
+        txnRef,
+        amount: inv.totalAmount,
+      });
+    } catch (socketErr) {
+      console.error("Socket emit error (non-critical):", socketErr);
+    }
+
+    res.json({
+      message: "Thanh toán thành công",
+      invoiceId: id,
+      txnRef,
+    });
+  } catch (error) {
+    console.error("Error confirming VNPay payment:", error);
     res.status(500).json({ message: "Lỗi hệ thống" });
   }
 };

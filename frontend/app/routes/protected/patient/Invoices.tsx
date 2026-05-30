@@ -1,30 +1,46 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { getMyActiveInvoice, getBillingHistory, createCheckoutSession } from "@/lib/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getMyActiveInvoice, getBillingHistory } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { CreditCard, Receipt, Wallet, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Receipt, Wallet, CheckCircle2, Clock, AlertCircle, QrCode } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import Loader from "@/components/global/Loader";
-import { toast } from "sonner";
+import VNPayQRModal from "@/components/global/VNPayQRModal";
+import { useState } from "react";
 
 export function meta() {
   return [{ title: "Hóa đơn & Thanh toán | MedFlow AI" }];
 }
 
+interface QRPaymentData {
+  txnRef: string;
+  invoiceId: string;
+  amount: number;
+}
+
 export default function PatientInvoices() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const queryClient = useQueryClient();
+
+  const [qrModal, setQrModal] = useState<QRPaymentData | null>(null);
+
+  // Sinh txnRef ngay ở frontend — mở modal tức thì, không cần API call
+  const openQRModal = (inv: any) => {
+    const txnRef = Math.random().toString(36).substring(2, 10).toUpperCase() +
+      Date.now().toString(36).toUpperCase();
+    setQrModal({ txnRef, invoiceId: inv._id, amount: inv.totalAmount });
+  };
 
   const { data: activeInvoices, isLoading: loadingActive } = useQuery<any[]>({
     queryKey: ["active-invoice", userId],
@@ -36,16 +52,6 @@ export default function PatientInvoices() {
     queryKey: ["billing-history", userId],
     queryFn: () => getBillingHistory(userId!),
     enabled: !!userId,
-  });
-
-  const paymentMutation = useMutation({
-    mutationFn: (id: string) => createCheckoutSession(id),
-    onSuccess: (data) => {
-      window.location.href = data.checkoutUrl;
-    },
-    onError: () => {
-      toast.error("Lỗi khi xử lý thanh toán.");
-    },
   });
 
   if (loadingActive || loadingHistory) {
@@ -65,6 +71,22 @@ export default function PatientInvoices() {
 
   return (
     <div className="space-y-6">
+      {/* VNPay QR Modal */}
+      {qrModal && (
+        <VNPayQRModal
+          open={!!qrModal}
+          onClose={() => {
+            setQrModal(null);
+            queryClient.invalidateQueries({ queryKey: ["active-invoice", userId] });
+            queryClient.invalidateQueries({ queryKey: ["billing-history", userId] });
+          }}
+          invoiceId={qrModal.invoiceId}
+          txnRef={qrModal.txnRef}
+          amount={qrModal.amount}
+          patientId={userId!}
+        />
+      )}
+
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-black tracking-tight">
@@ -111,14 +133,13 @@ export default function PatientInvoices() {
               </div>
 
               <Button
-                disabled={pendingInvoices.length === 0 || paymentMutation.isPending}
-                onClick={() =>
-                  pendingInvoices[0] && paymentMutation.mutate(pendingInvoices[0]._id)
-                }
+                disabled={pendingInvoices.length === 0}
+                onClick={() => pendingInvoices[0] && openQRModal(pendingInvoices[0])}
+                id="vnpay-pay-first-btn"
                 className="mt-4 w-full bg-white text-indigo-600 hover:bg-indigo-50 font-bold h-10 gap-2 shadow-none"
               >
-                <CreditCard className="w-4 h-4" />
-                {pendingInvoices.length > 1 ? "Thanh toán hóa đơn đầu tiên" : "Thanh toán ngay"}
+                <QrCode className="w-4 h-4" />
+                {pendingInvoices.length > 1 ? "Thanh toán hóa đơn đầu tiên" : "Thanh toán bằng QR"}
               </Button>
             </CardContent>
           </Card>
@@ -255,12 +276,12 @@ export default function PatientInvoices() {
                       </div>
                       <Button
                         size="sm"
-                        disabled={paymentMutation.isPending}
-                        onClick={() => paymentMutation.mutate(inv._id)}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold gap-1.5 px-4"
+                        onClick={() => openQRModal(inv)}
+                        id={`vnpay-pay-btn-${inv._id}`}
+                        className="bg-[#0060a9] hover:bg-[#003d7a] text-white font-semibold gap-1.5 px-5 rounded-lg shadow-md shadow-blue-500/20 transition-all"
                       >
-                        <CreditCard className="w-3.5 h-3.5" />
-                        Thanh toán
+                        <QrCode className="w-3.5 h-3.5" />
+                        Thanh toán QR
                       </Button>
                     </div>
                   </Card>
@@ -322,7 +343,11 @@ export default function PatientInvoices() {
                             <p className="text-sm font-black tabular-nums">
                               {inv.totalAmount.toLocaleString()} VNĐ
                             </p>
-                            {inv.polarCheckoutId ? (
+                            {inv.vnpayTxnRef ? (
+                              <p className="text-[11px] font-mono text-muted-foreground mt-0.5">
+                                VNPay #{inv.vnpayTxnRef.slice(0, 8)}
+                              </p>
+                            ) : inv.polarCheckoutId ? (
                               <p className="text-[11px] font-mono text-muted-foreground mt-0.5">
                                 #{inv.polarCheckoutId.slice(-8).toUpperCase()}
                               </p>

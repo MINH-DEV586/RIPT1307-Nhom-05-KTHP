@@ -3,14 +3,17 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IInvoice extends Document {
   patientId: string;
   polarCheckoutId?: string; // Links to Polar transaction
+  vnpayTxnRef?: string;     // Mã giao dịch VNPay (giả lập)
   status: "draft" | "pending_payment" | "paid";
+  isEstimatedInvoice?: boolean;
   items: Array<{
-    description: string; // e.g., "Chest X-Ray"
+    description: string;
     quantity: number;
-    unitPrice: number; // in cents (Polar uses cents)
+    unitPrice: number;
     totalPrice: number;
+    isEstimated?: boolean;
   }>;
-  totalAmount: number; // Sum of all items in cents
+  totalAmount: number;
   createdAt: Date;
 }
 
@@ -29,9 +32,12 @@ const InvoiceSchema = new Schema(
         quantity: Number,
         unitPrice: Number,
         totalPrice: Number,
+        isEstimated: { type: Boolean, default: false },
       },
     ],
     totalAmount: { type: Number, default: 0 },
+    vnpayTxnRef: { type: String },
+    isEstimatedInvoice: { type: Boolean, default: false },
   },
   {
     timestamps: true,

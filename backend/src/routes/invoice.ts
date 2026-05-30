@@ -5,6 +5,8 @@ import {
   getMyActiveInvoice,
   getBillingHistory,
   getAllInvoices,
+  createVNPayCheckout,
+  confirmVNPayPayment,
 } from "../controllers/invoice";
 import { checkRole } from "../middleware/checkRole";
 
@@ -20,5 +22,9 @@ invoiceRouter.get(
 invoiceRouter.get("/", requireAuth, checkRole(["admin", "doctor"]), getAllInvoices);
 invoiceRouter.get("/history/:id", requireAuth, getBillingHistory);
 invoiceRouter.post("/:id/checkout", requireAuth, createCheckoutSession);
+
+// VNPay QR Payment routes
+invoiceRouter.post("/:id/vnpay-checkout", requireAuth, createVNPayCheckout);
+invoiceRouter.post("/:id/confirm-payment", requireAuth, confirmVNPayPayment);
 
 export default invoiceRouter;
