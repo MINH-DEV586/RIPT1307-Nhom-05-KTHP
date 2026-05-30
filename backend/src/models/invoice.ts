@@ -4,7 +4,8 @@ export interface IInvoice extends Document {
   patientId: string;
   polarCheckoutId?: string; // Links to Polar transaction
   vnpayTxnRef?: string;     // Mã giao dịch VNPay (giả lập)
-  status: "draft" | "pending_payment" | "paid";
+  status: "draft" | "pending_payment" | "paid" | "merged";
+  invoiceType?: "outpatient" | "inpatient"; // Loại hóa đơn
   isEstimatedInvoice?: boolean;
   items: Array<{
     description: string;
@@ -23,8 +24,13 @@ const InvoiceSchema = new Schema(
     polarCheckoutId: { type: String },
     status: {
       type: String,
-      enum: ["draft", "pending_payment", "paid"],
+      enum: ["draft", "pending_payment", "paid", "merged"],
       default: "draft",
+    },
+    invoiceType: {
+      type: String,
+      enum: ["outpatient", "inpatient"],
+      default: "outpatient",
     },
     items: [
       {

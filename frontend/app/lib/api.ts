@@ -211,7 +211,10 @@ export const getUserById = async (userId: string) => {
   return res.json();
 };
 
-export const getMyActiveInvoice = async (patientId: string) => {
+export const getMyActiveInvoice = async (patientId: string): Promise<{
+  invoices: any[];
+  patientIsAdmitted: boolean;
+} | null> => {
   const res = await fetch(`${API_URL}/invoices/my-active-invoice/${patientId}`, {
     credentials: "include",
   });
@@ -219,7 +222,12 @@ export const getMyActiveInvoice = async (patientId: string) => {
     if (res.status === 404) return null; // No active invoice
     throw new Error("Failed to fetch invoice");
   }
-  return res.json();
+  const data = await res.json();
+  // Support both old array format and new object format
+  if (Array.isArray(data)) {
+    return { invoices: data, patientIsAdmitted: false };
+  }
+  return data;
 };
 
 export const createCheckoutSession = async (invoiceId: string) => {

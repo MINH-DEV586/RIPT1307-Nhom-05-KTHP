@@ -37,7 +37,10 @@ import {
   ShieldCheck,
   FileText,
   BedDouble,
+  Eye,
+  BedIcon,
 } from "lucide-react";
+import InvoiceDetailDialog from "@/components/global/InvoiceDetailDialog";
 import { toast } from "sonner";
 import { STATUS_CONFIG } from "@/components/users/statusBadge";
 import Loader from "@/components/global/Loader";
@@ -58,6 +61,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import VNPayQRModal from "@/components/global/VNPayQRModal";
 
 export function meta() {
   return [{ title: "Hồ sơ người dùng" }];
@@ -82,17 +86,32 @@ const Profile = () => {
   const isPatient = profileUser?.role === "patient";
   const isDischarged = profileUser?.status === "discharged";
 
-  const { data: invoices, isLoading: invoiceLoading } = useQuery<any[]>({
+  const { data: invoiceData, isLoading: invoiceLoading } = useQuery<{
+    invoices: any[];
+    patientIsAdmitted: boolean;
+  } | null>({
     queryKey: ["my-invoice", targetUserId],
     queryFn: () => getMyActiveInvoice(targetUserId!),
     enabled: !!targetUserId && isPatient && (isViewingOwnProfile || isAdmin),
   });
+
+  const invoices = invoiceData?.invoices ?? [];
+  const patientIsAdmitted = invoiceData?.patientIsAdmitted ?? false;
 
   const { data: billingHistory, isLoading: historyLoading } = useQuery({
     queryKey: ["billing-history", targetUserId],
     queryFn: () => getBillingHistory(targetUserId!),
     enabled: !!targetUserId && isPatient && (isViewingOwnProfile || isAdmin),
   });
+
+  const [qrModal, setQrModal] = useState<{ invoiceId: string; amount: number; txnRef: string } | null>(null);
+  const [detailInvoice, setDetailInvoice] = useState<any>(null);
+
+  const openQRModal = (inv: any) => {
+    const txnRef = Math.random().toString(36).substring(2, 10).toUpperCase() +
+      Date.now().toString(36).toUpperCase();
+    setQrModal({ txnRef, invoiceId: inv._id, amount: inv.totalAmount });
+  };
 
   const { data: beds = [] } = useQuery<any[]>({
     queryKey: ["beds", "all"],
@@ -110,6 +129,7 @@ const Profile = () => {
       toast.error(error.message || "Không thể bắt đầu thanh toán");
     },
   });
+
 
   if (sessionLoading || profileLoading) {
     return (
@@ -335,82 +355,99 @@ const Profile = () => {
 
 
           {isPatient && (isViewingOwnProfile || isAdmin) && (
-            <Card className="card shadow-sm overflow-hidden border-l-4 border-l-blue-500">
-              <CardHeader className="">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Receipt className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <CardTitle className="text-base">
-                        Số dư hiện tại
-                      </CardTitle>
-                      <CardDescription className="text-xs">
-                        Các chi phí cần thanh toán
-                      </CardDescription>
-                    </div>
-                  </div>
-                  {invoices && invoices.length > 0 && (
-                    <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">
-                      {invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0).toLocaleString()} VNĐ
-                    </span>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="p-6">
-                {!invoices || invoices.length === 0 ? (
-                  <p className="text-center text-slate-500 text-sm py-2">
-                    Không có chi phí phát sinh.
-                  </p>
-                ) : (
-                  <div className="space-y-6">
-                    {invoices.map((inv: any, index: number) => (
-                      <div key={inv._id || index} className="space-y-3 border-b last:border-0 pb-4 last:pb-0">
-                        <p className="font-bold text-xs text-indigo-600 dark:text-indigo-400">
-                          Hóa đơn #{inv._id?.slice(-6) || index + 1}
-                        </p>
-                        <div className="space-y-1">
-                          {inv.items?.map((item: any, i: number) => (
-                            <div
-                              key={i}
-                              className="flex justify-between text-xs text-slate-400"
-                            >
-                              <span>{item.description}</span>
-                              <span>{item.totalPrice.toLocaleString()} VNĐ</span>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="pt-2 flex justify-between items-center border-t border-dashed border-slate-100 dark:border-slate-800">
-                          <span className="text-xs font-bold">Tổng hóa đơn này:</span>
-                          <span className="text-sm font-black text-slate-800 dark:text-slate-200">
-                            {inv.totalAmount.toLocaleString()} VNĐ
-                          </span>
-                        </div>
-                        {inv.status === "paid" ? (
-                          <Badge className="w-full justify-center py-2 bg-green-50 text-green-700 border-green-200 mt-2">
-                            Thanh toán hoàn tất
-                          </Badge>
-                        ) : (
-                          <Button
-                            className="w-full bg-blue-600 hover:bg-blue-700 mt-2"
-                            disabled={(!isDischarged && profileUser?.status === "admitted") || checkoutMutation.isPending}
-                            onClick={() => checkoutMutation.mutate(inv._id)}
-                          >
-                            {checkoutMutation.isPending ? (
-                              <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                            ) : (
-                              <CreditCard className="mr-2 h-4 w-4" />
-                            )}
-                            {profileUser?.status === "admitted" && !isDischarged
-                              ? "Đang chờ xuất viện"
-                              : "Thanh toán ngay"}
-                          </Button>
-                        )}
+            <>
+              {/* VNPay QR Modal */}
+              {qrModal && (
+                <VNPayQRModal
+                  open={!!qrModal}
+                  onClose={() => {
+                    setQrModal(null);
+                    queryClient.invalidateQueries({ queryKey: ["my-invoice", targetUserId] });
+                    queryClient.invalidateQueries({ queryKey: ["billing-history", targetUserId] });
+                  }}
+                  invoiceId={qrModal.invoiceId}
+                  txnRef={qrModal.txnRef}
+                  amount={qrModal.amount}
+                  patientId={targetUserId!}
+                />
+              )}
+              {/* InvoiceDetailDialog */}
+              <InvoiceDetailDialog
+                invoice={detailInvoice}
+                open={!!detailInvoice}
+                onClose={() => setDetailInvoice(null)}
+              />
+
+              <Card className="card shadow-sm overflow-hidden border-l-4 border-l-blue-500">
+                <CardHeader className="">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Receipt className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <CardTitle className="text-base">Số dư hiện tại</CardTitle>
+                        <CardDescription className="text-xs">Các chi phí cần thanh toán</CardDescription>
                       </div>
-                    ))}
+                    </div>
+                    {invoices.length > 0 && (
+                      <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">
+                        {invoices.reduce((sum: number, inv: any) => sum + (inv.totalAmount || 0), 0).toLocaleString()} VNĐ
+                      </span>
+                    )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {invoices.length === 0 ? (
+                    <p className="text-center text-slate-500 text-sm py-2">Không có chi phí phát sinh.</p>
+                  ) : (
+                    <div className="space-y-6">
+                      {invoices.map((inv: any, index: number) => (
+                        <div key={inv._id || index} className="space-y-3 border-b last:border-0 pb-4 last:pb-0">
+                          <p className="font-bold text-xs text-indigo-600 dark:text-indigo-400">
+                            Hóa đơn #{inv._id?.slice(-6) || index + 1}
+                          </p>
+                          <div className="space-y-1">
+                            {inv.items?.map((item: any, i: number) => (
+                              <div key={i} className="flex justify-between text-xs text-slate-400">
+                                <span>{item.description}</span>
+                                <span>{item.totalPrice.toLocaleString()} VNĐ</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="pt-2 flex justify-between items-center border-t border-dashed border-slate-100 dark:border-slate-800">
+                            <span className="text-xs font-bold">Tổng hóa đơn này:</span>
+                            <span className="text-sm font-black text-slate-800 dark:text-slate-200">
+                              {inv.totalAmount.toLocaleString()} VNĐ
+                            </span>
+                          </div>
+
+                          {/* Nội trú: ẩn nút thanh toán, hiện thông báo chờ xuất viện */}
+                          {patientIsAdmitted ? (
+                            <div className="flex items-center gap-2 mt-2 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                              <BedIcon className="w-4 h-4 text-amber-600 shrink-0" />
+                              <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                                Hóa đơn nội trú sẽ được thanh toán sau khi bệnh nhân xuất viện.
+                              </p>
+                            </div>
+                          ) : inv.status === "paid" ? (
+                            <Badge className="w-full justify-center py-2 bg-green-50 text-green-700 border-green-200 mt-2">
+                              Thanh toán hoàn tất
+                            </Badge>
+                          ) : (
+                            <Button
+                              className="w-full bg-[#0060a9] hover:bg-[#003d7a] text-white mt-2 gap-2"
+                              onClick={() => openQRModal(inv)}
+                            >
+                              <CreditCard className="h-4 w-4" />
+                              Thanh toán bằng QR
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
           )}
           {isPatient && (isViewingOwnProfile || isAdmin) && (
             <Card className="card shadow-sm">
@@ -455,10 +492,12 @@ const Profile = () => {
                         </div>
                         <Button
                           variant="ghost"
-                          size="sm"
-                          className="text-xs h-7 px-2"
+                          size="icon"
+                          className="h-8 w-8 text-slate-500 hover:text-indigo-600"
+                          onClick={() => setDetailInvoice(pastInv)}
+                          title="Xem chi tiết"
                         >
-                          Chi tiết
+                          <Eye className="w-4 h-4" />
                         </Button>
                       </div>
                     ))}

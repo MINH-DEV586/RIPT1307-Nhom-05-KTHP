@@ -16,11 +16,8 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
     if (!patientId || typeof patientId !== "string") {
       return res.status(400).json({ message: "ID bệnh nhân không hợp lệ" });
     }
-    let inv = await invoice
-      .findOne({ patientId, status: { $in: ["draft", "pending_payment"] } })
-      .sort({ createdAt: -1 });
 
-    // Look up user to see if they are currently admitted
+    // Look up user to check admission status
     const userCollection = mongoose.connection.collection("user");
     let queryId: any = patientId;
     if (mongoose.Types.ObjectId.isValid(patientId)) {
@@ -28,6 +25,10 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
     }
     const user = await userCollection.findOne({ $or: [{ _id: queryId }, { _id: patientId }] });
 
+    // ─────────────────────────────────────────────────────────────
+    // INPATIENT (admitted): Tính hóa đơn hợp nhất nhưng chỉ cho
+    // thanh toán khi bệnh nhân đã xuất viện (discharged)
+    // ─────────────────────────────────────────────────────────────
     if (user && user.status === "admitted" && user.assignedBedId) {
       const bed = await Bed.findById(user.assignedBedId);
       if (bed) {
@@ -50,11 +51,13 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
         }
 
         const totalFee = days * dailyRate;
-
-        // Fetch all existing invoices for this patient to filter out already-billed prescriptions
         const existingInvoices = await invoice.find({ patientId }).lean();
 
-        // Fetch all prescriptions dispensed during their stay (allow up to 24h before admission to catch consultation prescriptions)
+        let inv = await invoice
+          .findOne({ patientId, status: { $in: ["draft", "pending_payment"] } })
+          .sort({ createdAt: -1 });
+
+        // ── Prescriptions ──
         const prescriptionSince = new Date(admittedAt.getTime() - 24 * 60 * 60 * 1000);
         const prescriptions = await Prescription.find({
           patientId: { $in: [patientId, queryId] },
@@ -64,8 +67,6 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
 
         const prescriptionItems = [];
         let totalPrescriptionFee = 0;
-
-        // List of all billed prescription items from existing invoices (excluding active inv)
         const billedPrescriptionItems: Array<{ description: string; price: number }> = [];
         for (const existingInv of existingInvoices) {
           if (inv && existingInv._id.toString() === inv._id.toString()) continue;
@@ -75,47 +76,33 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
             }
           }
         }
-
         for (const p of prescriptions) {
           let prescriptionTotal = 0;
           for (const item of p.items) {
             const med = await Medicine.findById(item.medicineId).lean();
-            const price = med ? med.price : 0;
-            prescriptionTotal += price * item.quantity;
+            prescriptionTotal += (med ? med.price : 0) * item.quantity;
           }
-
           if (prescriptionTotal > 0) {
-            // Check if this prescription is already billed in any database invoice
             const diagStr = p.diagnosis || "Khám bệnh";
             const pDateStr = new Date((p as any).createdAt).toLocaleDateString("vi-VN");
-            
-            const matchIndex = billedPrescriptionItems.findIndex(billedItem =>
-              billedItem.description.startsWith("Chi phí đơn thuốc") &&
-              billedItem.description.includes(`Chẩn đoán: ${diagStr}`) &&
-              billedItem.description.includes(pDateStr) &&
-              billedItem.price === prescriptionTotal
+            const matchIndex = billedPrescriptionItems.findIndex(b =>
+              b.description.includes(`Chẩn đoán: ${diagStr}`) &&
+              b.description.includes(pDateStr) &&
+              b.price === prescriptionTotal
             );
-
-            let isBilled = false;
             if (matchIndex !== -1) {
               billedPrescriptionItems.splice(matchIndex, 1);
-              isBilled = true;
-            }
-
-            if (!isBilled) {
+            } else {
               prescriptionItems.push({
                 description: `Chi phí đơn thuốc - Chẩn đoán: ${p.diagnosis} (${pDateStr})`,
-                quantity: 1,
-                unitPrice: prescriptionTotal,
-                totalPrice: prescriptionTotal,
-                isEstimated: true
+                quantity: 1, unitPrice: prescriptionTotal, totalPrice: prescriptionTotal, isEstimated: true
               });
               totalPrescriptionFee += prescriptionTotal;
             }
           }
         }
 
-        // Fetch all completed lab requests during their stay (allow up to 24h before admission to catch consultation lab requests)
+        // ── Lab Requests ──
         const labRequestSince = new Date(admittedAt.getTime() - 24 * 60 * 60 * 1000);
         const labRequests = await LabRequest.find({
           patientId: { $in: [patientId, queryId] },
@@ -125,135 +112,134 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
 
         const labItems = [];
         let totalLabFee = 0;
-
-        // List of all billed lab items from existing invoices (excluding active inv)
         const billedLabItems: Array<{ description: string; price: number }> = [];
         for (const existingInv of existingInvoices) {
           if (inv && existingInv._id.toString() === inv._id.toString()) continue;
           for (const item of existingInv.items) {
-            if (
-              item.description.startsWith("Chi phí xét nghiệm -") ||
-              item.description.startsWith("Chi phí xét nghiệm (Tạm tính) -") ||
-              item.description.startsWith("Chi phí xét nghiệm & Cận lâm sàng")
-            ) {
+            if (item.description.startsWith("Chi phí xét nghiệm")) {
               billedLabItems.push({ description: item.description, price: item.totalPrice });
             }
           }
         }
-
         for (const lr of labRequests) {
           const labTest = await LabTest.findOne({ name: lr.testType, isActive: true }).lean();
           const labFee = labTest?.price || 0;
           if (labFee > 0) {
             const lrDateStr = new Date((lr as any).createdAt).toLocaleDateString("vi-VN");
-            // Check if this lab request is already billed in any other database invoice
-            const matchIndex = billedLabItems.findIndex(billedItem =>
-              (billedItem.description.startsWith("Chi phí xét nghiệm -") ||
-                billedItem.description.startsWith("Chi phí xét nghiệm (Tạm tính) -") ||
-                billedItem.description.startsWith("Chi phí xét nghiệm & Cận lâm sàng")) &&
-              billedItem.description.includes(lr.testType) &&
-              billedItem.description.includes(lrDateStr) &&
-              billedItem.price === labFee
+            const matchIndex = billedLabItems.findIndex(b =>
+              b.description.includes(lr.testType) &&
+              b.description.includes(lrDateStr) &&
+              b.price === labFee
             );
-
-            let isBilled = false;
             if (matchIndex !== -1) {
               billedLabItems.splice(matchIndex, 1);
-              isBilled = true;
-            }
-
-            if (!isBilled) {
+            } else {
               labItems.push({
                 description: `Chi phí xét nghiệm (Tạm tính) - ${lr.testType} (${lrDateStr})`,
-                quantity: 1,
-                unitPrice: labFee,
-                totalPrice: labFee,
-                isEstimated: true
+                quantity: 1, unitPrice: labFee, totalPrice: labFee, isEstimated: true
               });
               totalLabFee += labFee;
             }
           }
         }
 
-        // Instead of mocking, we save these dynamic items to the actual invoice in the DB
+        // ── Build / Update Invoice ──
         if (!inv) {
-          inv = new invoice({
-            patientId,
-            status: "pending_payment",
-            items: [],
-            totalAmount: 0,
-          });
+          inv = new invoice({ patientId, status: "pending_payment", items: [], totalAmount: 0 });
         }
 
-        // Calculate already billed bed fees
         let billedBedFee = 0;
         for (const existingInv of existingInvoices) {
           if (inv && existingInv._id.toString() === inv._id.toString()) continue;
           for (const item of existingInv.items) {
-            if (item.description.startsWith("Phí giường bệnh nội trú")) {
-              billedBedFee += item.totalPrice;
-            }
+            if (item.description.startsWith("Phí giường bệnh nội trú")) billedBedFee += item.totalPrice;
           }
         }
-
         const remainingBedFee = Math.max(0, totalFee - billedBedFee);
 
-        // Filter out old estimated items to avoid duplicates
         const baseItems = inv.items ? inv.items.filter((item: any) =>
           !item.description.startsWith("Phí giường bệnh nội trú") &&
           !item.description.startsWith("Chi phí đơn thuốc") &&
           !item.description.startsWith("Chi phí xét nghiệm")
         ) : [];
-
         const baseTotal = baseItems.reduce((sum: number, item: any) => sum + item.totalPrice, 0);
 
         const updatedItems = [...baseItems, ...prescriptionItems, ...labItems];
-
         if (remainingBedFee > 0) {
           updatedItems.push({
-            description: `Phí giường bệnh nội trú (Tạm tính phần mới - ${bedTypeLabel} - ${days} ngày)`,
-            quantity: 1,
-            unitPrice: remainingBedFee,
-            totalPrice: remainingBedFee,
-            isEstimated: true
+            description: `Phí giường bệnh nội trú (Tạm tính - ${bedTypeLabel} - ${days} ngày)`,
+            quantity: 1, unitPrice: remainingBedFee, totalPrice: remainingBedFee, isEstimated: true
           });
         }
 
         inv.items = updatedItems;
         inv.totalAmount = baseTotal + remainingBedFee + totalPrescriptionFee + totalLabFee;
         inv.isEstimatedInvoice = true;
-        
-        // Only save if there's actually something to pay, or if it already existed in the DB with a real ID
-        if (inv.totalAmount > 0 || !inv.isNew) {
-          await inv.save();
-        }
+        if (inv.totalAmount > 0 || !inv.isNew) await inv.save();
 
         const otherInvs = await invoice
-          .find({
-            patientId,
-            status: { $in: ["draft", "pending_payment"] },
-            _id: { $ne: inv._id }
-          })
+          .find({ patientId, status: { $in: ["draft", "pending_payment"] }, _id: { $ne: inv._id } })
           .sort({ createdAt: -1 });
 
-        const invoicesToReturn = [...otherInvs];
-        if (inv.totalAmount > 0 || !inv.isNew) {
-          invoicesToReturn.unshift(inv);
-        }
+        const invoicesToReturn: any[] = [...otherInvs];
+        if (inv.totalAmount > 0 || !inv.isNew) invoicesToReturn.unshift(inv);
 
-        return res.json(invoicesToReturn);
+        // Trả về kèm flag patientIsAdmitted = true để frontend biết ẩn nút thanh toán
+        return res.json({ invoices: invoicesToReturn, patientIsAdmitted: true });
       }
     }
 
-    // Non-admitted patients: return all active invoices as an array
-    let invs = await invoice
+    // ─────────────────────────────────────────────────────────────
+    // OUTPATIENT (non-admitted / discharged): Gộp tất cả invoice
+    // pending thành 1 hóa đơn hợp nhất duy nhất
+    // ─────────────────────────────────────────────────────────────
+    const pendingInvs = await invoice
       .find({ patientId, status: { $in: ["draft", "pending_payment"] } })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: 1 })
+      .lean();
 
-    if (!invs || invs.length === 0) {
+    if (!pendingInvs || pendingInvs.length === 0) {
       return res.status(404).json({ message: "Không tìm thấy hóa đơn đang hoạt động" });
     }
-    res.json(invs);
+
+    // Nếu chỉ có 1 invoice thì trả về luôn
+    if (pendingInvs.length === 1) {
+      return res.json({ invoices: pendingInvs, patientIsAdmitted: false });
+    }
+
+    // Có nhiều invoices → merge vào invoice cuối cùng (mới nhất)
+    const latestInv = await invoice.findById(pendingInvs[pendingInvs.length - 1]._id);
+    if (!latestInv) {
+      return res.json({ invoices: pendingInvs.slice(-1), patientIsAdmitted: false });
+    }
+
+    const olderInvs = pendingInvs.slice(0, -1);
+    const mergedItems: any[] = [...latestInv.items];
+
+    for (const oldInv of olderInvs) {
+      for (const item of oldInv.items) {
+        // Tránh trùng lặp: kiểm tra description + price
+        const alreadyExists = mergedItems.some(
+          (m) => m.description === item.description && m.totalPrice === item.totalPrice
+        );
+        if (!alreadyExists) {
+          mergedItems.push(item);
+        }
+      }
+    }
+
+    latestInv.items = mergedItems;
+    latestInv.totalAmount = mergedItems.reduce((s: number, i: any) => s + i.totalPrice, 0);
+    await latestInv.save();
+
+    // Đánh dấu các invoices cũ đã được merge (chuyển sang paid để khỏi trùng)
+    const olderIds = olderInvs.map((i) => i._id);
+    await invoice.updateMany(
+      { _id: { $in: olderIds } },
+      { $set: { status: "merged" as any } }
+    );
+
+    return res.json({ invoices: [latestInv], patientIsAdmitted: false });
   } catch (error) {
     console.error("Error fetching active invoice:", error);
     res.status(500).json({ message: "Lỗi hệ thống" });

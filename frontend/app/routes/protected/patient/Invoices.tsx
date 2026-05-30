@@ -11,11 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Receipt, Wallet, CheckCircle2, Clock, AlertCircle, QrCode } from "lucide-react";
+import { Receipt, Wallet, CheckCircle2, Clock, AlertCircle, QrCode, Eye, BedDouble } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import Loader from "@/components/global/Loader";
 import VNPayQRModal from "@/components/global/VNPayQRModal";
+import InvoiceDetailDialog from "@/components/global/InvoiceDetailDialog";
 import { useState } from "react";
 
 export function meta() {
@@ -34,6 +35,7 @@ export default function PatientInvoices() {
   const queryClient = useQueryClient();
 
   const [qrModal, setQrModal] = useState<QRPaymentData | null>(null);
+  const [detailInvoice, setDetailInvoice] = useState<any>(null);
 
   // Sinh txnRef ngay ở frontend — mở modal tức thì, không cần API call
   const openQRModal = (inv: any) => {
@@ -42,11 +44,17 @@ export default function PatientInvoices() {
     setQrModal({ txnRef, invoiceId: inv._id, amount: inv.totalAmount });
   };
 
-  const { data: activeInvoices, isLoading: loadingActive } = useQuery<any[]>({
+  const { data: invoiceData, isLoading: loadingActive } = useQuery<{
+    invoices: any[];
+    patientIsAdmitted: boolean;
+  } | null>({
     queryKey: ["active-invoice", userId],
     queryFn: () => getMyActiveInvoice(userId!),
     enabled: !!userId,
   });
+
+  const activeInvoices = invoiceData?.invoices ?? [];
+  const patientIsAdmitted = invoiceData?.patientIsAdmitted ?? false;
 
   const { data: history = [], isLoading: loadingHistory } = useQuery<any[]>({
     queryKey: ["billing-history", userId],
@@ -86,6 +94,12 @@ export default function PatientInvoices() {
           patientId={userId!}
         />
       )}
+      {/* InvoiceDetailDialog */}
+      <InvoiceDetailDialog
+        invoice={detailInvoice}
+        open={!!detailInvoice}
+        onClose={() => setDetailInvoice(null)}
+      />
 
       {/* Page Header */}
       <div>
@@ -132,15 +146,22 @@ export default function PatientInvoices() {
                 )}
               </div>
 
-              <Button
-                disabled={pendingInvoices.length === 0}
-                onClick={() => pendingInvoices[0] && openQRModal(pendingInvoices[0])}
-                id="vnpay-pay-first-btn"
-                className="mt-4 w-full bg-white text-indigo-600 hover:bg-indigo-50 font-bold h-10 gap-2 shadow-none"
-              >
-                <QrCode className="w-4 h-4" />
-                {pendingInvoices.length > 1 ? "Thanh toán hóa đơn đầu tiên" : "Thanh toán bằng QR"}
-              </Button>
+              {patientIsAdmitted ? (
+                <div className="mt-4 w-full flex items-center justify-center gap-2 bg-white/15 rounded-lg h-10 text-sm font-semibold text-indigo-100">
+                  <BedDouble className="w-4 h-4 shrink-0" />
+                  Chờ xuất viện để thanh toán
+                </div>
+              ) : (
+                <Button
+                  disabled={pendingInvoices.length === 0}
+                  onClick={() => pendingInvoices[0] && openQRModal(pendingInvoices[0])}
+                  id="vnpay-pay-first-btn"
+                  className="mt-4 w-full bg-white text-indigo-600 hover:bg-indigo-50 font-bold h-10 gap-2 shadow-none"
+                >
+                  <QrCode className="w-4 h-4" />
+                  {pendingInvoices.length > 1 ? "Thanh toán hóa đơn đầu tiên" : "Thanh toán bằng QR"}
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -223,6 +244,20 @@ export default function PatientInvoices() {
 
             {/* Pending tab */}
             <TabsContent value="pending" className="mt-0 space-y-3">
+              {/* Banner nội trú: ẩn nút thanh toán */}
+              {patientIsAdmitted && (
+                <div className="flex items-center gap-3 p-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+                  <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-lg shrink-0">
+                    <BedDouble className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-amber-800 dark:text-amber-300">Bệnh nhân đang nội trú</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                      Hóa đơn tạm tính hiển thị bên dưới. Thanh toán sẽ được thực hiện sau khi xuất viện.
+                    </p>
+                  </div>
+                </div>
+              )}
               {pendingInvoices.length > 0 ? (
                 pendingInvoices.map((inv: any) => (
                   <Card key={inv._id} className="card shadow-sm overflow-hidden">
@@ -274,15 +309,22 @@ export default function PatientInvoices() {
                           <span className="text-sm font-semibold text-muted-foreground">VNĐ</span>
                         </p>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={() => openQRModal(inv)}
-                        id={`vnpay-pay-btn-${inv._id}`}
-                        className="bg-[#0060a9] hover:bg-[#003d7a] text-white font-semibold gap-1.5 px-5 rounded-lg shadow-md shadow-blue-500/20 transition-all"
-                      >
-                        <QrCode className="w-3.5 h-3.5" />
-                        Thanh toán QR
-                      </Button>
+                      {patientIsAdmitted ? (
+                        <div className="flex items-center gap-1.5 text-xs text-amber-600 font-medium bg-amber-50 dark:bg-amber-950/20 border border-amber-200 rounded-lg px-3 py-2">
+                          <BedDouble className="w-3.5 h-3.5 shrink-0" />
+                          Chờ xuất viện
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => openQRModal(inv)}
+                          id={`vnpay-pay-btn-${inv._id}`}
+                          className="bg-[#0060a9] hover:bg-[#003d7a] text-white font-semibold gap-1.5 px-5 rounded-lg shadow-md shadow-blue-500/20 transition-all"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                          Thanh toán QR
+                        </Button>
+                      )}
                     </div>
                   </Card>
                 ))
@@ -339,23 +381,34 @@ export default function PatientInvoices() {
                               </p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm font-black tabular-nums">
-                              {inv.totalAmount.toLocaleString()} VNĐ
-                            </p>
-                            {inv.vnpayTxnRef ? (
-                              <p className="text-[11px] font-mono text-muted-foreground mt-0.5">
-                                VNPay #{inv.vnpayTxnRef.slice(0, 8)}
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className="text-sm font-black tabular-nums">
+                                {inv.totalAmount.toLocaleString()} VNĐ
                               </p>
-                            ) : inv.polarCheckoutId ? (
-                              <p className="text-[11px] font-mono text-muted-foreground mt-0.5">
-                                #{inv.polarCheckoutId.slice(-8).toUpperCase()}
-                              </p>
-                            ) : (
-                              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 text-[10px] mt-1 px-1.5">
-                                Đã thanh toán
-                              </Badge>
-                            )}
+                              {inv.vnpayTxnRef ? (
+                                <p className="text-[11px] font-mono text-muted-foreground mt-0.5">
+                                  VNPay #{inv.vnpayTxnRef.slice(0, 8)}
+                                </p>
+                              ) : inv.polarCheckoutId ? (
+                                <p className="text-[11px] font-mono text-muted-foreground mt-0.5">
+                                  #{inv.polarCheckoutId.slice(-8).toUpperCase()}
+                                </p>
+                              ) : (
+                                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 text-[10px] mt-1 px-1.5">
+                                  Đã thanh toán
+                                </Badge>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-500 hover:text-indigo-600 shrink-0"
+                              onClick={() => setDetailInvoice(inv)}
+                              title="Xem chi tiết"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                       ))}
