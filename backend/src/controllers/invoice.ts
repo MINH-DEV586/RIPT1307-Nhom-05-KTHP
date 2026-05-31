@@ -4,11 +4,13 @@ import Prescription from "../models/prescription";
 import Medicine from "../models/medicine";
 import LabRequest from "../models/labRequest";
 import LabTest from "../models/labTest";
+import Notification from "../models/notification";
 import type { Request, Response } from "express";
 import { logActivity } from "../lib/activity";
 import mongoose from "mongoose";
 import { getIO } from "../lib/socket";
 import crypto from "crypto";
+import { sendMail, getPaymentConfirmationTemplate } from "../lib/mailer";
 
 export const getMyActiveInvoice = async (req: Request, res: Response) => {
   try {
@@ -175,7 +177,26 @@ export const getMyActiveInvoice = async (req: Request, res: Response) => {
         inv.items = updatedItems;
         inv.totalAmount = baseTotal + remainingBedFee + totalPrescriptionFee + totalLabFee;
         inv.isEstimatedInvoice = true;
+        const isNew = inv.isNew;
         if (inv.totalAmount > 0 || !inv.isNew) await inv.save();
+
+        // Gửi notification khi tạo hóa đơn mới lần đầu
+        if (isNew && inv.totalAmount > 0) {
+          try {
+            await Notification.create({
+              user: patientId,
+              title: "Hóa đơn mới cần thanh toán",
+              message: `Bạn có hóa đơn nội trú tạm tính ${inv.totalAmount.toLocaleString("vi-VN")} VNĐ đang chờ thanh toán.`,
+              type: "invoice",
+              link: "/patient/invoices",
+            });
+            // Emit socket để badge cập nhật real-time
+            const io = getIO();
+            io.emit("notification_received");
+          } catch (notifyErr) {
+            console.error("Failed to create invoice notification:", notifyErr);
+          }
+        }
 
         const otherInvs = await invoice
           .find({ patientId, status: { $in: ["draft", "pending_payment"] }, _id: { $ne: inv._id } })
@@ -421,18 +442,69 @@ export const confirmVNPayPayment = async (req: Request, res: Response) => {
       `Hóa đơn ${id} đã được thanh toán qua VNPay QR (mã: ${txnRef})`,
     );
 
-    // Emit socket event để frontend cập nhật real-time
+    // ── Tạo notification "Thanh toán thành công" trong DB ──
+    try {
+      await Notification.create({
+        user: inv.patientId,
+        title: "Thanh toán thành công ✅",
+        message: `Hóa đơn ${inv.totalAmount.toLocaleString("vi-VN")} VNĐ đã được thanh toán thành công (Mã GD: ${txnRef}).`,
+        type: "invoice",
+        link: "/patient/invoices",
+      });
+    } catch (notifyErr) {
+      console.error("Failed to create payment notification:", notifyErr);
+    }
+
+    // ── Emit socket để cập nhật real-time ──
     try {
       const io = getIO();
-      // Gửi tới bệnh nhân theo patientId (socket room "user_<patientId>" nếu có, hoặc broadcast)
       io.emit("payment_confirmed", {
         invoiceId: id,
         patientId: inv.patientId,
         txnRef,
         amount: inv.totalAmount,
       });
+      // Cập nhật badge thông báo
+      io.emit("notification_received");
     } catch (socketErr) {
       console.error("Socket emit error (non-critical):", socketErr);
+    }
+
+    // ── Gửi email xác nhận thanh toán ──
+    try {
+      // Lấy thông tin bệnh nhân (email, tên)
+      const userCollection = mongoose.connection.collection("user");
+      let queryId: any = inv.patientId;
+      if (mongoose.Types.ObjectId.isValid(inv.patientId)) {
+        queryId = new mongoose.Types.ObjectId(inv.patientId);
+      }
+      const patient = await userCollection.findOne(
+        { $or: [{ _id: queryId }, { _id: inv.patientId as any }] },
+        { projection: { email: 1, name: 1 } }
+      );
+
+      if (patient?.email) {
+        const emailHtml = getPaymentConfirmationTemplate(
+          patient.name || "Bệnh nhân",
+          patient.email,
+          id,
+          txnRef,
+          inv.totalAmount,
+          new Date(),
+          inv.items.map((item: any) => ({
+            description: item.description,
+            quantity: item.quantity,
+            totalPrice: item.totalPrice,
+          }))
+        );
+        await sendMail(
+          patient.email,
+          "✅ Xác nhận thanh toán hóa đơn y tế — MedFlow AI",
+          emailHtml
+        );
+      }
+    } catch (emailErr) {
+      console.error("Failed to send payment confirmation email (non-critical):", emailErr);
     }
 
     res.json({

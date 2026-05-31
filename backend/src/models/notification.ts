@@ -4,7 +4,7 @@ export interface INotification extends Document {
   user: mongoose.Types.ObjectId; // The ID of the user receiving the alert (e.g., the Doctor)
   title: string;
   message: string;
-  type: "system" | "assignment" | "lab_result" | "alert";
+  type: "system" | "assignment" | "lab_result" | "alert" | "invoice";
   isRead: boolean; // To show unread badges (🔴)
   link?: string; // Where to redirect when clicked
   createdAt: Date;
@@ -17,7 +17,7 @@ const NotificationSchema: Schema = new Schema(
     message: { type: String, required: true },
     type: {
       type: String,
-      enum: ["system", "assignment", "lab_result", "alert"],
+      enum: ["system", "assignment", "lab_result", "alert", "invoice"],
       default: "system",
     },
     isRead: { type: Boolean, default: false },

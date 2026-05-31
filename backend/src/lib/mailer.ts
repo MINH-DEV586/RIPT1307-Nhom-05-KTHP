@@ -144,6 +144,137 @@ export const getAppointmentRejectedTemplate = (
   `;
 };
 
+// ========== PAYMENT CONFIRMATION EMAIL ==========
+
+export interface InvoiceItem {
+  description: string;
+  quantity: number;
+  totalPrice: number;
+}
+
+export const getPaymentConfirmationTemplate = (
+  patientName: string,
+  patientEmail: string,
+  invoiceId: string,
+  txnRef: string,
+  totalAmount: number,
+  paidAt: Date,
+  items: InvoiceItem[]
+): string => {
+  const formattedDate = format(new Date(paidAt), "dd/MM/yyyy");
+  const formattedTime = format(new Date(paidAt), "HH:mm:ss");
+
+  const itemRows = items
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #f0f0f0; color: #374151; font-size: 14px;">${item.description}</td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #f0f0f0; color: #374151; font-size: 14px; text-align: center;">${item.quantity}</td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #f0f0f0; color: #111827; font-size: 14px; font-weight: 600; text-align: right; white-space: nowrap;">${item.totalPrice.toLocaleString("vi-VN")} VNĐ</td>
+        </tr>`
+    )
+    .join("");
+
+  return `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 620px; margin: 0 auto; background-color: #f4f6f9; padding: 24px; border-radius: 12px;">
+      <div style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden;">
+
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #0060a9 0%, #003d7a 100%); padding: 32px 32px 28px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 22px;">✅</span>
+            </div>
+            <div>
+              <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">Thanh toán thành công</h1>
+              <p style="color: #93c5fd; margin: 4px 0 0; font-size: 13px;">MedFlow AI — Hệ thống quản lý bệnh viện</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 28px 32px;">
+
+          <!-- Greeting -->
+          <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
+            Xin chào <strong style="color: #111827;">${patientName}</strong>,
+          </p>
+          <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
+            Hệ thống đã ghi nhận giao dịch thanh toán hóa đơn y tế của bạn thành công. Dưới đây là thông tin chi tiết:
+          </p>
+
+          <!-- Transaction Info Box -->
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 18px 20px; margin-bottom: 24px;">
+            <p style="margin: 0 0 10px; color: #1e40af; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Thông tin giao dịch</p>
+            <div style="display: grid; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #6b7280; font-size: 14px;">📋 Mã hóa đơn:</span>
+                <span style="font-family: monospace; color: #111827; font-size: 13px; font-weight: 600;">#${invoiceId.slice(-8).toUpperCase()}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #6b7280; font-size: 14px;">🔖 Mã giao dịch VNPay:</span>
+                <span style="font-family: monospace; color: #111827; font-size: 13px; font-weight: 600;">${txnRef}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #6b7280; font-size: 14px;">📅 Ngày thanh toán:</span>
+                <span style="color: #111827; font-size: 14px; font-weight: 600;">${formattedDate}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #6b7280; font-size: 14px;">⏰ Giờ thanh toán:</span>
+                <span style="color: #111827; font-size: 14px; font-weight: 600;">${formattedTime}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Invoice Items Table -->
+          <p style="color: #374151; font-size: 14px; font-weight: 700; margin: 0 0 10px;">Chi tiết các khoản phí:</p>
+          <table style="width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 16px;">
+            <thead>
+              <tr style="background-color: #f9fafb;">
+                <th style="padding: 10px 12px; text-align: left; font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb;">Mô tả</th>
+                <th style="padding: 10px 12px; text-align: center; font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb;">SL</th>
+                <th style="padding: 10px 12px; text-align: right; font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb;">Thành tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemRows}
+            </tbody>
+          </table>
+
+          <!-- Total -->
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px;">
+            <span style="color: #166534; font-size: 15px; font-weight: 700;">Tổng cộng đã thanh toán</span>
+            <span style="color: #15803d; font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums;">${totalAmount.toLocaleString("vi-VN")} VNĐ</span>
+          </div>
+
+          <!-- CTA Button -->
+          <div style="text-align: center; margin-bottom: 28px;">
+            <a href="${process.env.FRONTEND_URL || "http://localhost:5173"}/patient/invoices"
+               style="display: inline-block; background: linear-gradient(135deg, #0060a9, #003d7a); color: #ffffff; padding: 13px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(0,96,169,0.35);">
+              📄 Xem lịch sử thanh toán
+            </a>
+          </div>
+
+          <!-- Thank you note -->
+          <div style="background: #fafafa; border-left: 4px solid #0060a9; border-radius: 4px; padding: 14px 18px;">
+            <p style="margin: 0; color: #4b5563; font-size: 14px; line-height: 1.6;">
+              🙏 <strong>Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của MedFlow AI.</strong> Nếu bạn có bất kỳ thắc mắc nào về hóa đơn, vui lòng liên hệ với chúng tôi qua hệ thống hoặc trực tiếp tại quầy lễ tân của bệnh viện.
+            </p>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="padding: 20px 32px; border-top: 1px solid #e5e7eb; text-align: center; background: #fafafa;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+            Email này được gửi tự động từ hệ thống MedFlow AI.<br>
+            Trân trọng, <strong>Đội ngũ MedFlow AI</strong>
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+};
+
 export const getLabResultsTemplate = (
   patientName: string,
   testType: string,
