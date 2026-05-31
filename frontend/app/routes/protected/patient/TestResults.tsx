@@ -152,7 +152,7 @@ export default function TestResults() {
   if (loading) return <div className="h-[60vh] flex items-center justify-center"><Loader label="Đang tải kết quả..." /></div>;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-10">
+    <div className="w-full space-y-8 pb-10">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight text-primary flex items-center gap-3">
           <div className="p-2 bg-primary/10 rounded-xl">
@@ -177,90 +177,120 @@ export default function TestResults() {
             </p>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2">
-          {results.map((result) => (
-            <Card key={result._id} className="group overflow-hidden border-none shadow-xl bg-card/40 backdrop-blur-md hover:bg-card/60 transition-all duration-300 card-hover border-l-4 border-l-primary/30">
-              <CardHeader className="pb-4">
-                <div className="flex justify-between items-start">
-                  <div className="p-3 bg-background/50 rounded-2xl group-hover:scale-110 transition-transform duration-500 shadow-sm border border-primary/5">
-                    {getIcon(result.testType)}
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    {getStatusBadge(result.status)}
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-500/10 gap-2 font-bold"
-                      onClick={() => handleExplain(result._id)}
-                    >
-                      <Sparkles className="w-4 h-4 animate-pulse" />
-                      Hỏi AI
-                    </Button>
-                  </div>
-                </div>
-                <div className="mt-4 space-y-1">
-                  <CardTitle className="text-2xl font-bold group-hover:text-primary transition-colors">
-                    {result.testType}
-                  </CardTitle>
-                  <CardDescription className="flex items-center gap-2">
-                    <Calendar className="w-3.5 h-3.5" />
-                    Thực hiện: {format(new Date(result.createdAt), "dd/MM/yyyy", { locale: vi })}
-                    {result.bodyPart && (
-                      <>
-                        <span className="mx-1">•</span>
-                        Vị trí: {result.bodyPart}
-                      </>
-                    )}
-                  </CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {result.indicators && result.indicators.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Chỉ số chính</h4>
-                    <div className="grid gap-2">
-                      {result.indicators.slice(0, 3).map((ind: any, i: number) => (
-                        <div key={i} className="flex justify-between items-center p-2 rounded-lg bg-background/30 text-sm">
-                          <span className="text-muted-foreground">{ind.name}</span>
-                          <span className="font-bold">{ind.value} {ind.unit}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+      ) : (() => {
+        // Group results by date
+        const grouped = results.reduce((acc: Record<string, any[]>, r) => {
+          const dateKey = format(new Date(r.createdAt), "yyyy-MM-dd");
+          if (!acc[dateKey]) acc[dateKey] = [];
+          acc[dateKey].push(r);
+          return acc;
+        }, {});
+        const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
-                {result.aiAnalysis && (
-                  <div className="p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
-                    <div className="flex items-center gap-2 text-indigo-600 font-bold mb-1 text-xs uppercase tracking-tighter">
-                      <CheckCircle2 className="w-3 h-3" />
-                      Phân tích AI
-                    </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2 italic">
-                      {result.aiAnalysis}
-                    </p>
+        return (
+          <div className="space-y-10">
+            {sortedDates.map((dateKey) => (
+              <div key={dateKey} className="space-y-4">
+                {/* Date header */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-md shadow-emerald-500/20">
+                    <Calendar className="w-4 h-4" />
+                    {format(new Date(dateKey), "EEEE, dd/MM/yyyy", { locale: vi })}
                   </div>
-                )}
-                
-                <div className="flex gap-3 pt-2">
-                  {result.imageUrl && (
-                    <Button className="flex-1 gap-2 shadow-lg shadow-primary/20" asChild>
-                      <a href={result.imageUrl} target="_blank" rel="noreferrer">
-                        <Eye className="w-4 h-4" />
-                        Xem trực tuyến
-                      </a>
-                    </Button>
-                  )}
-                  <Button variant="outline" className="flex-1 gap-2 bg-background/50" onClick={() => handleDownloadOrPrint(result)}>
-                    <Download className="w-4 h-4" />
-                    Tải PDF/Ảnh
-                  </Button>
+                  <div className="flex-1 h-px bg-gradient-to-r from-emerald-200 to-transparent dark:from-emerald-800" />
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                    {grouped[dateKey].length} kết quả
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+
+                {/* Cards grid 2 columns */}
+                <div className="grid gap-6 md:grid-cols-2">
+                  {grouped[dateKey].map((result) => (
+                    <Card key={result._id} className="group overflow-hidden border-none shadow-xl bg-card/40 backdrop-blur-md hover:bg-card/60 transition-all duration-300 card-hover border-l-4 border-l-primary/30">
+                      <CardHeader className="pb-4">
+                        <div className="flex justify-between items-start">
+                          <div className="p-3 bg-background/50 rounded-2xl group-hover:scale-110 transition-transform duration-500 shadow-sm border border-primary/5">
+                            {getIcon(result.testType)}
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            {getStatusBadge(result.status)}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-500/10 gap-2 font-bold"
+                              onClick={() => handleExplain(result._id)}
+                            >
+                              <Sparkles className="w-4 h-4 animate-pulse" />
+                              Hỏi AI
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="mt-4 space-y-1">
+                          <CardTitle className="text-2xl font-bold group-hover:text-primary transition-colors">
+                            {result.testType}
+                          </CardTitle>
+                          <CardDescription className="flex items-center gap-2">
+                            <Calendar className="w-3.5 h-3.5" />
+                            Thực hiện: {format(new Date(result.createdAt), "dd/MM/yyyy", { locale: vi })}
+                            {result.bodyPart && (
+                              <>
+                                <span className="mx-1">•</span>
+                                Vị trí: {result.bodyPart}
+                              </>
+                            )}
+                          </CardDescription>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {result.indicators && result.indicators.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Chỉ số chính</h4>
+                            <div className="grid gap-2">
+                              {result.indicators.slice(0, 3).map((ind: any, i: number) => (
+                                <div key={i} className="flex justify-between items-center p-2 rounded-lg bg-background/30 text-sm">
+                                  <span className="text-muted-foreground">{ind.name}</span>
+                                  <span className="font-bold">{ind.value} {ind.unit}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {result.aiAnalysis && (
+                          <div className="p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
+                            <div className="flex items-center gap-2 text-indigo-600 font-bold mb-1 text-xs uppercase tracking-tighter">
+                              <CheckCircle2 className="w-3 h-3" />
+                              Phân tích AI
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-2 italic">
+                              {result.aiAnalysis}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex gap-3 pt-2">
+                          {result.imageUrl && (
+                            <Button className="flex-1 gap-2 shadow-lg shadow-primary/20" asChild>
+                              <a href={result.imageUrl} target="_blank" rel="noreferrer">
+                                <Eye className="w-4 h-4" />
+                                Xem trực tuyến
+                              </a>
+                            </Button>
+                          )}
+                          <Button variant="outline" className="flex-1 gap-2 bg-background/50" onClick={() => handleDownloadOrPrint(result)}>
+                            <Download className="w-4 h-4" />
+                            Tải PDF/Ảnh
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* AI Explanation Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

@@ -110,7 +110,7 @@ export default function BookAppointment() {
   if (isLoading) return <div className="h-screen flex items-center justify-center"><Loader label="Đang tìm kiếm bác sĩ tốt nhất cho bạn..." /></div>;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-20">
+    <div className="w-full space-y-8 pb-20">
       {/* Header */}
       <div className="flex flex-col gap-4">
         <Button variant="ghost" onClick={() => navigate(-1)} className="w-fit gap-2 -ml-2 text-muted-foreground">

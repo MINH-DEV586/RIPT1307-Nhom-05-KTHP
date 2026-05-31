@@ -109,7 +109,7 @@ export default function Prescriptions() {
   if (loading) return <div className="h-[60vh] flex items-center justify-center"><Loader label="Đang tải đơn thuốc..." /></div>;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-10">
+    <div className="w-full space-y-8 pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight text-primary flex items-center gap-3">
@@ -136,10 +136,36 @@ export default function Prescriptions() {
             </p>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid gap-6">
-          {prescriptions.map((prescription) => (
-            <Card key={prescription._id} className="overflow-hidden border-none shadow-xl bg-card/40 backdrop-blur-md hover:shadow-2xl transition-all duration-300">
+      ) : (() => {
+        // Group prescriptions by date
+        const grouped = prescriptions.reduce((acc: Record<string, any[]>, p) => {
+          const dateKey = format(new Date(p.createdAt), "yyyy-MM-dd");
+          if (!acc[dateKey]) acc[dateKey] = [];
+          acc[dateKey].push(p);
+          return acc;
+        }, {});
+        const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+        return (
+          <div className="space-y-10">
+            {sortedDates.map((dateKey) => (
+              <div key={dateKey} className="space-y-4">
+                {/* Date header */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-md shadow-emerald-500/20">
+                    <Calendar className="w-4 h-4" />
+                    {format(new Date(dateKey), "EEEE, dd/MM/yyyy", { locale: vi })}
+                  </div>
+                  <div className="flex-1 h-px bg-gradient-to-r from-emerald-200 to-transparent dark:from-emerald-800" />
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                    {grouped[dateKey].length} đơn thuốc
+                  </span>
+                </div>
+
+                {/* Cards grid 2 columns */}
+                <div className="grid gap-6 md:grid-cols-2">
+                  {grouped[dateKey].map((prescription) => (
+                    <Card key={prescription._id} className="overflow-hidden border-none shadow-xl bg-card/40 backdrop-blur-md hover:shadow-2xl transition-all duration-300">
               <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
               <CardHeader className="bg-primary/5 pb-4">
                 <div className="flex flex-wrap justify-between items-center gap-4">
@@ -226,10 +252,14 @@ export default function Prescriptions() {
                   </div>
                 )}
               </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }

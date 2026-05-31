@@ -1,17 +1,11 @@
 import { useState, useEffect } from "react";
 import { authClient } from "@/lib/auth-client";
-import { getPatientMedicalRecords } from "@/lib/api";
+import { getPatientMedicalRecords, getPrescriptionById } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ClipboardList,
   Calendar,
@@ -20,11 +14,13 @@ import {
   Clock,
   Activity,
   ClipboardCheck,
+  ChevronRight,
+  Pill,
 } from "lucide-react";
 import { format, isValid } from "date-fns";
 import { vi } from "date-fns/locale";
 import Loader from "@/components/global/Loader";
-import ExamHistoryList from "@/components/patients/ExamHistoryList";
+import ExamHistoryPanel from "@/components/patients/ExamHistoryPanel";
 
 export function meta() {
   return [{ title: "Lịch sử khám chữa bệnh | MedFlow AI" }];
@@ -39,16 +35,21 @@ export default function PatientMedicalRecords() {
   const [activeTab, setActiveTab] = useState<TabType>(
     searchParams.get("tab") === "exam-history" ? "exam-history" : "medical-records"
   );
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
-  // Sync tab khi URL thay đổi (ví dụ click sidebar)
   useEffect(() => {
     const tab = searchParams.get("tab");
     if (tab === "exam-history" || tab === "medical-records") {
       setActiveTab(tab);
+      setSelectedRecord(null);
     }
   }, [searchParams]);
 
-  // Hồ sơ bệnh án nội trú
+  // Reset selection when switching tab
+  useEffect(() => {
+    setSelectedRecord(null);
+  }, [activeTab]);
+
   const { data: records = [], isLoading } = useQuery<any[]>({
     queryKey: ["medical-records", patientId],
     queryFn: () => getPatientMedicalRecords(patientId),
@@ -60,171 +61,411 @@ export default function PatientMedicalRecords() {
       key: "medical-records" as TabType,
       label: "Hồ sơ bệnh án",
       icon: FileText,
-      description: "Hồ sơ nội trú sau khi nhập viện",
       color: "text-blue-600",
-      bg: "bg-blue-50 dark:bg-blue-950/30",
+      activeClass: "bg-blue-600 text-white shadow-blue-200",
+      inactiveClass: "text-blue-600 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100",
     },
     {
       key: "exam-history" as TabType,
       label: "Lịch sử khám",
       icon: ClipboardCheck,
-      description: "Kết quả các lần khám ngoại trú",
       color: "text-emerald-600",
-      bg: "bg-emerald-50 dark:bg-emerald-950/30",
+      activeClass: "bg-emerald-600 text-white shadow-emerald-200",
+      inactiveClass: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100",
     },
   ];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-10">
-      {/* Header */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight text-primary flex items-center gap-3">
+    <div className="w-full flex flex-col gap-5 pb-10 h-full">
+      {/* Page Header */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold tracking-tight text-primary flex items-center gap-2.5">
           <div className="p-2 bg-primary/10 rounded-xl">
-            <ClipboardList className="w-8 h-8 text-primary" />
+            <ClipboardList className="w-6 h-6 text-primary" />
           </div>
           Lịch sử khám chữa bệnh
         </h1>
-        <p className="text-muted-foreground text-lg ml-1">
-          Toàn bộ lịch sử khám chữa bệnh: hồ sơ nội trú và các lần khám ngoại trú.
+        <p className="text-muted-foreground text-sm ml-1">
+          Hồ sơ nội trú và các lần khám ngoại trú của bạn.
         </p>
       </div>
 
-      {/* Tab Switcher */}
-      <div className="grid grid-cols-2 gap-3">
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.key;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${
-                isActive
-                  ? "border-transparent bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
-                  : "border-border hover:border-blue-200 hover:bg-muted/50"
-              }`}
-            >
-              <div className={`p-2 rounded-lg ${isActive ? "bg-white/20" : tab.bg}`}>
-                <Icon className={`w-5 h-5 ${isActive ? "text-white" : tab.color}`} />
-              </div>
-              <div>
-                <p className={`font-bold text-sm ${isActive ? "text-white" : ""}`}>{tab.label}</p>
-                <p className={`text-xs ${isActive ? "text-white/70" : "text-muted-foreground"}`}>
-                  {tab.description}
-                </p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ===== TAB: HỒ SƠ BỆNH ÁN NỘI TRÚ ===== */}
-      {activeTab === "medical-records" && (
-        <>
-          {isLoading ? (
-            <div className="h-[40vh] flex items-center justify-center">
-              <Loader label="Đang tải hồ sơ..." />
-            </div>
-          ) : records.length === 0 ? (
-            <Card className="border-dashed border-2 bg-muted/30">
-              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                  <FileText className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-xl font-semibold">Chưa có hồ sơ nào</h3>
-                <p className="text-muted-foreground max-w-xs mt-2">
-                  Hồ sơ bệnh án chỉ được tạo sau khi bạn được nhập viện theo yêu cầu bác sĩ.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="relative space-y-6 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-primary/20 before:to-transparent">
-              {records.map((record: any, index: number) => (
-                <div
-                  key={record._id}
-                  className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group animate-in fade-in slide-in-from-bottom-4 duration-500"
-                  style={{ animationDelay: `${index * 100}ms` }}
+      {/* Split Panel */}
+      <div className="flex gap-4 flex-1 min-h-0" style={{ height: "calc(100vh - 200px)" }}>
+        {/* LEFT: List Panel */}
+        <div className="w-80 shrink-0 flex flex-col gap-3">
+          {/* Compact Tab Switcher */}
+          <div className="flex gap-2">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm ${
+                    isActive ? tab.activeClass + " shadow" : tab.inactiveClass
+                  }`}
                 >
-                  {/* Timeline dot */}
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full border border-primary/20 bg-background shadow-sm shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
-                    <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* List */}
+          <div className="flex-1 rounded-xl border bg-card overflow-hidden shadow-sm">
+            {activeTab === "medical-records" && (
+              <>
+                {isLoading ? (
+                  <div className="h-full flex items-center justify-center">
+                    <Loader label="Đang tải..." />
                   </div>
-
-                  <Card className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] border-none shadow-xl bg-card/40 backdrop-blur-md hover:bg-card/60 transition-all duration-300">
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <Badge
-                          variant="outline"
-                          className="bg-blue-50 text-blue-700 border-blue-200 flex gap-1 items-center"
-                        >
-                          <Calendar className="w-3 h-3" />
-                          {record.date && isValid(new Date(record.date))
-                            ? format(new Date(record.date), "dd MMMM, yyyy", { locale: vi })
-                            : "Không rõ ngày"}
-                        </Badge>
-                        <Badge className="bg-blue-100 text-blue-700 text-[10px]">Nội trú</Badge>
-                      </div>
-                      <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">
-                        {record.diagnosis}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {record.admissionReason && (
-                        <div className="space-y-1">
-                          <p className="text-xs font-bold text-orange-600 uppercase tracking-wider">
-                            Lý do nhập viện
-                          </p>
-                          <p className="text-sm">{record.admissionReason}</p>
-                        </div>
-                      )}
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                          <Activity className="w-4 h-4" />
-                          Triệu chứng
-                        </div>
-                        <p className="text-sm line-clamp-2">{record.symptoms}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-bold text-green-600 uppercase tracking-wider">
-                          Phác đồ điều trị
-                        </p>
-                        <p className="text-sm line-clamp-2">{record.treatmentPlan}</p>
-                      </div>
-                      <div className="pt-3 border-t border-primary/5 flex items-center gap-2 text-xs text-muted-foreground">
-                        <div className="w-6 h-6 rounded-full bg-indigo-500/10 flex items-center justify-center">
-                          <Stethoscope className="w-3 h-3 text-indigo-500" />
-                        </div>
-                        Bác sĩ: {record.doctor?.name || "Bác sĩ hệ thống"}
-                        {record.date && isValid(new Date(record.date)) && (
-                          <span className="ml-auto flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {format(new Date(record.date), "HH:mm")}
-                          </span>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ===== TAB: LỊCH SỬ KHÁM NGOẠI TRÚ ===== */}
-      {activeTab === "exam-history" && (
-        <Card className="card shadow-sm">
-          <CardContent className="p-6">
-            {patientId ? (
-              <ExamHistoryList patientId={patientId} />
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                Đang tải...
-              </div>
+                ) : records.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12 text-muted-foreground gap-3">
+                    <FileText className="w-10 h-10 text-muted-foreground/40" />
+                    <div>
+                      <p className="font-medium text-sm">Chưa có hồ sơ nào</p>
+                      <p className="text-xs mt-1">Hồ sơ được tạo sau khi nhập viện.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-full">
+                    <div className="divide-y">
+                      {records.map((record: any) => {
+                        const isSelected = selectedRecord?._id === record._id;
+                        return (
+                          <button
+                            key={record._id}
+                            onClick={() => setSelectedRecord(record)}
+                            className={`w-full text-left px-4 py-3 transition-all hover:bg-muted/50 flex items-center gap-3 group ${
+                              isSelected ? "bg-blue-50 dark:bg-blue-950/30 border-l-2 border-blue-500" : "border-l-2 border-transparent"
+                            }`}
+                          >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? "bg-blue-100" : "bg-muted"}`}>
+                              <FileText className={`w-4 h-4 ${isSelected ? "text-blue-600" : "text-muted-foreground"}`} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-semibold truncate ${isSelected ? "text-blue-700 dark:text-blue-400" : ""}`}>
+                                {record.diagnosis}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {record.date && isValid(new Date(record.date))
+                                  ? format(new Date(record.date), "dd/MM/yyyy", { locale: vi })
+                                  : "Không rõ ngày"}
+                              </p>
+                            </div>
+                            <ChevronRight className={`w-4 h-4 shrink-0 transition-transform ${isSelected ? "text-blue-500 translate-x-0.5" : "text-muted-foreground/40 group-hover:text-muted-foreground"}`} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                )}
+              </>
             )}
-          </CardContent>
-        </Card>
-      )}
+
+            {activeTab === "exam-history" && (
+              <ExamHistoryPanel
+                patientId={patientId}
+                onSelectRecord={setSelectedRecord}
+                selectedId={selectedRecord?._id}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: Detail Panel */}
+        <div className="flex-1 min-w-0 rounded-xl border bg-card shadow-sm overflow-hidden">
+          {!selectedRecord ? (
+            <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-muted/60 flex items-center justify-center">
+                <ClipboardList className="w-8 h-8 text-muted-foreground/40" />
+              </div>
+              <div className="text-center">
+                <p className="font-medium text-sm">Chọn một mục để xem chi tiết</p>
+                <p className="text-xs mt-1 text-muted-foreground/70">Nhấp vào danh sách bên trái</p>
+              </div>
+            </div>
+          ) : activeTab === "medical-records" ? (
+            <MedicalRecordDetail record={selectedRecord} />
+          ) : (
+            <ExamHistoryDetail record={selectedRecord} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ===== Chi tiết Hồ sơ Bệnh án ===== */
+function MedicalRecordDetail({ record }: { record: any }) {
+  return (
+    <ScrollArea className="h-full">
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="space-y-2">
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-xl font-bold leading-tight">{record.diagnosis}</h2>
+            <Badge className="bg-blue-100 text-blue-700 shrink-0">Nội trú</Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline" className="gap-1 text-xs">
+              <Calendar className="w-3 h-3" />
+              {record.date && isValid(new Date(record.date))
+                ? format(new Date(record.date), "dd MMMM, yyyy", { locale: vi })
+                : "Không rõ ngày"}
+            </Badge>
+            {record.date && isValid(new Date(record.date)) && (
+              <Badge variant="outline" className="gap-1 text-xs">
+                <Clock className="w-3 h-3" />
+                {format(new Date(record.date), "HH:mm")}
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <div className="h-px bg-border" />
+
+        {/* Doctor */}
+        <div className="flex items-center gap-2 text-sm">
+          <div className="w-7 h-7 rounded-full bg-indigo-500/10 flex items-center justify-center">
+            <Stethoscope className="w-3.5 h-3.5 text-indigo-500" />
+          </div>
+          <span className="text-muted-foreground">Bác sĩ phụ trách:</span>
+          <span className="font-semibold">{record.doctor?.name || "Bác sĩ hệ thống"}</span>
+        </div>
+
+        {/* Fields */}
+        {record.admissionReason && (
+          <DetailSection
+            label="Lý do nhập viện"
+            value={record.admissionReason}
+            color="text-orange-600"
+            bg="bg-orange-50 dark:bg-orange-950/20"
+            border="border-orange-200 dark:border-orange-800"
+          />
+        )}
+
+        {record.symptoms && (
+          <DetailSection
+            label="Triệu chứng"
+            value={record.symptoms}
+            color="text-blue-600"
+            bg="bg-blue-50 dark:bg-blue-950/20"
+            border="border-blue-200 dark:border-blue-800"
+            icon={<Activity className="w-3.5 h-3.5" />}
+          />
+        )}
+
+        {record.treatmentPlan && (
+          <DetailSection
+            label="Phác đồ điều trị"
+            value={record.treatmentPlan}
+            color="text-green-600"
+            bg="bg-green-50 dark:bg-green-950/20"
+            border="border-green-200 dark:border-green-800"
+          />
+        )}
+
+        {record.notes && (
+          <DetailSection
+            label="Ghi chú"
+            value={record.notes}
+            color="text-amber-600"
+            bg="bg-amber-50 dark:bg-amber-950/20"
+            border="border-amber-200 dark:border-amber-800"
+          />
+        )}
+      </div>
+    </ScrollArea>
+  );
+}
+
+/* ===== Chi tiết Lịch sử Khám ===== */
+function ExamHistoryDetail({ record }: { record: any }) {
+  const doctorName =
+    typeof record.doctor === "object" && record.doctor !== null
+      ? (record.doctor as any).name
+      : "Chưa rõ";
+  const doctorSpec =
+    typeof record.doctor === "object" && record.doctor !== null
+      ? (record.doctor as any).specialization ?? ""
+      : "";
+
+  const prescriptionId = record.prescription;
+  const { data: prescriptionDetail, isLoading: loadingRx } = useQuery({
+    queryKey: ["prescription", prescriptionId],
+    queryFn: () => getPrescriptionById(prescriptionId!),
+    enabled: !!prescriptionId,
+  });
+
+  return (
+    <ScrollArea className="h-full">
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="space-y-2">
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-xl font-bold leading-tight">{record.diagnosis}</h2>
+            <Badge className="bg-emerald-100 text-emerald-700 shrink-0">Ngoại trú</Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline" className="gap-1 text-xs">
+              <Calendar className="w-3 h-3" />
+              {record.examDate && isValid(new Date(record.examDate))
+                ? format(new Date(record.examDate), "dd MMMM, yyyy", { locale: vi })
+                : "Không rõ ngày"}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="h-px bg-border" />
+
+        {/* Doctor */}
+        <div className="flex items-center gap-2 text-sm">
+          <div className="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center">
+            <Stethoscope className="w-3.5 h-3.5 text-emerald-500" />
+          </div>
+          <span className="text-muted-foreground">Bác sĩ khám:</span>
+          <span className="font-semibold">{doctorName}{doctorSpec ? ` — ${doctorSpec}` : ""}</span>
+        </div>
+
+        {/* Fields */}
+        {record.chiefComplaint && (
+          <DetailSection
+            label="Lý do khám"
+            value={record.chiefComplaint}
+            color="text-orange-600"
+            bg="bg-orange-50 dark:bg-orange-950/20"
+            border="border-orange-200 dark:border-orange-800"
+          />
+        )}
+        {record.symptoms && (
+          <DetailSection
+            label="Triệu chứng"
+            value={record.symptoms}
+            color="text-blue-600"
+            bg="bg-blue-50 dark:bg-blue-950/20"
+            border="border-blue-200 dark:border-blue-800"
+            icon={<Activity className="w-3.5 h-3.5" />}
+          />
+        )}
+        {record.treatment && (
+          <DetailSection
+            label="Hướng xử trí"
+            value={record.treatment}
+            color="text-green-600"
+            bg="bg-green-50 dark:bg-green-950/20"
+            border="border-green-200 dark:border-green-800"
+          />
+        )}
+
+        {/* Đơn thuốc */}
+        {prescriptionId && (
+          <div className="rounded-lg border border-purple-200 dark:border-purple-800 overflow-hidden">
+            <div className="bg-purple-50 dark:bg-purple-950/20 px-4 py-2.5 flex items-center gap-2 border-b border-purple-200 dark:border-purple-800">
+              <Pill className="w-4 h-4 text-purple-600" />
+              <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                Đơn thuốc
+              </p>
+              {prescriptionDetail && (
+                <Badge
+                  className={`ml-auto text-[10px] ${
+                    prescriptionDetail.status === "dispensed"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-amber-100 text-amber-700"
+                  }`}
+                >
+                  {prescriptionDetail.status === "dispensed" ? "Đã phát thuốc" : "Chờ phát thuốc"}
+                </Badge>
+              )}
+            </div>
+            {loadingRx ? (
+              <div className="px-4 py-3 text-xs text-muted-foreground">Đang tải đơn thuốc...</div>
+            ) : prescriptionDetail?.items?.length > 0 ? (
+              <div className="divide-y divide-purple-100 dark:divide-purple-900">
+                {prescriptionDetail.items.map((item: any, i: number) => (
+                  <div key={i} className="px-4 py-3 flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-md bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0 mt-0.5">
+                      <Pill className="w-3.5 h-3.5 text-purple-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{item.medicineName}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {item.dosage} &bull; {item.frequency} &bull; {item.duration}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-xs shrink-0">
+                      x{item.quantity} {item.unit || "viên"}
+                    </Badge>
+                  </div>
+                ))}
+                {prescriptionDetail.items.some((it: any) => it.price > 0) && (
+                  <div className="px-4 py-2.5 flex justify-between items-center bg-purple-50/60 dark:bg-purple-950/20">
+                    <span className="text-xs text-muted-foreground">Tổng giá trị đơn thuốc</span>
+                    <span className="text-sm font-bold text-purple-700 dark:text-purple-300">
+                      {prescriptionDetail.items
+                        .reduce((acc: number, it: any) => acc + (it.price || 0) * it.quantity, 0)
+                        .toLocaleString()} VNĐ
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="px-4 py-3 text-xs text-muted-foreground">Không có thông tin thuốc.</div>
+            )}
+          </div>
+        )}
+
+        {record.followUpDate && isValid(new Date(record.followUpDate)) && (
+          <div className="rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/20 p-4">
+            <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5" /> Lịch tái khám
+            </p>
+            <p className="text-sm font-semibold text-purple-800 dark:text-purple-200">
+              {format(new Date(record.followUpDate), "PPP", { locale: vi })}
+            </p>
+          </div>
+        )}
+        {record.notes && (
+          <DetailSection
+            label="Ghi chú"
+            value={record.notes}
+            color="text-amber-600"
+            bg="bg-amber-50 dark:bg-amber-950/20"
+            border="border-amber-200 dark:border-amber-800"
+          />
+        )}
+      </div>
+    </ScrollArea>
+  );
+}
+
+/* ===== Reusable Detail Section ===== */
+function DetailSection({
+  label,
+  value,
+  color,
+  bg,
+  border,
+  icon,
+}: {
+  label: string;
+  value: string;
+  color: string;
+  bg: string;
+  border: string;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <div className={`rounded-lg border ${border} ${bg} p-4`}>
+      <p className={`text-xs font-bold uppercase tracking-wider mb-1.5 flex items-center gap-1.5 ${color}`}>
+        {icon}
+        {label}
+      </p>
+      <p className="text-sm leading-relaxed text-foreground/90">{value}</p>
     </div>
   );
 }

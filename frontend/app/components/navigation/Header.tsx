@@ -51,6 +51,12 @@ const Header = () => {
         return "Yêu cầu xét nghiệm";
       case "results":
         return "Kết quả xét nghiệm";
+      case "test-results":
+        return "Kết quả xét nghiệm";
+      case "medical-records":
+        return "Lịch sử khám chữa bệnh";
+      case "invoices":
+        return "Hóa đơn thanh toán";
       case "financial-history":
         return "Lịch sử tài chính";
       case "sessions":
@@ -65,10 +71,17 @@ const Header = () => {
         return "Vai trò & Quyền";
       case "billing":
         return "Thanh toán";
+      case "lab-technicians":
+        return "Kỹ thuật viên";
+      case "pharmacists":
+        return "Dược sĩ";
+      case "appointments":
+        return "Lịch hẹn & Tư vấn";
       default:
         return lastPart;
     }
   };
+
 
   return (
     <header className="flex h-16 items-center gap-2 border-b w-full px-3">
