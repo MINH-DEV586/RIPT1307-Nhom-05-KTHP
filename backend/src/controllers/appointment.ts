@@ -199,14 +199,20 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
 
     const appointments = await Appointment.find(filter).sort({ date: 1, timeSlot: 1 }).lean();
     
-    // Bổ sung thông tin bệnh nhân
+    // Bổ sung thông tin bệnh nhân và bác sĩ
     const userCollection = mongoose.connection.collection("user");
     const detailed = await Promise.all(appointments.map(async (app) => {
       let patient = await userCollection.findOne({ _id: app.patientId as any });
       if (!patient && mongoose.Types.ObjectId.isValid(app.patientId)) {
         patient = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(app.patientId) });
       }
-      return { ...app, patient };
+      
+      let doctor = await userCollection.findOne({ _id: app.doctorId as any });
+      if (!doctor && mongoose.Types.ObjectId.isValid(app.doctorId)) {
+        doctor = await userCollection.findOne({ _id: new mongoose.Types.ObjectId(app.doctorId) });
+      }
+
+      return { ...app, patient, doctor };
     }));
 
     res.json(detailed);

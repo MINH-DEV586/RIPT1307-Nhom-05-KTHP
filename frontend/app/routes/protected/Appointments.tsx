@@ -88,13 +88,16 @@ export default function AppointmentsPage() {
 
   if (isLoading) return <div className="h-[60vh] flex items-center justify-center"><Loader label="Đang tải lịch hẹn..." /></div>;
 
-  const now = new Date();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
   const upcoming = appointments.filter(a => {
     const appointmentDate = new Date(a.date);
-    return (a.status === "pending" || a.status === "confirmed") && appointmentDate >= now;
+    appointmentDate.setHours(0, 0, 0, 0);
+    return (a.status === "pending" || a.status === "confirmed") && appointmentDate.getTime() >= today.getTime();
   });
-  const completed = appointments.filter(a => a.status === "completed");
-  const cancelled = appointments.filter(a => a.status === "cancelled");
+  const completed = appointments.filter(a => a.status === "completed").reverse();
+  const cancelled = appointments.filter(a => a.status === "cancelled").reverse();
 
   return (
     <div className="space-y-8 pb-10">
@@ -150,17 +153,25 @@ export default function AppointmentsPage() {
 
         <TabsContent value="completed" className="pt-6">
           <div className="grid gap-6">
-             {completed.map((appt) => (
-                <AppointmentCard key={appt._id} appointment={appt} isDoctor={isDoctor} />
-              ))}
+            {completed.length > 0 ? (
+              completed.map((appt) => (
+                <AppointmentCard key={appt._id} appointment={appt} isDoctor={isDoctorOrAdmin} isAdmin={isAdmin} />
+              ))
+            ) : (
+              <EmptyState title="Không có lịch hẹn hoàn thành" />
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="cancelled" className="pt-6">
           <div className="grid gap-6">
-             {cancelled.map((appt) => (
-                <AppointmentCard key={appt._id} appointment={appt} isDoctor={isDoctor} />
-              ))}
+            {cancelled.length > 0 ? (
+              cancelled.map((appt) => (
+                <AppointmentCard key={appt._id} appointment={appt} isDoctor={isDoctorOrAdmin} isAdmin={isAdmin} />
+              ))
+            ) : (
+              <EmptyState title="Không có lịch hẹn đã hủy" />
+            )}
           </div>
         </TabsContent>
       </Tabs>
