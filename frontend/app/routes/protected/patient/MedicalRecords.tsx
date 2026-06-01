@@ -150,12 +150,24 @@ export default function PatientMedicalRecords() {
                               <p className={`text-sm font-semibold truncate ${isSelected ? "text-blue-700 dark:text-blue-400" : ""}`}>
                                 {record.diagnosis}
                               </p>
-                              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {record.date && isValid(new Date(record.date))
-                                  ? format(new Date(record.date), "dd/MM/yyyy", { locale: vi })
-                                  : "Không rõ ngày"}
-                              </p>
+                              <div className="flex flex-col gap-1 mt-1 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {record.date && isValid(new Date(record.date))
+                                    ? format(new Date(record.date), "dd/MM/yyyy", { locale: vi })
+                                    : "Không rõ ngày"}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Stethoscope className="w-3 h-3" />
+                                  <span className="font-medium text-foreground">{record.doctor?.name || "Bác sĩ hệ thống"}</span>
+                                  {record.doctor?.specialization && (
+                                    <>
+                                      <span className="text-muted-foreground/60">Chuyên khoa</span>
+                                      <span className="text-indigo-600 dark:text-indigo-400 font-medium">{record.doctor.specialization}</span>
+                                    </>
+                                  )}
+                                </span>
+                              </div>
                             </div>
                             <ChevronRight className={`w-4 h-4 shrink-0 transition-transform ${isSelected ? "text-blue-500 translate-x-0.5" : "text-muted-foreground/40 group-hover:text-muted-foreground"}`} />
                           </button>
@@ -235,7 +247,13 @@ function MedicalRecordDetail({ record }: { record: any }) {
             <Stethoscope className="w-3.5 h-3.5 text-indigo-500" />
           </div>
           <span className="text-muted-foreground">Bác sĩ phụ trách:</span>
-          <span className="font-semibold">{record.doctor?.name || "Bác sĩ hệ thống"}</span>
+          <span className="font-semibold text-foreground">{record.doctor?.name || "Bác sĩ hệ thống"}</span>
+          {record.doctor?.specialization && (
+             <>
+               <span className="text-muted-foreground/60">Chuyên khoa</span>
+               <span className="text-indigo-600 dark:text-indigo-400 font-medium">{record.doctor.specialization}</span>
+             </>
+          )}
         </div>
 
         {/* Fields */}
@@ -279,8 +297,74 @@ function MedicalRecordDetail({ record }: { record: any }) {
             border="border-amber-200 dark:border-amber-800"
           />
         )}
+
+        {/* Các đơn thuốc nội trú */}
+        {record.prescriptionIds && record.prescriptionIds.length > 0 && (
+          <div className="space-y-4">
+            <div className="h-px bg-border my-4" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-purple-600 flex items-center gap-2">
+              <Pill className="w-4 h-4" /> Đơn thuốc trong đợt điều trị
+            </h3>
+            {record.prescriptionIds.map((id: string) => (
+              <InpatientPrescriptionCard key={id} prescriptionId={id} />
+            ))}
+          </div>
+        )}
       </div>
     </ScrollArea>
+  );
+}
+
+function InpatientPrescriptionCard({ prescriptionId }: { prescriptionId: string }) {
+  const { data: prescriptionDetail, isLoading: loadingRx } = useQuery({
+    queryKey: ["prescription", prescriptionId],
+    queryFn: () => getPrescriptionById(prescriptionId),
+  });
+
+  return (
+    <div className="rounded-lg border border-purple-200 dark:border-purple-800 overflow-hidden">
+      <div className="bg-purple-50 dark:bg-purple-950/20 px-4 py-2.5 flex items-center gap-2 border-b border-purple-200 dark:border-purple-800">
+        <Pill className="w-4 h-4 text-purple-600" />
+        <p className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+          Đơn thuốc {prescriptionDetail?.createdAt ? format(new Date(prescriptionDetail.createdAt), "dd/MM/yyyy HH:mm") : ""}
+        </p>
+        {prescriptionDetail && (
+          <Badge
+            className={`ml-auto text-[10px] ${
+              prescriptionDetail.status === "dispensed"
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-amber-100 text-amber-700"
+            }`}
+          >
+            {prescriptionDetail.status === "dispensed" ? "Đã phát thuốc" : "Chờ phát thuốc"}
+          </Badge>
+        )}
+      </div>
+      {loadingRx ? (
+        <div className="px-4 py-3 text-xs text-muted-foreground">Đang tải đơn thuốc...</div>
+      ) : prescriptionDetail?.items?.length > 0 ? (
+        <div className="divide-y divide-purple-100 dark:divide-purple-900">
+          {prescriptionDetail.items.map((item: any, i: number) => (
+            <div key={i} className="px-4 py-3 flex items-start gap-3">
+              <div className="w-7 h-7 rounded-md bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0 mt-0.5">
+                <Pill className="w-3.5 h-3.5 text-purple-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">{item.medicineName}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {item.dosage} &bull; {item.frequency} &bull; {item.duration}
+                </p>
+              </div>
+              <Badge variant="outline" className="text-xs shrink-0">
+                x{item.quantity} {item.unit || "viên"}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="px-4 py-3 text-xs text-muted-foreground">Không có thông tin thuốc.</div>
+      )}
+    </div>
   );
 }
 
@@ -329,7 +413,13 @@ function ExamHistoryDetail({ record }: { record: any }) {
             <Stethoscope className="w-3.5 h-3.5 text-emerald-500" />
           </div>
           <span className="text-muted-foreground">Bác sĩ khám:</span>
-          <span className="font-semibold">{doctorName}{doctorSpec ? ` — ${doctorSpec}` : ""}</span>
+          <span className="font-semibold text-foreground">{doctorName}</span>
+          {doctorSpec && (
+             <>
+               <span className="text-muted-foreground/60">Chuyên khoa</span>
+               <span className="text-emerald-600 dark:text-emerald-500 font-medium">{doctorSpec}</span>
+             </>
+          )}
         </div>
 
         {/* Fields */}

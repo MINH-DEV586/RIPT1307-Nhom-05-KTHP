@@ -54,7 +54,9 @@ export const createPrescription = async (req: Request, res: Response) => {
     // Tự động gẫn vào hồ sơ nội trú mới nhất nếu bệnh nhân đang nằm viện
     try {
       const userCollection = mongoose.connection.collection("user");
-      const patient = await userCollection.findOne({ _id: patientId as any }, { projection: { status: 1 } });
+      let pId: any = patientId;
+      if (mongoose.Types.ObjectId.isValid(patientId)) pId = new mongoose.Types.ObjectId(patientId);
+      const patient = await userCollection.findOne({ _id: pId }, { projection: { status: 1 } });
       const inpatientStatuses = ["admitted", "in_treatment", "observation"];
 
       if (patient && inpatientStatuses.includes(patient.status)) {

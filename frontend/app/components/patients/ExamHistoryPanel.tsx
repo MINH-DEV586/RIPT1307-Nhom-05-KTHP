@@ -69,6 +69,10 @@ export default function ExamHistoryPanel({
             typeof record.doctor === "object" && record.doctor !== null
               ? (record.doctor as any).name
               : "Chưa rõ";
+          const doctorSpec =
+            typeof record.doctor === "object" && record.doctor !== null
+              ? (record.doctor as any).specialization ?? ""
+              : "";
 
           return (
             <button
@@ -97,7 +101,7 @@ export default function ExamHistoryPanel({
                 >
                   {record.diagnosis}
                 </p>
-                <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground flex-wrap">
+                <div className="flex flex-col gap-1 mt-1 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     {record.examDate && isValid(new Date(record.examDate))
@@ -106,7 +110,13 @@ export default function ExamHistoryPanel({
                   </span>
                   <span className="flex items-center gap-1">
                     <Stethoscope className="w-3 h-3" />
-                    {doctorName}
+                    <span className="font-medium text-foreground">{doctorName}</span>
+                    {doctorSpec && (
+                      <>
+                        <span className="text-muted-foreground/60">Chuyên khoa</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">{doctorSpec}</span>
+                      </>
+                    )}
                   </span>
                   {record.followUpDate && isValid(new Date(record.followUpDate)) && (
                     <span className="flex items-center gap-1 text-purple-500">

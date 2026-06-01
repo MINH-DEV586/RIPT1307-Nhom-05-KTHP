@@ -8,7 +8,9 @@ import mongoose from "mongoose";
 const lookupUser = async (userId: string, projection = { name: 1, specialization: 1, image: 1 }) => {
   try {
     const userCollection = mongoose.connection.collection("user");
-    return await userCollection.findOne({ _id: userId as any }, { projection });
+    let uid: any = userId;
+    if (mongoose.Types.ObjectId.isValid(userId)) uid = new mongoose.Types.ObjectId(userId);
+    return await userCollection.findOne({ _id: uid }, { projection });
   } catch {
     return null;
   }

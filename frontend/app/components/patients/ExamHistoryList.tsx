@@ -189,13 +189,16 @@ function ExamSection({
 }
 
 function ExamCard({ record }: { record: ExamHistory }) {
-  const [expanded, setExpanded] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
 
   const doctorName =
     typeof record.doctor === "object" && record.doctor !== null
       ? (record.doctor as any).name
       : "Chưa rõ";
+  const doctorSpec =
+    typeof record.doctor === "object" && record.doctor !== null
+      ? (record.doctor as any).specialization ?? ""
+      : "";
 
   return (
     <>
@@ -203,7 +206,7 @@ function ExamCard({ record }: { record: ExamHistory }) {
         <div className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50/80 to-teal-50/50 dark:from-emerald-950/30 dark:to-teal-950/20 border-b">
           <div className="flex-1 min-w-0">
             <p className="font-bold text-emerald-900 dark:text-emerald-100 truncate">{record.diagnosis}</p>
-            <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-muted-foreground">
+            <div className="flex flex-col gap-1 mt-1 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
                 {record.examDate && isValid(new Date(record.examDate))
@@ -212,7 +215,13 @@ function ExamCard({ record }: { record: ExamHistory }) {
               </span>
               <span className="flex items-center gap-1">
                 <Stethoscope className="w-3 h-3" />
-                {doctorName}
+                <span className="font-medium text-foreground">{doctorName}</span>
+                {doctorSpec && (
+                  <>
+                    <span className="text-muted-foreground/60">Chuyên khoa</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">{doctorSpec}</span>
+                  </>
+                )}
               </span>
               {record.followUpDate && isValid(new Date(record.followUpDate)) && (
                 <span className="flex items-center gap-1 text-purple-500">
@@ -220,9 +229,11 @@ function ExamCard({ record }: { record: ExamHistory }) {
                   Tái khám: {format(new Date(record.followUpDate), "dd/MM/yyyy")}
                 </span>
               )}
-              <Badge className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
-                Ngoại trú
-              </Badge>
+              <div className="pt-0.5">
+                <Badge className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                  Ngoại trú
+                </Badge>
+              </div>
             </div>
           </div>
 
@@ -236,35 +247,8 @@ function ExamCard({ record }: { record: ExamHistory }) {
             >
               <Eye className="w-4 h-4" />
             </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 text-slate-400"
-              onClick={() => setExpanded(!expanded)}
-            >
-              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
           </div>
         </div>
-
-        {expanded && (
-          <div className="p-4 space-y-3 text-sm">
-            <div>
-              <p className="text-xs font-bold text-orange-600 uppercase tracking-wider mb-0.5">Lý do khám</p>
-              <p className="text-slate-600 dark:text-slate-300">{record.chiefComplaint}</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-green-600 uppercase tracking-wider mb-0.5">Hướng xử trí</p>
-              <p className="text-slate-600 dark:text-slate-300">{record.treatment}</p>
-            </div>
-            {record.prescription && (
-              <p className="text-xs bg-blue-50 dark:bg-blue-950/20 text-blue-700 p-2 rounded border border-blue-100">
-                <Pill className="w-3 h-3 inline mr-1" />
-                {record.prescription}
-              </p>
-            )}
-          </div>
-        )}
       </div>
 
       <ExamDetailDialog

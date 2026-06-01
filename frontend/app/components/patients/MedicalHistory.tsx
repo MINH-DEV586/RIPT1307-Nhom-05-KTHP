@@ -250,7 +250,6 @@ function EditRecordDialog({
 function RecordCard({ record, canEdit, canDelete, patientId }: { record: MedicalRecord; canEdit: boolean; canDelete: boolean; patientId: string }) {
 
   const queryClient = useQueryClient();
-  const [expanded, setExpanded] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -269,6 +268,10 @@ function RecordCard({ record, canEdit, canDelete, patientId }: { record: Medical
     typeof record.doctor === "object" && record.doctor !== null
       ? (record.doctor as any).name ?? "Chưa rõ"
       : "Chưa rõ";
+  const doctorSpec =
+    typeof record.doctor === "object" && record.doctor !== null
+      ? (record.doctor as any).specialization ?? ""
+      : "";
 
 
   return (
@@ -278,7 +281,7 @@ function RecordCard({ record, canEdit, canDelete, patientId }: { record: Medical
         <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20 border-b">
           <div className="flex-1 min-w-0">
             <p className="font-bold text-blue-900 dark:text-blue-100 truncate">{record.diagnosis}</p>
-            <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-muted-foreground">
+            <div className="flex flex-col gap-1 mt-1 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
                 {record.date && isValid(new Date(record.date))
@@ -287,11 +290,19 @@ function RecordCard({ record, canEdit, canDelete, patientId }: { record: Medical
               </span>
               <span className="flex items-center gap-1">
                 <Stethoscope className="w-3 h-3" />
-                {doctorName}
+                <span className="font-medium text-foreground">{doctorName}</span>
+                {doctorSpec && (
+                  <>
+                    <span className="text-muted-foreground/60">Chuyên khoa</span>
+                    <span className="text-indigo-600 dark:text-indigo-400 font-medium">{doctorSpec}</span>
+                  </>
+                )}
               </span>
-              <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">
-                Nội trú
-              </Badge>
+              <div className="pt-0.5">
+                <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">
+                  Nội trú
+                </Badge>
+              </div>
             </div>
           </div>
           {/* Actions */}
@@ -312,39 +323,8 @@ function RecordCard({ record, canEdit, canDelete, patientId }: { record: Medical
                 <Trash2 className="w-4 h-4" />
               </Button>
             )}
-
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400"
-              onClick={() => setExpanded(!expanded)}>
-              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
           </div>
         </div>
-
-        {/* Expandable content */}
-        {expanded && (
-          <div className="p-4 space-y-3 text-sm">
-            {(record as any).admissionReason && (
-              <div>
-                <p className="text-xs font-bold text-orange-600 uppercase tracking-wider mb-0.5">Lý do nhập viện</p>
-                <p className="text-slate-600 dark:text-slate-300">{(record as any).admissionReason}</p>
-              </div>
-            )}
-            <div>
-              <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-0.5">Triệu chứng</p>
-              <p className="text-slate-600 dark:text-slate-300">{record.symptoms}</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-green-600 uppercase tracking-wider mb-0.5">Phác đồ điều trị</p>
-              <p className="text-slate-600 dark:text-slate-300">{record.treatmentPlan}</p>
-            </div>
-            {record.notes && (
-              <p className="italic text-amber-700 dark:text-amber-300 text-xs bg-amber-50 dark:bg-amber-950/20 p-2 rounded">
-                "{record.notes}"
-              </p>
-            )}
-
-          </div>
-        )}
       </div>
 
       {/* Detail Dialog */}
