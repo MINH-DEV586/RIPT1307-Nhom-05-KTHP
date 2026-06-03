@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
@@ -36,11 +36,11 @@ export function meta() {
 type TabType = "medical-records" | "exam-history";
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
-  admitted: { label: "Đang nội trú", color: "bg-indigo-100 text-indigo-700 border-indigo-200" },
+  admitted: { label: "Đang nội trú", color: "bg-blue-100 text-blue-700 border-blue-200" },
   in_treatment: { label: "Đang điều trị", color: "bg-blue-100 text-blue-700 border-blue-200" },
   observation: { label: "Theo dõi", color: "bg-amber-100 text-amber-700 border-amber-200" },
   discharged: { label: "Đã xuất viện", color: "bg-slate-100 text-slate-600 border-slate-200" },
-  follow_up: { label: "Tái khám", color: "bg-purple-100 text-purple-700 border-purple-200" },
+  follow_up: { label: "Tái khám", color: "bg-sky-100 text-sky-700 border-sky-200" },
 };
 
 const TABS = [
@@ -121,7 +121,7 @@ export default function MedicalRecordsPage() {
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${
                   isActive
-                    ? "border-transparent bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+                    ? "border-transparent bg-gradient-to-r from-blue-600 to-blue-600 text-white shadow-md shadow-blue-500/20"
                     : "border-border hover:border-blue-200 hover:bg-muted/50"
                 }`}
               >
@@ -196,7 +196,7 @@ export default function MedicalRecordsPage() {
               onClick={() => { setActiveTab(tab.key); setSelectedPatient(null); }}
               className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${
                 isActive
-                  ? "border-transparent bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20"
+                  ? "border-transparent bg-gradient-to-r from-blue-600 to-blue-600 text-white shadow-md shadow-blue-500/20"
                   : "border-border hover:border-blue-200 hover:bg-muted/50"
               }`}
             >
@@ -252,18 +252,18 @@ export default function MedicalRecordsPage() {
                         onClick={() => setSelectedPatient(patient)}
                         className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
                           isSelected
-                            ? "bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800"
+                            ? "bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800"
                             : "hover:bg-muted/60 border border-transparent"
                         }`}
                       >
                         <Avatar className="h-9 w-9 shrink-0">
                           <AvatarImage src={patient.image || ""} />
-                          <AvatarFallback className="text-sm bg-indigo-100 text-indigo-700">
+                          <AvatarFallback className="text-sm bg-blue-100 text-blue-700">
                             {patient.name?.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className={`font-semibold text-sm truncate ${isSelected ? "text-indigo-700" : ""}`}>
+                          <p className={`font-semibold text-sm truncate ${isSelected ? "text-blue-700" : ""}`}>
                             {patient.name}
                           </p>
                           {statusInfo && (
@@ -272,7 +272,7 @@ export default function MedicalRecordsPage() {
                             </Badge>
                           )}
                         </div>
-                        <ChevronRight className={`w-4 h-4 shrink-0 ${isSelected ? "text-indigo-500" : "text-muted-foreground/40"}`} />
+                        <ChevronRight className={`w-4 h-4 shrink-0 ${isSelected ? "text-blue-500" : "text-muted-foreground/40"}`} />
                       </button>
                     );
                   })
@@ -309,7 +309,7 @@ export default function MedicalRecordsPage() {
                   <div className="flex items-center gap-3">
                     <Avatar className="h-11 w-11">
                       <AvatarImage src={selectedPatient.image || ""} />
-                      <AvatarFallback className="bg-indigo-100 text-indigo-700 font-bold">
+                      <AvatarFallback className="bg-blue-100 text-blue-700 font-bold">
                         {selectedPatient.name?.charAt(0)}
                       </AvatarFallback>
                     </Avatar>

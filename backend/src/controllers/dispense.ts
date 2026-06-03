@@ -151,24 +151,38 @@ export const confirmDispense = async (req: Request, res: Response) => {
       }
 
       if (totalPrescriptionFee > 0) {
+        const items = [
+          {
+            description: `Chi phí đơn thuốc - Chẩn đoán: ${prescription.diagnosis || "Khám bệnh"} (${new Date().toLocaleDateString("vi-VN")})`,
+            quantity: 1,
+            unitPrice: totalPrescriptionFee,
+            totalPrice: totalPrescriptionFee
+          }
+        ];
+        let finalAmount = totalPrescriptionFee;
+
+        if (patientUser && patientUser.insuranceId) {
+          const discount = Math.round(totalPrescriptionFee * 0.8);
+          items.push({
+            description: `BHYT chi trả (80%)`,
+            quantity: 1,
+            unitPrice: -discount,
+            totalPrice: -discount
+          });
+          finalAmount -= discount;
+        }
+
         const prescriptionInvoice = new Invoice({
           patientId: prescription.patientId,
           status: "pending_payment",
-          items: [
-            {
-              description: `Chi phí đơn thuốc - Chẩn đoán: ${prescription.diagnosis || "Khám bệnh"} (${new Date().toLocaleDateString("vi-VN")})`,
-              quantity: 1,
-              unitPrice: totalPrescriptionFee,
-              totalPrice: totalPrescriptionFee
-            }
-          ],
-          totalAmount: totalPrescriptionFee
+          items,
+          totalAmount: finalAmount
         });
         await prescriptionInvoice.save({ session });
         await logActivity(
           dispensedBy,
           "Tạo hóa đơn đơn thuốc ngoại trú",
-          `Đã tự động tạo hóa đơn đơn thuốc ${totalPrescriptionFee} cho bệnh nhân ID: ${prescription.patientId}`
+          `Đã tự động tạo hóa đơn đơn thuốc ${finalAmount.toLocaleString("vi-VN")}đ cho bệnh nhân ID: ${prescription.patientId}${patientUser && patientUser.insuranceId ? " (đã trừ 80% BHYT)" : ""}`
         );
       }
     }

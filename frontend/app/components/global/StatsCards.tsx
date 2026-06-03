@@ -1,9 +1,7 @@
 import { Users, Activity, UserPlus, UserCheck } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { User } from "@/types";
 
-// Helper function to format trend percentage
 const formatTrend = (current: number, previous: number) => {
   if (previous === 0) {
     return { value: current > 0 ? "+100%" : "0%", isUp: current > 0 };
@@ -17,55 +15,38 @@ const formatTrend = (current: number, previous: number) => {
 };
 
 const StatsCards = ({ data }: { data: User[] }) => {
-  // --- TIME PERIODS ---
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-  // --- 1. TOTAL USERS ---
   const totalCurrent = data.length;
-  const totalPrevious = data.filter(
-    (u) => new Date(u.createdAt) < thirtyDaysAgo,
-  ).length;
+  const totalPrevious = data.filter((u) => new Date(u.createdAt) < thirtyDaysAgo).length;
   const totalTrend = formatTrend(totalCurrent, totalPrevious);
 
-  // --- 2. ACTIVE TREATMENTS / STAFF ---
   const activeStatuses = ["admitted", "in_treatment", "observation", "active"];
   const activeCurrent = data.filter((u) =>
-    activeStatuses.includes(u.status?.toLowerCase() || ""),
+    activeStatuses.includes(u.status?.toLowerCase() || "")
   ).length;
-
-  // Estimate previous active by filtering out those created in the last 30 days
   const activePrevious = data.filter(
     (u) =>
       activeStatuses.includes(u.status?.toLowerCase() || "") &&
-      new Date(u.createdAt) < thirtyDaysAgo,
+      new Date(u.createdAt) < thirtyDaysAgo
   ).length;
-
   const activeTrend = formatTrend(activeCurrent, activePrevious);
 
-  // --- 3. NEW THIS MONTH ---
-  const newCurrent = data.filter(
-    (u) => new Date(u.createdAt) >= thirtyDaysAgo,
-  ).length;
-
+  const newCurrent = data.filter((u) => new Date(u.createdAt) >= thirtyDaysAgo).length;
   const newPrevious = data.filter((u) => {
     const date = new Date(u.createdAt);
     return date >= sixtyDaysAgo && date < thirtyDaysAgo;
   }).length;
-
   const newTrend = formatTrend(newCurrent, newPrevious);
 
-  // --- 4. RATE / SATISFACTION ---
   const isPatient = data[0]?.role === "patient";
-  const dischargedCurrent = data.filter(
-    (u) => u.status?.toLowerCase() === "discharged",
-  ).length;
-
+  const dischargedCurrent = data.filter((u) => u.status?.toLowerCase() === "discharged").length;
   const dischargedPrevious = data.filter(
     (u) =>
       u.status?.toLowerCase() === "discharged" &&
-      new Date(u.createdAt) < thirtyDaysAgo,
+      new Date(u.createdAt) < thirtyDaysAgo
   ).length;
 
   let rateValue = "0%";
@@ -76,8 +57,6 @@ const StatsCards = ({ data }: { data: User[] }) => {
     if (isPatient) {
       rateLabel = "Tỷ lệ xuất viện";
       rateValue = `${Math.round((dischargedCurrent / totalCurrent) * 100)}%`;
-
-      // Calculate trend based on absolute numbers of discharged
       rateTrend = formatTrend(dischargedCurrent, dischargedPrevious);
     } else {
       rateLabel = "Tỷ lệ nhân viên đang làm việc";
@@ -86,7 +65,6 @@ const StatsCards = ({ data }: { data: User[] }) => {
     }
   }
 
-  // --- MAP TO CARD RENDER DATA ---
   const statsData = [
     {
       label: isPatient ? "Tổng số bệnh nhân" : "Tổng số nhân viên",
@@ -94,17 +72,21 @@ const StatsCards = ({ data }: { data: User[] }) => {
       trend: totalTrend.value,
       trendUp: totalTrend.isUp,
       icon: Users,
-      iconColor: "text-blue-600 dark:text-blue-400",
-      iconBg: "bg-blue-100 dark:bg-blue-900/30",
+      iconColor: "text-blue-600",
+      iconBg: "bg-blue-100",
+      borderColor: "border-l-blue-500",
+      bg: "bg-blue-50/40",
     },
     {
-      label: isPatient ? "Đang điều trị" : "Đang làm việc",
+      label: isPatient ? "Bệnh nhân hoạt động" : "Đang làm việc",
       value: activeCurrent.toLocaleString(),
       trend: activeTrend.value,
       trendUp: activeTrend.isUp,
       icon: Activity,
-      iconColor: "text-teal-600 dark:text-teal-400",
-      iconBg: "bg-teal-100 dark:bg-teal-900/30",
+      iconColor: "text-teal-600",
+      iconBg: "bg-teal-100",
+      borderColor: "border-l-teal-500",
+      bg: "bg-teal-50/40",
     },
     {
       label: "Mới trong tháng này",
@@ -112,8 +94,10 @@ const StatsCards = ({ data }: { data: User[] }) => {
       trend: newTrend.value,
       trendUp: newTrend.isUp,
       icon: UserPlus,
-      iconColor: "text-purple-600 dark:text-purple-400",
-      iconBg: "bg-purple-100 dark:bg-purple-900/30",
+      iconColor: "text-sky-600",
+      iconBg: "bg-sky-100",
+      borderColor: "border-l-sky-500",
+      bg: "bg-sky-50/40",
     },
     {
       label: rateLabel,
@@ -121,50 +105,42 @@ const StatsCards = ({ data }: { data: User[] }) => {
       trend: rateTrend.value,
       trendUp: rateTrend.isUp,
       icon: UserCheck,
-      iconColor: "text-green-600 dark:text-green-400",
-      iconBg: "bg-green-100 dark:bg-green-900/30",
+      iconColor: "text-green-600",
+      iconBg: "bg-green-100",
+      borderColor: "border-l-green-500",
+      bg: "bg-green-50/40",
     },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 stagger-children">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {statsData.map((stat, index) => (
-        <Card
+        <div
           key={index}
-          className="border-none shadow-sm rounded-lg card hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 animate-fade-up"
-          style={{ animationDelay: `${index * 60}ms` }}
+          className={cn(
+            "rounded-xl border border-slate-200 border-l-4 shadow-sm p-5 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5",
+            stat.borderColor,
+            stat.bg
+          )}
         >
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              {/* Icon Box */}
-              <div className={cn("p-3 rounded-2xl transition-transform group-hover:scale-110", stat.iconBg)}>
-                <stat.icon className={cn("w-6 h-6", stat.iconColor)} />
-              </div>
-
-              {/* Trend Badge */}
-              <div
-                className={cn(
-                  "px-2.5 py-1 rounded-full text-xs font-bold",
-                  stat.trendUp
-                    ? "bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-                    : "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-                )}
-              >
-                {stat.trend}
-              </div>
+          <div className="flex items-center justify-between mb-3">
+            <div className={cn("p-2.5 rounded-lg", stat.iconBg)}>
+              <stat.icon className={cn("w-5 h-5", stat.iconColor)} />
             </div>
-
-            {/* Label & Value */}
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                {stat.label}
-              </p>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight animate-count">
-                {stat.value}
-              </h3>
-            </div>
-          </CardContent>
-        </Card>
+            <span
+              className={cn(
+                "text-xs font-semibold px-2 py-0.5 rounded-full",
+                stat.trendUp
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-600"
+              )}
+            >
+              {stat.trend}
+            </span>
+          </div>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{stat.label}</p>
+        </div>
       ))}
     </div>
   );

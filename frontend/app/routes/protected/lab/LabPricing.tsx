@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getLabTests, createLabTestRecord, updateLabTestRecord, deleteLabTestRecord } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -116,24 +116,24 @@ export default function LabPricing() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-100 rounded-xl">
-            <FlaskConical className="w-6 h-6 text-indigo-600" />
+          <div className="p-2 bg-blue-100 rounded-xl">
+            <FlaskConical className="w-6 h-6 text-blue-600" />
           </div>
           <div>
             <h1 className="text-2xl font-black text-foreground">Bảng giá xét nghiệm</h1>
             <p className="text-sm text-muted-foreground">Quản lý danh mục và giá các loại xét nghiệm</p>
           </div>
         </div>
-        <Button onClick={openCreate} className="bg-indigo-600 hover:bg-indigo-700 rounded-xl gap-2 font-bold">
+        <Button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 rounded-xl gap-2 font-bold">
           <Plus className="w-4 h-4" /> Thêm loại xét nghiệm
         </Button>
       </div>
 
       {/* Tổng quan */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-center">
-          <p className="text-3xl font-black text-indigo-600">{labTests.length}</p>
-          <p className="text-sm text-indigo-500 font-medium mt-1">Loại xét nghiệm</p>
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-center">
+          <p className="text-3xl font-black text-blue-600">{labTests.length}</p>
+          <p className="text-sm text-blue-500 font-medium mt-1">Loại xét nghiệm</p>
         </div>
         <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center">
           <p className="text-3xl font-black text-emerald-600">{Object.keys(grouped).length}</p>
@@ -156,7 +156,7 @@ export default function LabPricing() {
         Object.entries(grouped).map(([category, tests]) => (
           <div key={category} className="rounded-2xl border border-border overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-3 bg-muted/40 border-b">
-              <Tag className="w-4 h-4 text-indigo-500" />
+              <Tag className="w-4 h-4 text-blue-500" />
               <span className="font-black text-sm uppercase tracking-wider">{category}</span>
               <Badge variant="secondary" className="ml-auto">{tests.length} loại</Badge>
             </div>
@@ -176,12 +176,12 @@ export default function LabPricing() {
                     <TableCell className="font-semibold">{test.name}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{test.description || "—"}</TableCell>
                     <TableCell className="text-sm">{test.duration}</TableCell>
-                    <TableCell className="text-right font-black text-indigo-600">
+                    <TableCell className="text-right font-black text-blue-600">
                       {test.price.toLocaleString("vi-VN")}đ
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-indigo-600 hover:bg-indigo-50" onClick={() => openEdit(test)}>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50" onClick={() => openEdit(test)}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
                         <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-500 hover:bg-red-50"
@@ -237,7 +237,7 @@ export default function LabPricing() {
               <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map((c) => (
                   <Badge key={c} variant={form.category === c ? "default" : "outline"}
-                    className={`cursor-pointer rounded-lg px-3 py-1 ${form.category === c ? "bg-indigo-600 text-white" : "hover:bg-indigo-50"}`}
+                    className={`cursor-pointer rounded-lg px-3 py-1 ${form.category === c ? "bg-blue-600 text-white" : "hover:bg-blue-50"}`}
                     onClick={() => setForm({ ...form, category: c })}
                   >
                     {c}
@@ -249,7 +249,7 @@ export default function LabPricing() {
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={closeDialog} className="rounded-xl">Hủy</Button>
             <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}
-              className="bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold">
+              className="bg-blue-600 hover:bg-blue-700 rounded-xl font-bold">
               {editTarget ? "Lưu thay đổi" : "Thêm mới"}
             </Button>
           </DialogFooter>

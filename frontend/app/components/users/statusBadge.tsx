@@ -34,7 +34,7 @@ export const STATUS_CONFIG: Record<
   },
   follow_up: {
     label: "Tái khám",
-    color: "bg-purple-100 text-purple-700 border-purple-200",
+    color: "bg-sky-100 text-sky-700 border-sky-200",
     icon: AlertCircle,
   },
 

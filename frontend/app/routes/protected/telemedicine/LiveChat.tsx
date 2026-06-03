@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+﻿import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { socket } from "@/lib/socket";
 import { getChatHistory, getTelemedicineSessions } from "@/lib/api";
@@ -121,7 +121,7 @@ export default function EmbeddedChat() {
     ? onlineUsers.includes(currentUser?.role === "doctor" ? consultation.patientId : consultation.doctorId)
     : false;
 
-  if (loading) return <div className="h-full flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-indigo-500 opacity-50" /></div>;
+  if (loading) return <div className="h-full flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-blue-500 opacity-50" /></div>;
 
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-background/20 animate-fade-in">
@@ -131,7 +131,7 @@ export default function EmbeddedChat() {
           <div className="relative">
             <Avatar className="h-12 w-12 border-2 border-background shadow-md">
               <AvatarImage src={consultation?.otherUser?.image} />
-              <AvatarFallback className="bg-indigo-600 text-white font-black text-lg">
+              <AvatarFallback className="bg-blue-600 text-white font-black text-lg">
                 {consultation?.otherUser?.name?.[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -162,8 +162,8 @@ export default function EmbeddedChat() {
       <ScrollArea className="flex-1 min-h-0 p-8">
         <div className="space-y-8 pb-4">
           <div className="flex flex-col items-center justify-center text-center py-10 opacity-40">
-            <div className="p-4 bg-indigo-50 rounded-xl mb-4 border border-indigo-100 shadow-sm">
-               <ShieldCheck className="w-8 h-8 text-indigo-600" />
+            <div className="p-4 bg-blue-50 rounded-xl mb-4 border border-blue-100 shadow-sm">
+               <ShieldCheck className="w-8 h-8 text-blue-600" />
             </div>
             <p className="text-xs font-black uppercase tracking-widest text-slate-500">Kênh tư vấn bảo mật MedChat</p>
             <p className="text-[10px] mt-2 max-w-[300px] leading-relaxed font-medium">
@@ -202,8 +202,8 @@ export default function EmbeddedChat() {
                   <div className={cn(
                     "max-w-[75%] px-4 py-2.5 rounded-2xl text-sm shadow-sm transition-all duration-300 relative",
                     isMe 
-                      ? "bg-indigo-600 text-white rounded-tr-none hover:bg-indigo-700" 
-                      : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-tl-none hover:border-indigo-200"
+                      ? "bg-blue-600 text-white rounded-tr-none hover:bg-blue-700" 
+                      : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-tl-none hover:border-blue-200"
                   )}>
                     {msg.content}
                   </div>
@@ -228,13 +228,13 @@ export default function EmbeddedChat() {
             placeholder="Nhập nội dung trao đổi y khoa..."
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            className="flex-1 bg-muted/50 border-none focus-visible:ring-2 focus-visible:ring-indigo-500/20 shadow-inner rounded-lg h-12 px-5 text-sm"
+            className="flex-1 bg-muted/50 border-none focus-visible:ring-2 focus-visible:ring-blue-500/20 shadow-inner rounded-lg h-12 px-5 text-sm"
           />
           <Button
             type="submit"
             size="icon"
             disabled={!inputText.trim()}
-            className="h-12 w-12 rounded-lg bg-indigo-600 hover:bg-indigo-700 shadow-sm shrink-0 transition-all active:scale-95"
+            className="h-12 w-12 rounded-lg bg-blue-600 hover:bg-blue-700 shadow-sm shrink-0 transition-all active:scale-95"
           >
             <Send className="w-5 h-5" />
           </Button>

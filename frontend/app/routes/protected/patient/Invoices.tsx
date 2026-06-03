@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+﻿import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getMyActiveInvoice, getBillingHistory } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import {
@@ -116,9 +116,9 @@ export default function PatientInvoices() {
 
         {/* ── Left: Summary Card ── */}
         <div className="md:col-span-1 space-y-3">
-          <Card className="border-0 bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 overflow-hidden">
+          <Card className="border-0 bg-blue-600 text-white shadow-lg shadow-blue-500/25 overflow-hidden">
             <CardHeader className="pb-0 pt-5 px-5">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-indigo-200">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-blue-200">
                 Tổng phí cần trả
               </p>
             </CardHeader>
@@ -126,20 +126,20 @@ export default function PatientInvoices() {
               <p className="text-5xl font-black tracking-tight leading-none">
                 {totalAmountPending.toLocaleString()}
               </p>
-              <p className="text-indigo-200 font-semibold mt-1">VNĐ</p>
+              <p className="text-blue-200 font-semibold mt-1">VNĐ</p>
 
               <div className="mt-5 flex items-center gap-2 bg-white/10 rounded-md px-3 py-2.5">
                 {pendingInvoices.length > 0 ? (
                   <>
-                    <AlertCircle className="w-4 h-4 text-indigo-200 shrink-0" />
-                    <p className="text-xs text-indigo-100 font-medium">
+                    <AlertCircle className="w-4 h-4 text-blue-200 shrink-0" />
+                    <p className="text-xs text-blue-100 font-medium">
                       {pendingInvoices.length} hóa đơn đang chờ thanh toán
                     </p>
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" />
-                    <p className="text-xs text-indigo-100 font-medium">
+                    <p className="text-xs text-blue-100 font-medium">
                       Tất cả hóa đơn đã được tất toán
                     </p>
                   </>
@@ -147,7 +147,7 @@ export default function PatientInvoices() {
               </div>
 
               {patientIsAdmitted ? (
-                <div className="mt-4 w-full flex items-center justify-center gap-2 bg-white/15 rounded-lg h-10 text-sm font-semibold text-indigo-100">
+                <div className="mt-4 w-full flex items-center justify-center gap-2 bg-white/15 rounded-lg h-10 text-sm font-semibold text-blue-100">
                   <BedDouble className="w-4 h-4 shrink-0" />
                   Chờ xuất viện để thanh toán
                 </div>
@@ -156,7 +156,7 @@ export default function PatientInvoices() {
                   disabled={pendingInvoices.length === 0}
                   onClick={() => pendingInvoices[0] && openQRModal(pendingInvoices[0])}
                   id="vnpay-pay-first-btn"
-                  className="mt-4 w-full bg-white text-indigo-600 hover:bg-indigo-50 font-bold h-10 gap-2 shadow-none"
+                  className="mt-4 w-full bg-white text-blue-600 hover:bg-blue-50 font-bold h-10 gap-2 shadow-none"
                 >
                   <QrCode className="w-4 h-4" />
                   {pendingInvoices.length > 1 ? "Thanh toán hóa đơn đầu tiên" : "Thanh toán bằng QR"}
@@ -186,7 +186,7 @@ export default function PatientInvoices() {
               <Separator />
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground font-medium flex items-center gap-2">
-                  <Wallet className="w-3.5 h-3.5 text-indigo-500" />
+                  <Wallet className="w-3.5 h-3.5 text-blue-500" />
                   Tổng đã thanh toán
                 </span>
                 <span className="font-bold text-emerald-600">
@@ -209,8 +209,8 @@ export default function PatientInvoices() {
                 className="gap-2 font-semibold px-6 text-sm h-[44px] rounded-lg
                   border bg-white text-muted-foreground border-border shadow-sm
                   hover:bg-slate-50 hover:text-foreground
-                  data-[state=active]:bg-indigo-600 data-[state=active]:text-white
-                  data-[state=active]:border-indigo-600 data-[state=active]:shadow-md
+                  data-[state=active]:bg-blue-600 data-[state=active]:text-white
+                  data-[state=active]:border-blue-600 data-[state=active]:shadow-md
                   focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none
                   transition-all duration-200"
               >
@@ -227,8 +227,8 @@ export default function PatientInvoices() {
                 className="gap-2 font-semibold px-6 text-sm h-[44px] rounded-lg
                   border bg-white text-muted-foreground border-border shadow-sm
                   hover:bg-slate-50 hover:text-foreground
-                  data-[state=active]:bg-indigo-600 data-[state=active]:text-white
-                  data-[state=active]:border-indigo-600 data-[state=active]:shadow-md
+                  data-[state=active]:bg-blue-600 data-[state=active]:text-white
+                  data-[state=active]:border-blue-600 data-[state=active]:shadow-md
                   focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none
                   transition-all duration-200"
               >
@@ -403,7 +403,7 @@ export default function PatientInvoices() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-slate-500 hover:text-indigo-600 shrink-0"
+                              className="h-8 w-8 text-slate-500 hover:text-blue-600 shrink-0"
                               onClick={() => setDetailInvoice(inv)}
                               title="Xem chi tiết"
                             >

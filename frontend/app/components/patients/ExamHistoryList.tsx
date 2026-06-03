@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getPatientExamHistory, getPrescriptionById } from "@/lib/api";
 
@@ -117,9 +117,9 @@ function ExamDetailDialog({
           {/* Đơn thuốc */}
           {prescriptionDetail && prescriptionDetail.items && prescriptionDetail.items.length > 0 ? (
             <div className="border rounded-lg overflow-hidden">
-              <div className="bg-purple-50 dark:bg-purple-950/20 px-4 py-2 border-b flex items-center gap-2">
-                <Pill className="w-4 h-4 text-purple-600" />
-                <p className="text-xs font-bold text-purple-700 uppercase tracking-wider">
+              <div className="bg-sky-50 dark:bg-sky-950/20 px-4 py-2 border-b flex items-center gap-2">
+                <Pill className="w-4 h-4 text-sky-600" />
+                <p className="text-xs font-bold text-sky-700 uppercase tracking-wider">
                   Đơn thuốc ({prescriptionDetail.items.length} loại) — {prescriptionDetail.status === "dispensed" ? "Đã phát" : "Đang chờ phát"}
                 </p>
               </div>
@@ -144,11 +144,11 @@ function ExamDetailDialog({
           ) : null}
 
           {record.followUpDate && isValid(new Date(record.followUpDate)) && (
-            <div className="bg-purple-50 dark:bg-purple-950/20 p-3 rounded-lg border border-purple-200">
-              <p className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <div className="bg-sky-50 dark:bg-sky-950/20 p-3 rounded-lg border border-sky-200">
+              <p className="text-xs font-bold text-sky-700 uppercase tracking-wider mb-1 flex items-center gap-1">
                 <CalendarClock className="w-3 h-3" /> Lịch tái khám
               </p>
-              <p className="text-sm font-semibold text-purple-800 dark:text-purple-200">
+              <p className="text-sm font-semibold text-sky-800 dark:text-sky-200">
                 {format(new Date(record.followUpDate), "PPP", { locale: vi })}
               </p>
             </div>
@@ -224,7 +224,7 @@ function ExamCard({ record }: { record: ExamHistory }) {
                 )}
               </span>
               {record.followUpDate && isValid(new Date(record.followUpDate)) && (
-                <span className="flex items-center gap-1 text-purple-500">
+                <span className="flex items-center gap-1 text-sky-500">
                   <CalendarClock className="w-3 h-3" />
                   Tái khám: {format(new Date(record.followUpDate), "dd/MM/yyyy")}
                 </span>

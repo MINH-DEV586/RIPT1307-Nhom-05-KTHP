@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { getUsers } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -31,7 +31,7 @@ export default function ActiveAssignmentsBoard() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64 border rounded-xl bg-slate-50/50 dark:bg-slate-900/20">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -61,7 +61,7 @@ export default function ActiveAssignmentsBoard() {
         </div>
         <Badge
           variant="secondary"
-          className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100"
+          className="bg-blue-100 text-blue-700 hover:bg-blue-100"
         >
           {activeAssignments.length} Hoạt động
         </Badge>
@@ -86,12 +86,12 @@ export default function ActiveAssignmentsBoard() {
               className={cn(
                 "overflow-hidden transition-all duration-300 relative",
                 isHighlighted
-                  ? "ring-2 ring-indigo-500 shadow-lg shadow-indigo-500/10 bg-indigo-50/30 dark:bg-indigo-950/20"
+                  ? "ring-2 ring-blue-500 shadow-lg shadow-blue-500/10 bg-blue-50/30 dark:bg-blue-950/20"
                   : "shadow-md shadow-accent bg-zinc-100 dark:bg-zinc-900",
               )}
             >
               {isHighlighted && (
-                <div className="absolute top-0 left-0 w-full h-1 bg-indigo-600 animate-in fade-in" />
+                <div className="absolute top-0 left-0 w-full h-1 bg-blue-600 animate-in fade-in" />
               )}
 
               <CardHeader className="p-4 pb-2">
@@ -101,7 +101,7 @@ export default function ActiveAssignmentsBoard() {
                       <AvatarImage src={patient.image || ""} />
                       <AvatarFallback
                         className={
-                          isHighlighted ? "bg-indigo-100 text-indigo-700" : ""
+                          isHighlighted ? "bg-blue-100 text-blue-700" : ""
                         }
                       >
                         {patient.name
@@ -121,7 +121,7 @@ export default function ActiveAssignmentsBoard() {
                     </div>
                   </div>
                   {isHighlighted && (
-                    <Badge className="bg-indigo-600 hover:bg-indigo-600 text-[10px] uppercase px-1.5 py-0">
+                    <Badge className="bg-blue-600 hover:bg-blue-600 text-[10px] uppercase px-1.5 py-0">
                       Bệnh nhân của bạn
                     </Badge>
                   )}
@@ -135,7 +135,7 @@ export default function ActiveAssignmentsBoard() {
                     className={cn(
                       "p-2 rounded-md border flex flex-col gap-1",
                       isMyPatientAsDoctor
-                        ? "bg-indigo-100 border-indigo-200 dark:bg-indigo-900/40 dark:border-indigo-800"
+                        ? "bg-blue-100 border-blue-200 dark:bg-blue-900/40 dark:border-blue-800"
                         : "bg-slate-50 dark:bg-slate-900",
                     )}
                   >
@@ -146,7 +146,7 @@ export default function ActiveAssignmentsBoard() {
                       className={cn(
                         "text-xs font-semibold truncate",
                         isMyPatientAsDoctor &&
-                          "text-indigo-700 dark:text-indigo-300",
+                          "text-blue-700 dark:text-blue-300",
                       )}
                     >
                       {patient.assignedDoctorName}
@@ -157,7 +157,7 @@ export default function ActiveAssignmentsBoard() {
                     className={cn(
                       "p-2 rounded-md border flex flex-col gap-1",
                       isMyPatientAsNurse
-                        ? "bg-indigo-100 border-indigo-200 dark:bg-indigo-900/40 dark:border-indigo-800"
+                        ? "bg-blue-100 border-blue-200 dark:bg-blue-900/40 dark:border-blue-800"
                         : "bg-slate-50 dark:bg-slate-900",
                     )}
                   >
@@ -168,7 +168,7 @@ export default function ActiveAssignmentsBoard() {
                       className={cn(
                         "text-xs font-semibold truncate",
                         isMyPatientAsNurse &&
-                          "text-indigo-700 dark:text-indigo-300",
+                          "text-blue-700 dark:text-blue-300",
                       )}
                     >
                       {patient.assignedNurseName}
@@ -190,7 +190,7 @@ export default function ActiveAssignmentsBoard() {
                 </div>
 
                 {/* AI Reasoning (Collapsible or Truncated) */}
-                <div className="text-[13px] bg-indigo-50/50 dark:bg-indigo-950/20 p-2 rounded border border-indigo-100/50 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-300 flex gap-2">
+                <div className="text-[13px] bg-blue-50/50 dark:bg-blue-950/20 p-2 rounded border border-blue-100/50 dark:border-blue-900/50 text-blue-700 dark:text-blue-300 flex gap-2">
                   <Sparkles size={12} className="shrink-0 mt-0.5" />
                   <p
                     className="line-clamp-5 italic"

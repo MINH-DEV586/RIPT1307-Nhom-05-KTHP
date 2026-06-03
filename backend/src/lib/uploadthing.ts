@@ -9,17 +9,26 @@ export const uploadRouter = {
     image: { maxFileSize: "4MB", maxFileCount: 1 },
   })
     .middleware(async ({ req }) => {
+      let token = "";
       const authHeader = req.headers.authorization;
-      if (!authHeader) {
+      if (authHeader && authHeader.startsWith("Bearer ") && authHeader !== "Bearer undefined") {
+        token = authHeader.substring(7);
+      } else {
+        // Fallback to Better Auth cookie
+        const cookies = (req as any).cookies;
+        token = cookies?.["better-auth.session_token"] || "";
+      }
+
+      if (!token) {
+        console.error("Upload rejected: No token found in Authorization header or better-auth.session_token cookie");
         throw new Error("Unauthorized");
       }
-      const token = authHeader.substring(7); // Remove "Bearer " prefix
 
       const session = await mongoose.connection.collection("session").findOne({
         token: token,
       });
       if (!session) {
-        console.error("Upload rejected: Session not found in DB");
+        console.error("Upload rejected: Session not found in DB for token:", token.slice(0, 10) + "...");
         throw new Error("Unauthorized");
       }
       // check expireAt

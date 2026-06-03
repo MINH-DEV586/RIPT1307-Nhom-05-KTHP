@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getPatientLabResults, updateLabResult } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -135,8 +135,8 @@ const Radiology = ({ patientId }: { patientId: string }) => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0 space-y-3">
-              <div className="p-3 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-md">
-                <div className="flex items-center gap-2 mb-1 text-indigo-600 dark:text-indigo-400 font-bold text-[11px] uppercase tracking-wider">
+              <div className="p-3 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/50 rounded-md">
+                <div className="flex items-center gap-2 mb-1 text-blue-600 dark:text-blue-400 font-bold text-[11px] uppercase tracking-wider">
                   <BrainCircuit className="h-3.5 w-3.5" /> Phân tích AI
                 </div>
                 <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">

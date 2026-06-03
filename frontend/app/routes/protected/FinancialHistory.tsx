@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getAllInvoices } from "@/lib/api";
 import {
@@ -111,8 +111,8 @@ const FinancialHistory = () => {
         <Card className="card shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg shrink-0">
-                <TrendingUp className="w-5 h-5 text-indigo-600" />
+              <div className="p-2.5 bg-blue-50 dark:bg-blue-950/30 rounded-lg shrink-0">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground font-medium">

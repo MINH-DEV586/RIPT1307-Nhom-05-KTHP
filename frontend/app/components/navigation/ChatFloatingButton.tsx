@@ -47,14 +47,14 @@ export default function ChatFloatingButton() {
       {lastNotification && (
         <div className="animate-fade-up bg-card border shadow-2xl rounded-2xl p-4 max-w-xs w-64 flex flex-col gap-2 glass">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Tin nhắn mới</span>
+            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Tin nhắn mới</span>
             <button onClick={() => setLastNotification(null)}>
               <X className="w-3 h-3 text-muted-foreground" />
             </button>
           </div>
           <p className="text-sm font-bold truncate">Bạn có một tin nhắn tư vấn mới</p>
           <p className="text-xs text-muted-foreground line-clamp-2 italic">"{lastNotification.content}"</p>
-          <Button asChild size="sm" className="w-full mt-1 bg-indigo-600 hover:bg-indigo-700 h-8 text-xs">
+          <Button asChild size="sm" className="w-full mt-1 bg-blue-700 hover:bg-blue-800 h-8 text-xs">
             <Link to={`/telemedicine/c/${lastNotification.sessionId}`} onClick={() => setLastNotification(null)}>
               Trả lời ngay
             </Link>
@@ -69,8 +69,8 @@ export default function ChatFloatingButton() {
             <Button
               size="icon"
               className={cn(
-                "h-14 w-14 rounded-full shadow-2xl shadow-indigo-500/40 transition-all hover:scale-110 active:scale-95 group border-none",
-                isOpen ? "bg-slate-900 rotate-90" : "bg-indigo-600 hover:bg-indigo-700"
+                "h-14 w-14 rounded-full shadow-xl shadow-blue-700/30 transition-all hover:scale-110 active:scale-95 group border-none",
+                isOpen ? "bg-slate-700 rotate-90" : "bg-blue-700 hover:bg-blue-800"
               )}
               onClick={() => {
                 setUnreadCount(0);
@@ -93,11 +93,11 @@ export default function ChatFloatingButton() {
           </div>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-72 p-0 rounded-2xl overflow-hidden border-none shadow-2xl glass">
-          <div className="bg-indigo-600 p-4 text-white">
+          <div className="bg-blue-700 p-4 text-white">
             <h3 className="font-black text-lg flex items-center gap-2">
                <MessageCircle className="w-5 h-5" /> MedFlow Messenger
             </h3>
-            <p className="text-[10px] text-indigo-100 opacity-80 uppercase font-bold tracking-wider mt-1">
+            <p className="text-[10px] text-blue-100 opacity-80 uppercase font-bold tracking-wider mt-1">
                Tư vấn trực tuyến 24/7
             </p>
           </div>
@@ -108,7 +108,7 @@ export default function ChatFloatingButton() {
                 </p>
              </div>
              <div className="grid grid-cols-1 gap-2">
-                 <Button asChild variant="outline" className="justify-start gap-2 h-11 rounded-xl border-indigo-100 text-indigo-600 hover:bg-indigo-50 font-bold">
+                 <Button asChild variant="outline" className="justify-start gap-2 h-11 rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50 font-bold">
                    <Link to="/telemedicine" onClick={() => setIsOpen(false)}>
                      <MessageSquare className="w-4 h-4" /> Mở Messenger
                    </Link>

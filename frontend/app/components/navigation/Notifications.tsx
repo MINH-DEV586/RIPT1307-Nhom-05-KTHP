@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,7 @@ export default function Notifications({ user }: { user: User }) {
       return <Pill className="h-4 w-4 text-teal-500" />;
     }
     if (lowerTitle.includes("xét nghiệm")) {
-      return <TestTubes className="h-4 w-4 text-purple-500" />;
+      return <TestTubes className="h-4 w-4 text-sky-500" />;
     }
     if (lowerTitle.includes("kết quả")) {
       return <FileCheck className="h-4 w-4 text-emerald-500" />;
@@ -61,7 +61,7 @@ export default function Notifications({ user }: { user: User }) {
 
     switch (type) {
       case "assignment":
-        return <UserPlus className="h-4 w-4 text-indigo-500" />;
+        return <UserPlus className="h-4 w-4 text-blue-500" />;
       case "lab_result":
         return <Activity className="h-4 w-4 text-blue-500" />;
       case "alert":
@@ -93,7 +93,7 @@ export default function Notifications({ user }: { user: User }) {
         <DropdownMenuLabel className="p-4 pb-2 flex justify-between items-center">
           <span className="font-bold">Thông báo</span>
           {unreadCount > 0 && (
-            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
               {unreadCount} mới
             </span>
           )}
@@ -117,7 +117,7 @@ export default function Notifications({ user }: { user: User }) {
                   className={cn(
                     "p-4 border-b last:border-0 cursor-pointer focus:bg-slate-50 dark:focus:bg-slate-900 transition-colors",
                     !notif.isRead
-                      ? "bg-indigo-50/30 dark:bg-indigo-950/20"
+                      ? "bg-blue-50/30 dark:bg-blue-950/20"
                       : "",
                   )}
                   onClick={() => {
@@ -155,7 +155,7 @@ export default function Notifications({ user }: { user: User }) {
                       </p>
                     </div>
                     {!notif.isRead && (
-                      <div className="h-2 w-2 bg-indigo-600 rounded-full mt-2 shrink-0" />
+                      <div className="h-2 w-2 bg-blue-600 rounded-full mt-2 shrink-0" />
                     )}
                   </Link>
                 </DropdownMenuItem>
@@ -169,7 +169,7 @@ export default function Notifications({ user }: { user: User }) {
             <div className="p-2">
               <Button
                 variant="ghost"
-                className="w-full text-xs text-indigo-600 hover:text-indigo-700 h-8"
+                className="w-full text-xs text-blue-600 hover:text-blue-700 h-8"
                 onClick={() => {
                   notifications.forEach((notif) => {
                     if (!notif.isRead) readMutation.mutate(notif._id);

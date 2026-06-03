@@ -1,4 +1,4 @@
-import {
+﻿import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -30,9 +30,9 @@ export default function InvoiceDetailDialog({
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto p-0 gap-0">
         {/* ── Header ── */}
-        <div className="px-6 pt-5 pb-4 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/20 border-b">
+        <div className="px-6 pt-5 pb-4 bg-gradient-to-r from-blue-50 to-blue-50 dark:from-blue-950/30 dark:to-blue-950/20 border-b">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+            <DialogTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
               <Receipt className="w-5 h-5" />
               Chi tiết hóa đơn
             </DialogTitle>
@@ -125,7 +125,7 @@ export default function InvoiceDetailDialog({
               )}
             </div>
             <div className="text-right">
-              <p className={`text-2xl font-black tabular-nums ${isPaid ? "text-emerald-600" : "text-indigo-600"}`}>
+              <p className={`text-2xl font-black tabular-nums ${isPaid ? "text-emerald-600" : "text-blue-600"}`}>
                 {(invoice.totalAmount || 0).toLocaleString()}
               </p>
               <p className="text-xs text-muted-foreground font-semibold">VNĐ</p>

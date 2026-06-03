@@ -123,7 +123,7 @@ export default function Register() {
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       {/* Left panel – branding & benefits */}
-      <div className="hidden lg:flex flex-col justify-between w-[42%] bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-800 p-12 text-white">
+      <div className="hidden lg:flex flex-col justify-between w-[42%] bg-gradient-to-b from-blue-800 to-blue-900 p-12 text-white">
         <div className="flex items-center gap-3">
           <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
             <HeartPulse className="w-6 h-6 text-white" />
@@ -136,7 +136,7 @@ export default function Register() {
             <h2 className="text-3xl font-black leading-tight mb-4">
               Chăm sóc sức khỏe thông minh dành cho bạn
             </h2>
-            <p className="text-indigo-200 text-base leading-relaxed">
+            <p className="text-blue-200 text-base leading-relaxed">
               Tạo tài khoản bệnh nhân miễn phí và trải nghiệm dịch vụ y tế hiện đại, tiện lợi ngay từ hôm nay.
             </p>
           </div>
@@ -147,13 +147,13 @@ export default function Register() {
                 <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                   <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span className="text-indigo-100 text-sm font-medium">{b}</span>
+                <span className="text-blue-100 text-sm font-medium">{b}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <p className="text-indigo-300 text-xs">
+        <p className="text-blue-300 text-xs">
           © 2026 MedFlow AI — Hệ thống bảo mật & tuân thủ HIPAA
         </p>
       </div>
@@ -163,7 +163,7 @@ export default function Register() {
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="bg-gradient-to-br from-indigo-600 to-violet-600 p-2 rounded-xl">
+            <div className="bg-blue-700 p-2 rounded-xl">
               <Activity className="w-5 h-5 text-white" />
             </div>
             <span className="font-black text-xl text-slate-900 dark:text-white">MedFlow AI</span>
@@ -263,7 +263,7 @@ export default function Register() {
               type="submit"
               id="register-submit-btn"
               disabled={isLoading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl py-6 font-bold text-base shadow-xl shadow-indigo-500/20 transition-all active:scale-[0.98] group mt-2"
+              className="w-full bg-blue-700 hover:bg-blue-800 text-white rounded-2xl py-6 font-bold text-base shadow-md shadow-blue-700/20 transition-all active:scale-[0.98] group mt-2"
             >
               {isLoading ? (
                 <div className="flex items-center gap-2">
@@ -286,7 +286,7 @@ export default function Register() {
             Đã có tài khoản?{" "}
             <Link
               to="/login"
-              className="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+              className="font-bold text-blue-700 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
             >
               Đăng nhập tại đây
             </Link>

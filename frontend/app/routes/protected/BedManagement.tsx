@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllBeds, getUsers, admitPatientToBed, dischargePatientFromBed, createBed } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
@@ -74,7 +74,7 @@ const BED_TYPES = {
   normal: { label: "Giường thường", color: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300", price: 200000, icon: null },
   emergency: { label: "Cấp cứu", color: "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300", price: 300000, icon: "flame" },
   rehab: { label: "Phục hồi", color: "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300", price: 200000, icon: null },
-  disability: { label: "Khuyết tật", color: "bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300", price: 200000, icon: null },
+  disability: { label: "Khuyết tật", color: "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300", price: 200000, icon: null },
   vip: { label: "Phòng VIP", color: "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300", price: 500000, icon: "crown" },
 };
 
@@ -98,7 +98,7 @@ function BedIcon({ status, type }: { status: string, type: string }) {
       className={`
         w-10 h-7 rounded-md border-2 flex items-center justify-center transition-all relative
         ${status === "available" ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/40" : ""}
-        ${status === "occupied" ? "border-indigo-400 bg-indigo-100 dark:bg-indigo-950/60" : ""}
+        ${status === "occupied" ? "border-blue-400 bg-blue-100 dark:bg-blue-950/60" : ""}
         ${status === "maintenance" ? "border-amber-400 bg-amber-50 dark:bg-amber-950/40" : ""}
         ${isVip ? "ring-2 ring-amber-400 ring-offset-1" : ""}
       `}
@@ -106,7 +106,7 @@ function BedIcon({ status, type }: { status: string, type: string }) {
       <BedDouble
         className={`w-4 h-4
           ${status === "available" ? "text-emerald-500" : ""}
-          ${status === "occupied" ? "text-indigo-500" : ""}
+          ${status === "occupied" ? "text-blue-500" : ""}
           ${status === "maintenance" ? "text-amber-500" : ""}
         `}
       />
@@ -214,7 +214,7 @@ export default function BedManagementPage() {
   const occupancyRate = totalBedsCount > 0 ? Math.round((occupiedCount / totalBedsCount) * 100) : 0;
 
   const pieData = [
-    { name: "Đang dùng", value: occupiedCount, color: "#6366f1" },
+    { name: "Đang dùng", value: occupiedCount, color: "#1d4ed8" },
     { name: "Còn trống", value: availableCount, color: "#10b981" },
     { name: "Bảo trì", value: maintenanceCount, color: "#f59e0b" },
   ];
@@ -231,7 +231,7 @@ export default function BedManagementPage() {
           {(session?.user.role === "admin" || session?.user.role === "doctor") && (
             <Button
               size="sm"
-              className="bg-indigo-600 hover:bg-indigo-700 gap-2 rounded-xl h-9"
+              className="bg-blue-600 hover:bg-blue-700 gap-2 rounded-xl h-9"
               onClick={() => setCreateBedDialogOpen(true)}
             >
               <Plus className="w-4 h-4" /> Thêm giường
@@ -260,7 +260,7 @@ export default function BedManagementPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Tổng giường", value: totalBedsCount, icon: BedDouble, color: "text-slate-600", bg: "bg-slate-100 dark:bg-slate-800" },
-          { label: "Đang sử dụng", value: occupiedCount, icon: Activity, color: "text-indigo-600", bg: "bg-indigo-50 dark:bg-indigo-950/30" },
+          { label: "Đang sử dụng", value: occupiedCount, icon: Activity, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },
           { label: "Còn trống", value: availableCount, icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
           { label: "Tỷ lệ lấp đầy", value: `${occupancyRate}%`, icon: Users, color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-950/30" },
         ].map((s) => (
@@ -335,7 +335,7 @@ export default function BedManagementPage() {
                     key={d.id}
                     variant={selectedDept === d.id ? "default" : "ghost"}
                     onClick={() => setSelectedDept(d.id)}
-                    className={`justify-start gap-3 h-11 px-4 rounded-xl ${selectedDept === d.id ? "bg-indigo-600" : ""}`}
+                    className={`justify-start gap-3 h-11 px-4 rounded-xl ${selectedDept === d.id ? "bg-blue-600" : ""}`}
                   >
                     <div className={`w-2 h-2 rounded-full ${selectedDept === d.id ? "bg-white" : "bg-slate-300"}`} />
                     {d.label}
@@ -372,7 +372,7 @@ export default function BedManagementPage() {
                 return (
                   <Card
                     key={bed._id}
-                    className={`card shadow-lg border-none hover:ring-2 hover:ring-indigo-500/30 transition-all ${isVip ? "bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/10 dark:to-background" : ""}`}
+                    className={`card shadow-lg border-none hover:ring-2 hover:ring-blue-500/30 transition-all ${isVip ? "bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/10 dark:to-background" : ""}`}
                   >
                     <CardContent className="p-5">
                       <div className="flex items-start justify-between mb-4">
@@ -392,7 +392,7 @@ export default function BedManagementPage() {
                             <div className="flex items-center gap-3">
                               <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
                                 <AvatarImage src={patient.image || ""} />
-                                <AvatarFallback className="font-bold bg-indigo-100 text-indigo-600">
+                                <AvatarFallback className="font-bold bg-blue-100 text-blue-600">
                                   {patient.name?.charAt(0)}
                                 </AvatarFallback>
                               </Avatar>
@@ -419,7 +419,7 @@ export default function BedManagementPage() {
                                   })()}
                                 </span>
                               </div>
-                              <div className="flex justify-between text-indigo-600 dark:text-indigo-400 font-bold">
+                              <div className="flex justify-between text-blue-600 dark:text-blue-400 font-bold">
                                 <span>Tạm tính chi phí:</span>
                                 <span>
                                   {(() => {
@@ -530,7 +530,7 @@ export default function BedManagementPage() {
                                       return `${days} ngày`;
                                     })()}
                                   </span>
-                                  <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                                  <span className="text-blue-600 dark:text-blue-400 font-bold">
                                     {(() => {
                                       const admittedAt = patient.admittedAt ? new Date(patient.admittedAt) : new Date(patient.createdAt || Date.now());
                                       const days = Math.max(1, Math.ceil((new Date().getTime() - admittedAt.getTime()) / (1000 * 60 * 60 * 24)));
@@ -545,7 +545,7 @@ export default function BedManagementPage() {
                               <Badge
                                 className={`rounded-full px-3 py-0.5 text-[10px] uppercase tracking-wider
                                    ${bed.status === "available" ? "bg-emerald-100 text-emerald-700" : ""}
-                                   ${bed.status === "occupied" ? "bg-indigo-100 text-indigo-700" : ""}
+                                   ${bed.status === "occupied" ? "bg-blue-100 text-blue-700" : ""}
                                    ${bed.status === "maintenance" ? "bg-amber-100 text-amber-700" : ""}
                                  `}
                               >
@@ -634,7 +634,7 @@ export default function BedManagementPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAdmitDialogOpen(false)} className="rounded-xl h-11 px-6">Hủy</Button>
             <Button
-              className="bg-indigo-600 hover:bg-indigo-700 rounded-xl h-11 px-8 font-bold"
+              className="bg-blue-600 hover:bg-blue-700 rounded-xl h-11 px-8 font-bold"
               disabled={!selectedPatientId || admitMutation.isPending}
               onClick={() => admitMutation.mutate({
                 patientId: selectedPatientId,
@@ -714,7 +714,7 @@ export default function BedManagementPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateBedDialogOpen(false)} className="rounded-xl h-11">Hủy</Button>
             <Button
-              className="bg-indigo-600 hover:bg-indigo-700 rounded-xl h-11 px-8 font-bold"
+              className="bg-blue-600 hover:bg-blue-700 rounded-xl h-11 px-8 font-bold"
               onClick={() => createBedMutation.mutate(newBedData)}
               disabled={!newBedData.bedNumber || createBedMutation.isPending}
             >

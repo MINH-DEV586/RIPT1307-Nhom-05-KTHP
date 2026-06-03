@@ -1,4 +1,4 @@
-import type { Route } from "../+types/root";
+﻿import type { Route } from "../+types/root";
 import { Activity, Lock, Mail, ChevronRight, AlertCircle } from "lucide-react";
 import { CustomInput } from "@/components/global/CustomInput";
 import { Button } from "@/components/ui/button";
@@ -73,7 +73,7 @@ const Login = () => {
       <Card className="rounded-lg shadow-2xl card backdrop-blur-xl">
         <CardContent className="p-10 min-w-100 md:min-w-140.5">
           <div className="flex flex-col items-center mb-8">
-            <div className="bg-linear-to-tr from-blue-600 to-indigo-600 p-3 rounded-2xl shadow-lg shadow-blue-500/30 mb-4">
+            <div className="bg-blue-700 p-3 rounded-2xl shadow-md mb-4">
               <Activity className="text-white w-8 h-8" />
             </div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -132,7 +132,7 @@ const Login = () => {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white rounded-2xl py-6 font-bold text-base shadow-xl shadow-slate-200 dark:shadow-blue-900/20 transition-all active:scale-[0.98] group"
+              className="w-full bg-blue-700 hover:bg-blue-800 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-2xl py-6 font-bold text-base shadow-md transition-all active:scale-[0.98] group"
             >
               {isLoading ? (
                 <div className="flex items-center gap-2">
@@ -155,7 +155,7 @@ const Login = () => {
             Bệnh nhân mới?{" "}
             <Link
               to="/register"
-              className="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+              className="font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
             >
               Tạo tài khoản miễn phí
             </Link>

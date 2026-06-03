@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAppointmentById, updateAppointmentStatus } from "@/lib/api";
@@ -23,7 +23,7 @@ import Loader from "@/components/global/Loader";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   pending: { label: "Chờ xác nhận", color: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
-  confirmed: { label: "Đã xác nhận", color: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" },
+  confirmed: { label: "Đã xác nhận", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
   completed: { label: "Hoàn thành", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
   cancelled: { label: "Đã hủy", color: "bg-rose-500/10 text-rose-600 border-rose-500/20" },
 };
@@ -174,7 +174,7 @@ export default function AppointmentDetailPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              {isOnline ? <Video className="w-5 h-5 text-indigo-500" /> : <MapPin className="w-5 h-5 text-emerald-500" />}
+              {isOnline ? <Video className="w-5 h-5 text-blue-500" /> : <MapPin className="w-5 h-5 text-emerald-500" />}
               <span className="font-semibold">{isOnline ? "Khám trực tuyến" : "Khám tại bệnh viện"}</span>
             </div>
           </div>

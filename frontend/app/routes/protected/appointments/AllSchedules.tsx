@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { getAllDoctorSchedules } from "@/lib/api";
 import { ScheduleOverview } from "@/components/appointments/ScheduleOverview";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -41,17 +41,17 @@ export default function AllSchedules() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle className="text-lg font-black text-indigo-700">
+                    <CardTitle className="text-lg font-black text-blue-700">
                       {s.doctor?.name || `Bác sĩ (ID: ${s.doctorId.substring(0, 8)}...)`}
                     </CardTitle>
                     <CardDescription className="text-sm font-medium flex items-center gap-1">
-                      <Stethoscope className="w-3.5 h-3.5 text-indigo-500" /> {s.doctor?.specialization || "Bác sĩ chuyên khoa"}
+                      <Stethoscope className="w-3.5 h-3.5 text-blue-500" /> {s.doctor?.specialization || "Bác sĩ chuyên khoa"}
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0 flex-1">
-                <div className="p-4 bg-indigo-50/30 border-b text-[11px] font-bold uppercase tracking-wider text-indigo-600">
+                <div className="p-4 bg-blue-50/30 border-b text-[11px] font-bold uppercase tracking-wider text-blue-600">
                   Lịch trình của bác sĩ {s.doctor?.name}
                 </div>
                 <ScheduleOverview schedule={s} title="Cấu hình thời gian" showBreak={true} />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { getAllPrescriptionsList } from "@/lib/api";
 import { printMedicalDoc } from "@/lib/print";
@@ -194,8 +194,8 @@ export default function Prescriptions() {
                 <div className="grid gap-4">
                   {prescription.items.map((item: any, idx: number) => (
                     <div key={idx} className="flex items-start gap-4 p-4 rounded-xl bg-background/50 border border-primary/5 hover:border-primary/20 transition-colors group">
-                      <div className="w-12 h-12 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                        <Pill className="w-6 h-6 text-indigo-500" />
+                      <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <Pill className="w-6 h-6 text-blue-500" />
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex justify-between">

@@ -283,11 +283,12 @@ export const dischargePatientFromBed = async (req: Request, res: Response) => {
     const bedItemDescription = `Phí giường bệnh nội trú (${bedTypeLabel} - ${days} ngày)`;
 
     if (inv) {
-      // Filter out existing bed, prescription and lab items from this stay to avoid duplicates
+      // Filter out existing bed, prescription, lab items and BHYT items from this stay to avoid duplicates
       const filteredItems = inv.items.filter(item =>
         !item.description.startsWith("Phí giường bệnh nội trú") &&
         !item.description.startsWith("Chi phí đơn thuốc") &&
-        !item.description.startsWith("Chi phí xét nghiệm")
+        !item.description.startsWith("Chi phí xét nghiệm") &&
+        !item.description.startsWith("BHYT chi trả")
       );
 
       // Calculate total amount of remaining items
@@ -314,6 +315,19 @@ export const dischargePatientFromBed = async (req: Request, res: Response) => {
         newTotal += item.totalPrice;
       }
 
+      // Calculate BHYT for inpatient stay if user has insuranceId
+      if (user && user.insuranceId) {
+        const eligibleAmount = totalFee + totalPrescriptionFee + totalLabFee;
+        const discount = Math.round(eligibleAmount * 0.8);
+        filteredItems.push({
+          description: `BHYT chi trả (80% phí nội trú)`,
+          quantity: 1,
+          unitPrice: -discount,
+          totalPrice: -discount
+        });
+        newTotal -= discount;
+      }
+
       inv.items = filteredItems;
       inv.totalAmount = newTotal;
       await inv.save();
@@ -335,6 +349,19 @@ export const dischargePatientFromBed = async (req: Request, res: Response) => {
       for (const item of labItems) {
         items.push(item);
         newTotal += item.totalPrice;
+      }
+
+      // Calculate BHYT for inpatient stay if user has insuranceId
+      if (user && user.insuranceId) {
+        const eligibleAmount = totalFee + totalPrescriptionFee + totalLabFee;
+        const discount = Math.round(eligibleAmount * 0.8);
+        items.push({
+          description: `BHYT chi trả (80% phí nội trú)`,
+          quantity: 1,
+          unitPrice: -discount,
+          totalPrice: -discount
+        });
+        newTotal -= discount;
       }
 
       inv = new Invoice({

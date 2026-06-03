@@ -21,4 +21,10 @@ const suppressChromeDevtools = (): Plugin => ({
 
 export default defineConfig({
   plugins: [tailwindcss(), suppressChromeDevtools(), reactRouter(), tsconfigPaths()],
+  ssr: {
+    noExternal: ["xlsx"],
+  },
+  optimizeDeps: {
+    include: ["xlsx"],
+  },
 });

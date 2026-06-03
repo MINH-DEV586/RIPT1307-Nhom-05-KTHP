@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { getUsers, createTelemedicineSession, getTelemedicineSessions } from "@/lib/api";
 import { Card } from "@/components/ui/card";
@@ -68,8 +68,8 @@ export default function TelemedicineHome() {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-12 space-y-8 animate-page-in">
         <div className="relative">
-          <div className="w-32 h-32 bg-indigo-100 dark:bg-indigo-950/50 rounded-full flex items-center justify-center animate-pulse">
-            <MessageCircle className="w-16 h-16 text-indigo-600" />
+          <div className="w-32 h-32 bg-blue-100 dark:bg-blue-950/50 rounded-full flex items-center justify-center animate-pulse">
+            <MessageCircle className="w-16 h-16 text-blue-600" />
           </div>
         </div>
         <div className="space-y-3 max-w-md">
@@ -79,9 +79,9 @@ export default function TelemedicineHome() {
           </p>
         </div>
         <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
-           <div className="p-5 rounded-xl bg-indigo-50/50 border border-indigo-100 flex flex-col items-center gap-2">
-              <ShieldCheck className="w-6 h-6 text-indigo-600" />
-              <span className="text-[11px] font-semibold tracking-wide text-indigo-700">Bảo mật</span>
+           <div className="p-5 rounded-xl bg-blue-50/50 border border-blue-100 flex flex-col items-center gap-2">
+              <ShieldCheck className="w-6 h-6 text-blue-600" />
+              <span className="text-[11px] font-semibold tracking-wide text-blue-700">Bảo mật</span>
            </div>
            <div className="p-5 rounded-xl bg-emerald-50/50 border border-emerald-100 flex flex-col items-center gap-2">
               <HeartPulse className="w-6 h-6 text-emerald-600" />
@@ -103,7 +103,7 @@ export default function TelemedicineHome() {
     <div className="p-8 space-y-10 animate-page-in flex-1 min-h-0 overflow-y-auto custom-scrollbar">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b pb-8">
         <div>
-          <Badge className="bg-indigo-100 text-indigo-700 border-none mb-3 px-3 py-1 font-black text-[10px] tracking-widest uppercase">
+          <Badge className="bg-blue-100 text-blue-700 border-none mb-3 px-3 py-1 font-black text-[10px] tracking-widest uppercase">
             Available Now
           </Badge>
           <h2 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white">Bắt đầu tư vấn mới</h2>
@@ -113,7 +113,7 @@ export default function TelemedicineHome() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input 
             placeholder="Tìm bác sĩ hoặc chuyên khoa..." 
-            className="pl-12 h-11 rounded-lg border-slate-200 bg-white shadow-sm focus-visible:ring-indigo-500 transition-all"
+            className="pl-12 h-11 rounded-lg border-slate-200 bg-white shadow-sm focus-visible:ring-blue-500 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -128,9 +128,9 @@ export default function TelemedicineHome() {
           >
             
             <div className="relative">
-              <Avatar className="h-20 w-20 border-2 border-white dark:border-slate-800 shadow-md ring-2 ring-indigo-100 transition-transform duration-300 group-hover:scale-105">
+              <Avatar className="h-20 w-20 border-2 border-white dark:border-slate-800 shadow-md ring-2 ring-blue-100 transition-transform duration-300 group-hover:scale-105">
                 <AvatarImage src={doctor.image} />
-                <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-indigo-700 text-white font-bold text-2xl">
+                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-700 text-white font-bold text-2xl">
                   {doctor.name[0].toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -138,14 +138,14 @@ export default function TelemedicineHome() {
             </div>
             
             <div className="space-y-1">
-              <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors tracking-tight">{doctor.name}</h3>
-              <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-none text-[11px] font-semibold px-3">
+              <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors tracking-tight">{doctor.name}</h3>
+              <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-none text-[11px] font-semibold px-3">
                 {doctor.specialization || "Bác sĩ chuyên khoa"}
               </Badge>
             </div>
 
             <Button 
-              className="w-full rounded-lg bg-indigo-600 hover:bg-indigo-700 shadow-sm gap-2 font-semibold h-10 transition-all active:scale-95"
+              className="w-full rounded-lg bg-blue-600 hover:bg-blue-700 shadow-sm gap-2 font-semibold h-10 transition-all active:scale-95"
               onClick={() => handleStartInstantConsult(doctor._id)}
             >
               <MessageCircle className="w-4 h-4" />

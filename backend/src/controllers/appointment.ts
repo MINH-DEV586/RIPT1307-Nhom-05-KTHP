@@ -49,6 +49,13 @@ export const bookAppointment = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Ngày hẹn không hợp lệ" });
     }
 
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const dateStr = date.split('T')[0];
+    if (dateStr < todayStr) {
+      return res.status(400).json({ message: "Không thể đặt lịch hẹn trong quá khứ" });
+    }
+
     const appointment = new Appointment({
       patientId,
       doctorId,

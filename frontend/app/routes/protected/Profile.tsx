@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router";
+﻿import { useParams, Link } from "react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
 import {
@@ -193,7 +193,7 @@ const Profile = () => {
               {isPatient && (
                 <Button 
                   asChild 
-                  className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-500/10"
+                  className="w-full gap-2 bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-500/10"
                 >
                   <Link to="/telemedicine/sessions/book">
                     <Video className="w-4 h-4" /> Đặt lịch tư vấn
@@ -204,7 +204,7 @@ const Profile = () => {
                 <Button 
                   asChild 
                   variant="outline" 
-                  className="w-full gap-2 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                  className="w-full gap-2 border-blue-200 text-blue-600 hover:bg-blue-50"
                 >
                   <Link to="/telemedicine/sessions">
                     <MessageSquare className="w-4 h-4" /> Xem phiên khám
@@ -389,7 +389,7 @@ const Profile = () => {
                       </div>
                     </div>
                     {invoices.length > 0 && (
-                      <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">
+                      <span className="text-xl font-black text-blue-600 dark:text-blue-400">
                         {invoices.reduce((sum: number, inv: any) => sum + (inv.totalAmount || 0), 0).toLocaleString()} VNĐ
                       </span>
                     )}
@@ -402,7 +402,7 @@ const Profile = () => {
                     <div className="space-y-6">
                       {invoices.map((inv: any, index: number) => (
                         <div key={inv._id || index} className="space-y-3 border-b last:border-0 pb-4 last:pb-0">
-                          <p className="font-bold text-xs text-indigo-600 dark:text-indigo-400">
+                          <p className="font-bold text-xs text-blue-600 dark:text-blue-400">
                             Hóa đơn #{inv._id?.slice(-6) || index + 1}
                           </p>
                           <div className="space-y-1">
@@ -493,7 +493,7 @@ const Profile = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-slate-500 hover:text-indigo-600"
+                          className="h-8 w-8 text-slate-500 hover:text-blue-600"
                           onClick={() => setDetailInvoice(pastInv)}
                           title="Xem chi tiết"
                         >
@@ -709,7 +709,7 @@ function EditProfileModal({ user, viewerRole }: { user: any, viewerRole?: string
             </Button>
             <Button 
               type="submit" 
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
               disabled={updateMutation.isPending}
             >
               {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

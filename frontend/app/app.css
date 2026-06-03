@@ -27,7 +27,7 @@ body {
   --card-foreground: oklch(0.3211 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.3211 0 0);
-  --primary: oklab(62.31% -0.03321 -0.18515);
+  --primary: oklch(0.45 0.22 245);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.967 0.0029 264.5419);
   --secondary-foreground: oklch(0.4461 0.0263 256.8018);
@@ -38,20 +38,20 @@ body {
   --destructive: oklch(0.6368 0.2078 25.3313);
   --border: oklch(0.9276 0.0058 264.5313);
   --input: oklch(0.9276 0.0058 264.5313);
-  --ring: oklch(0.6231 0.188 259.8145);
-  --chart-1: oklch(0.6231 0.188 259.8145);
-  --chart-2: oklch(0.5461 0.2152 262.8809);
-  --chart-3: oklch(0.4882 0.2172 264.3763);
-  --chart-4: oklch(0.4244 0.1809 265.6377);
-  --chart-5: oklch(0.3791 0.1378 265.5222);
+  --ring: oklch(0.45 0.22 245);
+  --chart-1: oklch(0.45 0.22 245);
+  --chart-2: oklch(0.58 0.13 183);
+  --chart-3: oklch(0.70 0.17 55);
+  --chart-4: oklch(0.55 0.18 145);
+  --chart-5: oklch(0.58 0.22 25);
   --sidebar: oklch(0.9846 0.0017 247.8389);
   --sidebar-foreground: oklch(0.3211 0 0);
-  --sidebar-primary: oklch(0.6231 0.188 259.8145);
+  --sidebar-primary: oklch(0.45 0.22 245);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.9514 0.025 236.8242);
-  --sidebar-accent-foreground: oklch(0.3791 0.1378 265.5222);
+  --sidebar-accent: oklch(0.94 0.02 240);
+  --sidebar-accent-foreground: oklch(0.35 0.12 245);
   --sidebar-border: oklch(0.9276 0.0058 264.5313);
-  --sidebar-ring: oklch(0.6231 0.188 259.8145);
+  --sidebar-ring: oklch(0.45 0.22 245);
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
@@ -70,7 +70,7 @@ body {
   --card-foreground: oklch(0.9219 0 0);
   --popover: oklch(0.2686 0 0);
   --popover-foreground: oklch(0.9219 0 0);
-  --primary: oklch(0.6231 0.188 259.8145);
+  --primary: oklch(0.60 0.21 245);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.2686 0 0);
   --secondary-foreground: oklch(0.9219 0 0);
@@ -81,20 +81,20 @@ body {
   --destructive: oklch(0.6368 0.2078 25.3313);
   --border: oklch(0.3715 0 0);
   --input: oklch(0.3715 0 0);
-  --ring: oklch(0.6231 0.188 259.8145);
-  --chart-1: oklch(0.7137 0.1434 254.624);
-  --chart-2: oklch(0.6231 0.188 259.8145);
-  --chart-3: oklch(0.5461 0.2152 262.8809);
-  --chart-4: oklch(0.4882 0.2172 264.3763);
-  --chart-5: oklch(0.4244 0.1809 265.6377);
+  --ring: oklch(0.60 0.21 245);
+  --chart-1: oklch(0.68 0.18 245);
+  --chart-2: oklch(0.62 0.14 183);
+  --chart-3: oklch(0.72 0.17 55);
+  --chart-4: oklch(0.60 0.18 145);
+  --chart-5: oklch(0.62 0.22 25);
   --sidebar: oklch(0.2046 0 0);
   --sidebar-foreground: oklch(0.9219 0 0);
-  --sidebar-primary: oklch(0.6231 0.188 259.8145);
+  --sidebar-primary: oklch(0.60 0.21 245);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.3791 0.1378 265.5222);
-  --sidebar-accent-foreground: oklch(0.8823 0.0571 254.1284);
+  --sidebar-accent: oklch(0.32 0.10 245);
+  --sidebar-accent-foreground: oklch(0.85 0.05 240);
   --sidebar-border: oklch(0.3715 0 0);
-  --sidebar-ring: oklch(0.6231 0.188 259.8145);
+  --sidebar-ring: oklch(0.60 0.21 245);
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
@@ -170,12 +170,12 @@ body {
 }
 
 @utility border-gradient {
-  @apply bg-linear-to-b dark:from-[#2f3035] dark:to-card from-[#f0f0f0] to-[#e0e0e0];
+  @apply bg-white border border-slate-200 dark:bg-[#1e2028] dark:border-[#2f3035];
 }
 
 @layer components {
   .card {
-    @apply border-gradient p-0.5 rounded-2xl border-none;
+    @apply bg-white border border-slate-200 rounded-xl shadow-sm dark:bg-card dark:border-border;
   }
 }
 
@@ -281,7 +281,7 @@ main {
 
 /* ── Gradient text ── */
 @utility gradient-text {
-  @apply bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-600 bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-blue-700 via-blue-600 to-teal-600 bg-clip-text text-transparent;
 }
 
 /* ── Glass card ── */

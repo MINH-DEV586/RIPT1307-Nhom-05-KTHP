@@ -1,4 +1,4 @@
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+﻿import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,11 @@ export function DoctorSearchCard({ doctor, onSelect }: DoctorSearchCardProps) {
   return (
     <Card className="group overflow-hidden border-none shadow-lg hover:shadow-2xl transition-all duration-300 bg-card/50 backdrop-blur-md">
       <CardContent className="p-0">
-        <div className="relative h-32 bg-indigo-600/10 group-hover:bg-indigo-600/20 transition-colors">
+        <div className="relative h-32 bg-blue-600/10 group-hover:bg-blue-600/20 transition-colors">
           <div className="absolute -bottom-10 left-6">
             <Avatar className="w-20 h-20 border-4 border-background shadow-xl">
               <AvatarImage src={doctor.image || ""} />
-              <AvatarFallback className="bg-indigo-500 text-white font-bold text-xl">
+              <AvatarFallback className="bg-blue-500 text-white font-bold text-xl">
                 {doctor.name.split(" ").map(n => n[0]).join("")}
               </AvatarFallback>
             </Avatar>
@@ -32,8 +32,8 @@ export function DoctorSearchCard({ doctor, onSelect }: DoctorSearchCardProps) {
         
         <div className="pt-12 px-6 pb-6 space-y-4">
           <div>
-            <h3 className="text-xl font-black group-hover:text-indigo-600 transition-colors">{doctor.name}</h3>
-            <p className="text-indigo-600 font-bold text-sm">{doctor.specialization || "Chuyên gia y tế"}</p>
+            <h3 className="text-xl font-black group-hover:text-blue-600 transition-colors">{doctor.name}</h3>
+            <p className="text-blue-600 font-bold text-sm">{doctor.specialization || "Chuyên gia y tế"}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-y-3">
@@ -50,7 +50,7 @@ export function DoctorSearchCard({ doctor, onSelect }: DoctorSearchCardProps) {
               <span>{doctor.consultationFee?.toLocaleString() || "200.000"} VNĐ</span>
             </div>
             <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-              <Clock className="w-3.5 h-3.5 text-indigo-400" />
+              <Clock className="w-3.5 h-3.5 text-blue-400" />
               <span>Sẵn sàng: {doctor.schedule?.workingHours?.start || "08:00"} - {doctor.schedule?.workingHours?.end || "17:00"}</span>
             </div>
           </div>
@@ -66,7 +66,7 @@ export function DoctorSearchCard({ doctor, onSelect }: DoctorSearchCardProps) {
                   <Badge 
                     key={day} 
                     variant={isActive ? "default" : "outline"} 
-                    className={`text-[10px] px-1.5 py-0 ${isActive ? "bg-indigo-600 hover:bg-indigo-600" : "bg-muted/30 text-muted-foreground opacity-50"}`}
+                    className={`text-[10px] px-1.5 py-0 ${isActive ? "bg-blue-600 hover:bg-blue-600" : "bg-muted/30 text-muted-foreground opacity-50"}`}
                   >
                     {labels[day]}
                   </Badge>
@@ -78,7 +78,7 @@ export function DoctorSearchCard({ doctor, onSelect }: DoctorSearchCardProps) {
       </CardContent>
       <CardFooter className="p-4 bg-muted/20 border-t flex justify-between items-center">
         <span className="text-xs font-bold text-muted-foreground">Slot trống: 12</span>
-        <Button onClick={() => onSelect(doctor)} size="sm" className="gap-1 bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-500/20">
+        <Button onClick={() => onSelect(doctor)} size="sm" className="gap-1 bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-500/20">
           Đặt lịch ngay <ArrowRight className="w-3.5 h-3.5" />
         </Button>
       </CardFooter>

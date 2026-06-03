@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
 import { getUsers } from "@/lib/api";
 import Loader from "@/components/global/Loader";
@@ -38,11 +38,11 @@ export function meta() {
 }
 
 const PATIENT_STATUS_COLORS: Record<string, { color: string; label: string }> = {
-  admitted: { color: "#6366f1", label: "Nhập viện" },
+  admitted: { color: "#1d4ed8", label: "Nhập viện" },
   in_treatment: { color: "#3b82f6", label: "Đang điều trị" },
   observation: { color: "#f59e0b", label: "Theo dõi" },
   discharged: { color: "#10b981", label: "Xuất viện" },
-  follow_up: { color: "#8b5cf6", label: "Tái khám" },
+  follow_up: { color: "#0ea5e9", label: "Tái khám" },
   active: { color: "#22c55e", label: "Hoạt động" },
 };
 
@@ -92,14 +92,14 @@ function PatientDashboardView({ user }: { user: any }) {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="card shadow-md border-l-4 border-l-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/10">
+        <Card className="card shadow-md border-l-4 border-l-indigo-500 bg-blue-50/30 dark:bg-blue-950/10">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-indigo-500/10 rounded-2xl">
-                <CalendarDays className="w-6 h-6 text-indigo-600" />
+              <div className="p-3 bg-blue-500/10 rounded-2xl">
+                <CalendarDays className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-xs text-indigo-600/80 font-bold uppercase tracking-wider">Lịch hẹn sắp tới</p>
+                <p className="text-xs text-blue-600/80 font-bold uppercase tracking-wider">Lịch hẹn sắp tới</p>
                 <p className="text-lg font-black">
                   {upcomingSession 
                     ? format(new Date(upcomingSession.startTime), "HH:mm, dd/MM", { locale: vi })
@@ -145,11 +145,11 @@ function PatientDashboardView({ user }: { user: any }) {
           <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/20">
             <div>
               <CardTitle className="text-xl flex items-center gap-2">
-                <ClipboardList className="w-5 h-5 text-indigo-500" />
+                <ClipboardList className="w-5 h-5 text-blue-500" />
                 Lịch sử khám gần đây
               </CardTitle>
             </div>
-            <Button asChild variant="ghost" size="sm" className="gap-1 text-indigo-600 font-bold hover:bg-indigo-500/10">
+            <Button asChild variant="ghost" size="sm" className="gap-1 text-blue-600 font-bold hover:bg-blue-500/10">
               <Link to="/patient/medical-records">Xem tất cả <ArrowRight className="w-4 h-4" /></Link>
             </Button>
           </CardHeader>
@@ -208,8 +208,8 @@ function PatientDashboardView({ user }: { user: any }) {
                       {result.bodyPart && <span className="flex items-center gap-1"><Activity className="w-3.5 h-3.5" /> {result.bodyPart}</span>}
                     </div>
                     {result.aiAnalysis && (
-                      <div className="mt-3 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10 flex items-start gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-indigo-600 mt-0.5 shrink-0" />
+                      <div className="mt-3 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10 flex items-start gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
                         <p className="text-[11px] text-muted-foreground italic line-clamp-2 leading-relaxed">{result.aiAnalysis}</p>
                       </div>
                     )}
@@ -364,8 +364,8 @@ export default function HMSDashboard() {
               label: "Bệnh nhân nhập viện",
               value: admitted,
               icon: HeartPulse,
-              color: "text-indigo-600",
-              bg: "bg-indigo-50 dark:bg-indigo-950/30",
+              color: "text-blue-600",
+              bg: "bg-blue-50 dark:bg-blue-950/30",
               href: "/patients",
             },
             {
@@ -388,8 +388,8 @@ export default function HMSDashboard() {
               label: "Tổng điều dưỡng",
               value: nurses.length,
               icon: Users,
-              color: "text-violet-600",
-              bg: "bg-violet-50 dark:bg-violet-950/30",
+              color: "text-blue-600",
+              bg: "bg-blue-50 dark:bg-blue-950/30",
               href: "/nurses",
             },
           ].map((s) => (
@@ -422,7 +422,7 @@ export default function HMSDashboard() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-indigo-500" />
+                    <BarChart3 className="w-5 h-5 text-blue-500" />
                     Tổng quan doanh thu
                   </CardTitle>
                   <CardDescription>Doanh thu theo tháng trong năm nay</CardDescription>
@@ -452,7 +452,7 @@ export default function HMSDashboard() {
             <Card className="card shadow-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-violet-500" />
+                  <Activity className="w-4 h-4 text-blue-500" />
                   Phân bổ bệnh nhân
                 </CardTitle>
               </CardHeader>
@@ -508,9 +508,9 @@ export default function HMSDashboard() {
             </CardHeader>
             <CardContent className="space-y-2">
               {[
-                { href: "/appointments", icon: CalendarDays, label: "Lịch hẹn hôm nay", color: "text-indigo-600", bg: "bg-indigo-50 dark:bg-indigo-950/30" },
+                { href: "/appointments", icon: CalendarDays, label: "Lịch hẹn hôm nay", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },
                 { href: "/bed-management", icon: BedDouble, label: "Sơ đồ giường bệnh", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },
-                ...(isAdmin ? [{ href: "/reports", icon: BarChart3, label: "Báo cáo & Phân tích", color: "text-violet-600", bg: "bg-violet-50 dark:bg-violet-950/30" }] : []),
+                ...(isAdmin ? [{ href: "/reports", icon: BarChart3, label: "Báo cáo & Phân tích", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" }] : []),
                 { href: "/patients", icon: Users, label: "Quản lý bệnh nhân", color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
               ].map((link) => (
                 <Link

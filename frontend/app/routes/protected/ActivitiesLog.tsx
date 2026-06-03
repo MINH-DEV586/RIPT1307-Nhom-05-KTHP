@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getActivityLogs } from "@/lib/api";
 import CustomPagination from "@/components/global/CustomPagination";
@@ -139,7 +139,7 @@ const ActivitiesLog = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
                         {log.action}
                       </span>
                     </TableCell>

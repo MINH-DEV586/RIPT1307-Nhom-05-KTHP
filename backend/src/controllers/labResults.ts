@@ -59,24 +59,38 @@ export const createLabResult = async (req: Request, res: Response) => {
 
           if (!isAdmitted) {
             // Create a separate lab fee invoice for outpatients
+            const items = [
+              {
+                description: `Chi phí xét nghiệm - ${labReq.testType} (${new Date().toLocaleDateString("vi-VN")})`,
+                quantity: 1,
+                unitPrice: labFee,
+                totalPrice: labFee
+              }
+            ];
+            let finalAmount = labFee;
+
+            if (patientUser && patientUser.insuranceId) {
+              const discount = Math.round(labFee * 0.8);
+              items.push({
+                description: `BHYT chi trả (80%)`,
+                quantity: 1,
+                unitPrice: -discount,
+                totalPrice: -discount
+              });
+              finalAmount -= discount;
+            }
+
             const labInvoice = new Invoice({
               patientId,
               status: "pending_payment",
-              items: [
-                {
-                  description: `Chi phí xét nghiệm - ${labReq.testType} (${new Date().toLocaleDateString("vi-VN")})`,
-                  quantity: 1,
-                  unitPrice: labFee,
-                  totalPrice: labFee
-                }
-              ],
-              totalAmount: labFee
+              items,
+              totalAmount: finalAmount
             });
             await labInvoice.save();
             await logActivity(
               createdBy,
               "Tạo hóa đơn xét nghiệm",
-              `Đã tạo hóa đơn xét nghiệm ${labReq.testType} - ${labFee.toLocaleString("vi-VN")}đ cho bệnh nhân ID: ${patientId}`
+              `Đã tạo hóa đơn xét nghiệm ${labReq.testType} - ${finalAmount.toLocaleString("vi-VN")}đ cho bệnh nhân ID: ${patientId}${patientUser && patientUser.insuranceId ? " (đã trừ 80% BHYT)" : ""}`
             );
           }
         }
@@ -272,5 +286,32 @@ export const explainLabResult = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("AI Explanation Error:", error);
     res.status(500).json({ message: "Không thể kết nối với AI để giải thích lúc này." });
+  }
+};
+
+export const deleteLabResult = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const deletedResult = await labResults.findByIdAndDelete(id);
+
+    if (!deletedResult) {
+      return res.status(404).json({ message: "Không tìm thấy kết quả xét nghiệm" });
+    }
+
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("lab_result_deleted");
+    }
+
+    await logActivity(
+      (req as any).user.id,
+      "Xóa kết quả xét nghiệm",
+      `Đã xóa xét nghiệm ID: ${id}`,
+    );
+
+    res.json({ message: "Đã xóa kết quả xét nghiệm thành công" });
+  } catch (error) {
+    console.error("Error deleting lab result:", error);
+    res.status(500).json({ message: "Lỗi hệ thống" });
   }
 };

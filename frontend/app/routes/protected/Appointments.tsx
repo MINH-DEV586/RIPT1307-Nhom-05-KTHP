@@ -52,7 +52,7 @@ export function meta() {
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: "Chờ xác nhận", color: "bg-amber-500/10 text-amber-600 border-amber-500/20", icon: Clock },
-  confirmed: { label: "Đã xác nhận", color: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20", icon: CheckCircle2 },
+  confirmed: { label: "Đã xác nhận", color: "bg-blue-500/10 text-blue-600 border-blue-500/20", icon: CheckCircle2 },
   completed: { label: "Hoàn thành", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20", icon: CheckCircle2 },
   cancelled: { label: "Đã hủy", color: "bg-rose-500/10 text-rose-600 border-rose-500/20", icon: XCircle },
 };
@@ -118,7 +118,7 @@ export default function AppointmentsPage() {
         {!isDoctorOrAdmin && (
           <Button
             onClick={() => navigate("/appointments/book")}
-            className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 h-12 px-6 font-bold"
+            className="gap-2 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 h-12 px-6 font-bold"
           >
             <Plus className="w-5 h-5" />
             Đặt lịch mới
@@ -206,9 +206,15 @@ function AppointmentCard({
     setDiagnosisModalOpen(false);
   };
 
+  const appointmentDate = new Date(appointment.date);
+  appointmentDate.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const isFuture = appointmentDate.getTime() > today.getTime();
+
   return (
     <Card className="overflow-hidden border-none shadow-xl bg-card/40 backdrop-blur-md hover:bg-card/60 transition-all group relative">
-      <div className={`absolute top-0 left-0 w-1.5 h-full ${isOnline ? "bg-indigo-500" : "bg-emerald-500"}`} />
+      <div className={`absolute top-0 left-0 w-1.5 h-full ${isOnline ? "bg-blue-500" : "bg-emerald-500"}`} />
       <CardContent className="p-6">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Left: Info */}
@@ -243,7 +249,7 @@ function AppointmentCard({
                   <Stethoscope className="w-4 h-4" />
                   <span>Bác sĩ: {appointment.doctor?.name || "Chưa xác định"}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 ml-6">
+                <div className="flex items-center gap-2 text-xs font-bold text-blue-600 ml-6">
                   <span>Khoa: {appointment.doctor?.specialization || "Bác sĩ chuyên khoa"}</span>
                 </div>
               </div>
@@ -252,7 +258,7 @@ function AppointmentCard({
                 <span className="flex items-center gap-1.5"><CalendarDays className="w-4 h-4" /> {format(new Date(appointment.date), "dd/MM/yyyy")}</span>
                 <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {appointment.timeSlot}</span>
                 <span className="flex items-center gap-1.5">
-                  {isOnline ? <Video className="w-4 h-4 text-indigo-500" /> : <MapPin className="w-4 h-4 text-emerald-500" />}
+                  {isOnline ? <Video className="w-4 h-4 text-blue-500" /> : <MapPin className="w-4 h-4 text-emerald-500" />}
                   {isOnline ? "Tư vấn trực tuyến" : "Tại bệnh viện"}
                 </span>
               </div>
@@ -274,7 +280,7 @@ function AppointmentCard({
           <div className="flex flex-col justify-center gap-2 min-w-[160px]">
             {appointment.status === "pending" && isDoctor && !isAdmin && (
               <>
-                <Button onClick={() => onStatusUpdate?.("confirmed")} className="bg-indigo-600 hover:bg-indigo-700 font-bold">Chấp nhận</Button>
+                <Button onClick={() => onStatusUpdate?.("confirmed")} className="bg-blue-600 hover:bg-blue-700 font-bold">Chấp nhận</Button>
                 <Button variant="outline" onClick={() => setRejectionModalOpen(true)} className="text-rose-600 border-rose-200 hover:bg-rose-50 font-bold">Từ chối</Button>
               </>
             )}
@@ -282,14 +288,29 @@ function AppointmentCard({
             {appointment.status === "confirmed" && (
               <>
                 {isOnline && (
-                  <Button onClick={() => navigate(`/telemedicine/sessions/${appointment._id}/chat`)} className="gap-2 bg-indigo-600 font-bold">
+                  <Button 
+                    onClick={() => navigate(`/telemedicine/sessions/${appointment._id}/chat`)} 
+                    className="gap-2 bg-blue-600 font-bold"
+                    disabled={isFuture}
+                    title={isFuture ? "Chỉ khả dụng vào ngày khám" : ""}
+                  >
                     <Video className="w-4 h-4" /> Vào phòng họp
                   </Button>
                 )}
                 {isDoctor && !isAdmin && (
-                  <Button onClick={() => setDiagnosisModalOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 font-bold">
+                  <Button 
+                    onClick={() => setDiagnosisModalOpen(true)} 
+                    className="gap-2 bg-emerald-600 hover:bg-emerald-700 font-bold"
+                    disabled={isFuture}
+                    title={isFuture ? "Chỉ khả dụng vào ngày khám" : ""}
+                  >
                     <FileText className="w-4 h-4" /> Ghi chuẩn đoán
                   </Button>
+                )}
+                {isFuture && (
+                  <span className="text-[10px] font-bold text-amber-600 text-center bg-amber-50 dark:bg-amber-950/30 p-1.5 rounded-lg border border-amber-100 dark:border-amber-900/50">
+                    Chưa đến ngày khám
+                  </span>
                 )}
                 <Button 
                   variant="ghost" 

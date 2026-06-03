@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { getAllPrescriptionsList } from "@/lib/api";
 import {
   Table,
@@ -12,21 +12,24 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Search } from "lucide-react";
+import { FileText, Plus, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 export default function PrescriptionList() {
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const patientId = searchParams.get("patientId") || undefined;
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [patientId]);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
-      const data = await getAllPrescriptionsList();
+      const data = await getAllPrescriptionsList(patientId ? { patientId } : undefined);
       setPrescriptions(data);
     } catch (error) {
       console.error(error);
@@ -63,8 +66,8 @@ export default function PrescriptionList() {
       </div>
 
       <Card className="border-none shadow-xl bg-card/30 backdrop-blur-sm">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2 max-w-sm">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 max-w-sm w-full">
             <Search className="w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Tìm kiếm theo bệnh nhân, chẩn đoán..."
@@ -73,6 +76,24 @@ export default function PrescriptionList() {
               className="bg-background/50 border-primary/20"
             />
           </div>
+          {patientId && (
+            <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950/40 border border-blue-200/50 px-3 py-1.5 rounded-xl">
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                Đang lọc theo bệnh nhân: {prescriptions[0]?.patientName || `#${patientId}`}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 hover:bg-blue-200/50 rounded-lg text-blue-600"
+                onClick={() => {
+                  searchParams.delete("patientId");
+                  setSearchParams(searchParams);
+                }}
+              >
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <Table>

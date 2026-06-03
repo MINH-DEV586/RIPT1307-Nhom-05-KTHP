@@ -7,6 +7,7 @@ import {
   updateLabResult,
   getAllLabResults,
   explainLabResult,
+  deleteLabResult,
 } from "../controllers/labResults";
 
 const labResultsRouter = Router();
@@ -48,6 +49,14 @@ labResultsRouter.put(
   requireAuth,
   checkRole(["admin", "doctor", "lab_tech"]),
   updateLabResult,
+);
+
+// DELETE: Delete a lab result
+labResultsRouter.delete(
+  "/:id",
+  requireAuth,
+  checkRole(["admin", "doctor", "lab_tech"]),
+  deleteLabResult,
 );
 
 export default labResultsRouter;

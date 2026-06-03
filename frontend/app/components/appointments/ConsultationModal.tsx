@@ -79,9 +79,13 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
   const [customTest, setCustomTest] = useState("");
 
-  // Prescription State
   const [prescribedItems, setPrescribedItems] = useState<Partial<PrescriptionItem>[]>([]);
   const [selectedMedId, setSelectedMedId] = useState("");
+
+  const hasStockError = prescribedItems.some((item) => {
+    const med = medicines.find(m => m._id === item.medicineId);
+    return med && (item.quantity || 0) > med.stock;
+  });
 
   // Data Queries
   const { data: beds = [] } = useQuery({
@@ -141,13 +145,17 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
   const handleAddMedicine = () => {
     const med = medicines.find(m => m._id === selectedMedId);
     if (med) {
+      if (med.stock === 0) {
+        toast.error(`Thuốc ${med.name} đã hết hàng trong kho!`);
+        return;
+      }
       setPrescribedItems([...prescribedItems, {
         medicineId: med._id,
         medicineName: med.name,
         dosage: "1 viên",
         frequency: "2 lần/ngày",
         duration: "7 ngày",
-        quantity: 14
+        quantity: Math.min(14, med.stock)
       }]);
       setSelectedMedId("");
     }
@@ -289,7 +297,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-hidden flex flex-col p-0 rounded-3xl border-none shadow-2xl">
-        <DialogHeader className="p-6 bg-gradient-to-r from-indigo-600 to-indigo-800 text-white rounded-t-3xl">
+        <DialogHeader className="p-6 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-t-3xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-white/20 rounded-2xl">
@@ -297,7 +305,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
               </div>
               <div>
                 <DialogTitle className="text-2xl font-black">Thực hiện khám bệnh</DialogTitle>
-                <DialogDescription className="text-indigo-100 font-medium">
+                <DialogDescription className="text-blue-100 font-medium">
                   Bệnh nhân: <span className="font-bold text-white">{appointment.patient?.name}</span> • ID: {appointment.patientId.slice(-6).toUpperCase()}
                 </DialogDescription>
               </div>
@@ -320,7 +328,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
               <Button
                 key={tab.id}
                 variant={activeTab === tab.id ? "default" : "ghost"}
-                className={`justify-start gap-3 rounded-xl h-12 ${activeTab === tab.id ? "bg-indigo-600 shadow-lg shadow-indigo-500/20" : ""}`}
+                className={`justify-start gap-3 rounded-xl h-12 ${activeTab === tab.id ? "bg-blue-600 shadow-lg shadow-blue-500/20" : ""}`}
                 onClick={() => setActiveTab(tab.id)}
               >
                 <tab.icon className="w-4 h-4" />
@@ -334,10 +342,10 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Chỉ định xử trí</span>
               </div>
               <div
-                className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${disposition === "outpatient" ? "bg-indigo-50 border-indigo-500 text-indigo-700" : "bg-slate-50 border-slate-200 text-slate-500"}`}
+                className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${disposition === "outpatient" ? "bg-blue-50 border-blue-500 text-blue-700" : "bg-slate-50 border-slate-200 text-slate-500"}`}
                 onClick={() => setDisposition("outpatient")}
               >
-                <Stethoscope className={`w-6 h-6 mb-2 ${disposition === "outpatient" ? "text-indigo-500" : "text-slate-400"}`} />
+                <Stethoscope className={`w-6 h-6 mb-2 ${disposition === "outpatient" ? "text-blue-500" : "text-slate-400"}`} />
                 <p className="text-[10px] font-black uppercase tracking-tighter">Ngoại trú</p>
                 <p className="text-[9px] font-medium leading-tight mt-1 opacity-80">Kê đơn & Thanh toán</p>
               </div>
@@ -359,19 +367,19 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
               {/* --- EXAM TAB --- */}
               <TabsContent value="exam" className="mt-0 space-y-6">
                 <div className="space-y-4">
-                  <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl space-y-2">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600">
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl space-y-2">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-blue-600">
                       Triệu chứng hiện tại <span className="text-red-500">*</span>
                     </h4>
                     {!isWalkIn && appointment.symptoms ? (
                       // Có triệu chứng từ lịch hẹn — hiển thị nhưng vẫn cho sửa
-                      <p className="text-xs text-indigo-400 italic mb-1">Từ lịch hẹn: "{appointment.symptoms}"</p>
+                      <p className="text-xs text-blue-400 italic mb-1">Từ lịch hẹn: "{appointment.symptoms}"</p>
                     ) : null}
                     <Textarea
                       placeholder="Nhập triệu chứng bệnh nhân mô tả (đau bụng, sốt, ho...)..."
                       value={symptoms}
                       onChange={(e) => setSymptoms(e.target.value)}
-                      className="min-h-[80px] rounded-xl bg-white border-indigo-200 text-sm"
+                      className="min-h-[80px] rounded-xl bg-white border-blue-200 text-sm"
                     />
                   </div>
 
@@ -382,7 +390,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                       placeholder="Vd: Viêm họng cấp J02.9, Sốt virus..."
                       value={diagnosis}
                       onChange={(e) => setDiagnosis(e.target.value)}
-                      className="h-12 rounded-xl bg-background border-slate-200 focus:ring-indigo-500"
+                      className="h-12 rounded-xl bg-background border-slate-200 focus:ring-blue-500"
                     />
                   </div>
 
@@ -462,15 +470,15 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                   )}
 
                   {disposition === "outpatient" && (
-                    <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-3xl space-y-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="p-6 bg-blue-50 border border-blue-100 rounded-3xl space-y-4 animate-in fade-in slide-in-from-top-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <Stethoscope className="w-6 h-6 text-indigo-600" />
-                          <h4 className="font-black text-indigo-700">Chỉ định ngoại trú</h4>
+                          <Stethoscope className="w-6 h-6 text-blue-600" />
+                          <h4 className="font-black text-blue-700">Chỉ định ngoại trú</h4>
                         </div>
-                        <Badge className="bg-indigo-600 text-white border-none">Ngoại trú</Badge>
+                        <Badge className="bg-blue-600 text-white border-none">Ngoại trú</Badge>
                       </div>
-                      <p className="text-sm text-indigo-600/80 font-medium italic">
+                      <p className="text-sm text-blue-600/80 font-medium italic">
                         Bệnh nhân được điều trị tại nhà theo đơn thuốc và phác đồ đã kê. Hệ thống sẽ tạo hóa đơn thanh toán sau khi hoàn thành.
                       </p>
                     </div>
@@ -507,7 +515,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                             key={t._id}
                             variant={selectedTests.includes(t.name) ? "default" : "outline"}
                             className={`cursor-pointer px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 ${
-                              selectedTests.includes(t.name) ? "bg-indigo-600 text-white" : "hover:bg-indigo-50"
+                              selectedTests.includes(t.name) ? "bg-blue-600 text-white" : "hover:bg-blue-50"
                             }`}
                             onClick={() =>
                               selectedTests.includes(t.name)
@@ -517,7 +525,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                           >
                             {t.name}
                             <span className={`text-[10px] font-bold ${
-                              selectedTests.includes(t.name) ? "text-indigo-200" : "text-indigo-500"
+                              selectedTests.includes(t.name) ? "text-blue-200" : "text-blue-500"
                             }`}>
                               {t.price.toLocaleString("vi-VN")}đ
                             </span>
@@ -545,7 +553,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                               <div>
                                 <span className="font-bold text-slate-700">{t}</span>
                                 {info && (
-                                  <span className="ml-3 text-xs font-bold text-indigo-600">
+                                  <span className="ml-3 text-xs font-bold text-blue-600">
                                     {info.price.toLocaleString("vi-VN")}đ
                                   </span>
                                 )}
@@ -559,9 +567,9 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                           );
                         })}
                         {/* Tổng phí xét nghiệm */}
-                        <div className="flex justify-between items-center p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                          <span className="text-sm font-black text-indigo-700">Tổng phí xét nghiệm</span>
-                          <span className="text-lg font-black text-indigo-600">
+                        <div className="flex justify-between items-center p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                          <span className="text-sm font-black text-blue-700">Tổng phí xét nghiệm</span>
+                          <span className="text-lg font-black text-blue-600">
                             {labFee.toLocaleString("vi-VN")}đ
                           </span>
                         </div>
@@ -588,7 +596,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                       </Select>
                     </div>
                     <div className="md:col-span-4">
-                      <Button onClick={handleAddMedicine} className="w-full h-12 rounded-xl bg-indigo-600 font-bold" disabled={!selectedMedId}>
+                      <Button onClick={handleAddMedicine} className="w-full h-12 rounded-xl bg-blue-600 font-bold" disabled={!selectedMedId}>
                         <Plus className="w-4 h-4 mr-2" /> Thêm thuốc
                       </Button>
                     </div>
@@ -607,17 +615,26 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                               <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                   <div className="p-2 bg-white rounded-lg shadow-sm">
-                                    <Pill className="w-5 h-5 text-indigo-500" />
+                                    <Pill className="w-5 h-5 text-blue-500" />
                                   </div>
                                   <div className="flex flex-col">
                                     <span className="font-black text-slate-800">{item.medicineName}</span>
                                     {(() => {
                                       const med = medicines.find(m => m._id === item.medicineId);
                                       if (!med) return null;
+                                      const isOverStock = (item.quantity || 0) > med.stock;
                                       return (
-                                        <span className="text-xs text-muted-foreground font-semibold">
-                                          Đơn giá: {med.price.toLocaleString()} đ | Thành tiền: {((item.quantity || 0) * med.price).toLocaleString()} đ
-                                        </span>
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="text-xs text-muted-foreground font-semibold">
+                                            Đơn giá: {med.price.toLocaleString()} đ | Thành tiền: {((item.quantity || 0) * med.price).toLocaleString()} đ
+                                          </span>
+                                          {isOverStock && (
+                                            <span className="text-xs text-red-500 font-bold flex items-center gap-1 mt-0.5">
+                                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                              Không đủ tồn kho (Hiện có: {med.stock} {med.unit})
+                                            </span>
+                                          )}
+                                        </div>
                                       );
                                     })()}
                                   </div>
@@ -665,16 +682,22 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                                 </div>
                                 <div className="space-y-1">
                                   <Label className="text-[10px] font-black text-slate-400 uppercase">Số lượng</Label>
-                                  <Input
-                                    type="number"
-                                    value={item.quantity}
-                                    onChange={(e) => {
-                                      const newItems = [...prescribedItems];
-                                      newItems[idx].quantity = Number(e.target.value);
-                                      setPrescribedItems(newItems);
-                                    }}
-                                    className="h-8 text-xs bg-white rounded-lg"
-                                  />
+                                  {(() => {
+                                    const med = medicines.find(m => m._id === item.medicineId);
+                                    const isOverStock = med && (item.quantity || 0) > med.stock;
+                                    return (
+                                      <Input
+                                        type="number"
+                                        value={item.quantity}
+                                        onChange={(e) => {
+                                          const newItems = [...prescribedItems];
+                                          newItems[idx].quantity = Number(e.target.value);
+                                          setPrescribedItems(newItems);
+                                        }}
+                                        className={`h-8 text-xs bg-white rounded-lg ${isOverStock ? "border-red-500 focus-visible:ring-red-500 text-red-600 font-bold" : ""}`}
+                                      />
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             </CardContent>
@@ -682,7 +705,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                         ))}
                         <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex justify-between items-center mt-4">
                           <span className="font-bold text-slate-700">Tổng tiền đơn thuốc dự kiến:</span>
-                          <span className="font-black text-indigo-600 text-lg">
+                          <span className="font-black text-blue-600 text-lg">
                             {prescribedItems.reduce((acc, item) => {
                               const med = medicines.find(m => m._id === item.medicineId);
                               return acc + (med ? med.price * (item.quantity || 0) : 0);
@@ -712,7 +735,7 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                           <Card key={record._id} className="border-none shadow-sm bg-slate-50/50 rounded-2xl">
                             <CardContent className="p-4 space-y-2">
                               <div className="flex justify-between items-center">
-                                <span className="text-xs font-bold text-indigo-600">{new Date(record.createdAt).toLocaleDateString("vi-VN")}</span>
+                                <span className="text-xs font-bold text-blue-600">{new Date(record.createdAt).toLocaleDateString("vi-VN")}</span>
                                 <Badge variant="outline" className="text-[10px]">Lần khám trước</Badge>
                               </div>
                               <p className="text-sm font-black text-slate-800">{record.diagnosis}</p>
@@ -741,9 +764,9 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                             </div>
                             <div className="flex-1">
                               <p className="text-sm font-bold text-slate-800">{lab.testType}</p>
-                              <p className="text-[10px] text-indigo-600 font-black uppercase tracking-tighter">{lab.status === 'analyzed' ? 'Đã có kết quả' : 'Đang xử lý'}</p>
+                              <p className="text-[10px] text-blue-600 font-black uppercase tracking-tighter">{lab.status === 'analyzed' ? 'Đã có kết quả' : 'Đang xử lý'}</p>
                             </div>
-                            <Button variant="ghost" size="sm" className="font-bold text-indigo-600" onClick={() => window.open(lab.imageUrl, '_blank')}>Xem</Button>
+                            <Button variant="ghost" size="sm" className="font-bold text-blue-600" onClick={() => window.open(lab.imageUrl, '_blank')}>Xem</Button>
                           </Card>
                         ))}
                       </div>
@@ -761,11 +784,11 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tóm tắt ca khám</span>
               <div className="flex items-center gap-4 mt-1">
                 <div className="flex items-center gap-1">
-                  <FlaskConical className={`w-3 h-3 ${selectedTests.length > 0 ? "text-indigo-600" : "text-slate-300"}`} />
+                  <FlaskConical className={`w-3 h-3 ${selectedTests.length > 0 ? "text-blue-600" : "text-slate-300"}`} />
                   <span className="text-xs font-bold">{selectedTests.length} xét nghiệm</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Pill className={`w-3 h-3 ${prescribedItems.length > 0 ? "text-indigo-600" : "text-slate-300"}`} />
+                  <Pill className={`w-3 h-3 ${prescribedItems.length > 0 ? "text-blue-600" : "text-slate-300"}`} />
                   <span className="text-xs font-bold">{prescribedItems.length} thuốc</span>
                 </div>
                 {disposition === "inpatient" && (
@@ -775,20 +798,26 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
                   </div>
                 )}
                 {disposition === "outpatient" && (
-                  <div className="flex items-center gap-1 px-2 py-0.5 bg-indigo-100 rounded-md text-indigo-700">
-                    <Stethoscope className="w-3 h-3 text-indigo-500" />
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 rounded-md text-blue-700">
+                    <Stethoscope className="w-3 h-3 text-blue-500" />
                     <span className="text-[10px] font-black uppercase">Chỉ định: NGOẠI TRÚ</span>
                   </div>
                 )}
               </div>
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+            {hasStockError && (
+              <span className="text-xs text-red-500 font-bold flex items-center gap-1 mr-2 bg-red-50 px-3 py-1.5 rounded-lg border border-red-200">
+                <AlertCircle className="w-3.5 h-3.5" />
+                Số lượng thuốc kê vượt quá tồn kho!
+              </span>
+            )}
             <Button variant="outline" onClick={onClose} className="rounded-xl h-11 px-6 font-bold">Tạm lưu</Button>
             <Button
               className="bg-emerald-600 hover:bg-emerald-700 rounded-xl h-11 px-8 font-black gap-2 shadow-lg shadow-emerald-500/20"
               onClick={handleFinalize}
-              disabled={medicalRecordMutation.isPending}
+              disabled={medicalRecordMutation.isPending || hasStockError}
             >
               <CheckCircle2 className="w-5 h-5" />
               {medicalRecordMutation.isPending ? "Đang lưu..." : "HOÀN THÀNH CA KHÁM"}

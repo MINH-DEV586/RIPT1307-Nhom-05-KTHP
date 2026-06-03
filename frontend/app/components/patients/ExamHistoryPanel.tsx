@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { getPatientExamHistory } from "@/lib/api";
 import { format, isValid } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -119,7 +119,7 @@ export default function ExamHistoryPanel({
                     )}
                   </span>
                   {record.followUpDate && isValid(new Date(record.followUpDate)) && (
-                    <span className="flex items-center gap-1 text-purple-500">
+                    <span className="flex items-center gap-1 text-sky-500">
                       <CalendarClock className="w-3 h-3" />
                       {format(new Date(record.followUpDate), "dd/MM")}
                     </span>

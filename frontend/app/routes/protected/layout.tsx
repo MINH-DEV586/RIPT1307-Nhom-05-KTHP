@@ -84,7 +84,7 @@ const Layout = () => {
       <SidebarInset className="bg-card/50">
         <Header />
         <main className="px-4 my-4">
-          <Outlet />
+          <Outlet key={pathname} />
         </main>
         <ChatFloatingButton />
       </SidebarInset>

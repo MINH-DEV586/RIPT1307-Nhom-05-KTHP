@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+﻿import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, Clock, Coffee } from "lucide-react";
 
@@ -44,7 +44,7 @@ export function ScheduleOverview({ schedule, title = "Lịch làm việc", showB
               variant={schedule.workingDays.includes(day) ? "default" : "outline"}
               className={`
                 px-2 py-1 text-[10px] uppercase font-bold
-                ${schedule.workingDays.includes(day) ? "bg-indigo-600 hover:bg-indigo-600" : "text-muted-foreground opacity-50"}
+                ${schedule.workingDays.includes(day) ? "bg-blue-600 hover:bg-blue-600" : "text-muted-foreground opacity-50"}
               `}
             >
               {DAY_LABELS[day]}

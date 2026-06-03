@@ -131,7 +131,7 @@ export const updateLabResult = async ({
   data,
 }: {
   id: string;
-  data: { doctorNotes?: string; status?: string };
+  data: any;
 }) => {
   const res = await fetch(`${API_URL}/lab-results/${id}`, {
     method: "PUT",
@@ -143,12 +143,24 @@ export const updateLabResult = async ({
   return res.json();
 };
 
+export const deleteLabResult = async (id: string) => {
+  const res = await fetch(`${API_URL}/lab-results/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to delete lab result");
+  return res.json();
+};
+
 export const createLabResult = async (data: {
   patientId: string;
   testType: string;
-  bodyPart: string;
-  imageUrl: string;
+  bodyPart?: string;
+  imageUrl?: string;
   aiAnalysis?: string;
+  labRequestId?: string;
+  indicators?: any[];
+  note?: string;
 }) => {
   const res = await fetch(`${API_URL}/lab-results`, {
     method: "POST",

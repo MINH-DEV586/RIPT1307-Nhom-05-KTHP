@@ -41,14 +41,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
               (function() {
                 try {
                   var storageKey = "medflow-theme";
-                  var defaultTheme = "system";
+                  var defaultTheme = "light";
                   var theme = localStorage.getItem(storageKey) || defaultTheme;
                   var supportDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
                   
                   var root = document.documentElement;
                   root.classList.remove("light", "dark");
                   
-                  if (theme === "dark" || (theme === "system" && supportDarkMode)) {
+                  if (theme === "dark") {
                     root.classList.add("dark");
                   } else {
                     root.classList.add("light");
@@ -60,7 +60,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         />
       </head>
       <body suppressHydrationWarning>
-        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <ThemeProvider defaultTheme="light" storageKey="medflow-theme">
           <TooltipProvider>{children}</TooltipProvider>
           <ToastProvider />
         </ThemeProvider>

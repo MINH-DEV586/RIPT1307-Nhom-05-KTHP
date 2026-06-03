@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+﻿import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { HeartPulse, Home, ArrowLeft } from "lucide-react";
 
@@ -12,14 +12,14 @@ export function ErrorBoundary() {
       <div className="text-center space-y-6 max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center shadow-xl shadow-indigo-500/25">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-600 flex items-center justify-center shadow-xl shadow-blue-500/25">
             <HeartPulse className="w-8 h-8 text-white" />
           </div>
         </div>
 
         {/* 404 */}
         <div>
-          <p className="text-8xl font-black text-indigo-600/20 dark:text-indigo-500/10 select-none leading-none">
+          <p className="text-8xl font-black text-blue-600/20 dark:text-blue-500/10 select-none leading-none">
             404
           </p>
           <h1 className="text-2xl font-black text-slate-900 dark:text-white mt-2">
@@ -37,7 +37,7 @@ export function ErrorBoundary() {
               <ArrowLeft className="w-4 h-4" /> Quay lại
             </Link>
           </Button>
-          <Button asChild className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+          <Button asChild className="gap-2 bg-blue-600 hover:bg-blue-700">
             <Link to="/dashboard">
               <Home className="w-4 h-4" /> Về trang chủ
             </Link>

@@ -26,6 +26,19 @@ export const createPrescription = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Thông tin bệnh nhân và thuốc là bắt buộc" });
     }
 
+    // Kiểm tra tồn kho thuốc trước khi kê đơn
+    for (const item of items) {
+      const med = await Medicine.findById(item.medicineId);
+      if (!med) {
+        return res.status(404).json({ message: `Không tìm thấy thuốc: ${item.medicineName}` });
+      }
+      if (med.stock < item.quantity) {
+        return res.status(400).json({
+          message: `Thuốc ${item.medicineName} không đủ tồn kho. Hiện còn: ${med.stock}, Yêu cầu: ${item.quantity}`
+        });
+      }
+    }
+
     const newPrescription = new Prescription({
       patientId,
       doctorId,

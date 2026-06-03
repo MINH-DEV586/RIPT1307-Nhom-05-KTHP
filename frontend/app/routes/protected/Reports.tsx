@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getAllInvoices, getUsers } from "@/lib/api";
 import {
@@ -48,11 +48,11 @@ export function meta() {
 const MONTH_LABELS = ["Th1","Th2","Th3","Th4","Th5","Th6","Th7","Th8","Th9","Th10","Th11","Th12"];
 
 const STATUS_COLORS: Record<string, string> = {
-  admitted: "#6366f1",
+  admitted: "#1d4ed8",
   in_treatment: "#3b82f6",
   observation: "#f59e0b",
   discharged: "#10b981",
-  follow_up: "#8b5cf6",
+  follow_up: "#0ea5e9",
   active: "#22c55e",
 };
 
@@ -185,7 +185,7 @@ export default function ReportsPage() {
               size="sm"
               variant={timeRange === r.months ? "default" : "outline"}
               onClick={() => setTimeRange(r.months)}
-              className={timeRange === r.months ? "bg-indigo-600 hover:bg-indigo-700" : ""}
+              className={timeRange === r.months ? "bg-blue-600 hover:bg-blue-700" : ""}
             >
               {r.label}
             </Button>
@@ -224,8 +224,8 @@ export default function ReportsPage() {
             value: totalPatients,
             sub: "Đang quản lý",
             icon: Users,
-            color: "text-indigo-600",
-            bg: "bg-indigo-50 dark:bg-indigo-950/30",
+            color: "text-blue-600",
+            bg: "bg-blue-50 dark:bg-blue-950/30",
             trend: "+8.1%",
             trendUp: true,
           },
@@ -266,7 +266,7 @@ export default function ReportsPage() {
         <Card className="card shadow-sm lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-indigo-500" />
+              <BarChart3 className="w-5 h-5 text-blue-500" />
               Xu hướng doanh thu
             </CardTitle>
             <CardDescription>Doanh thu đã thu và còn chờ theo tháng</CardDescription>
@@ -277,8 +277,8 @@ export default function ReportsPage() {
                 <AreaChart data={revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="gradPaid" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#1d4ed8" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#1d4ed8" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="gradPending" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.2} />
@@ -293,7 +293,7 @@ export default function ReportsPage() {
                     formatter={(v: number) => [`${v.toLocaleString()} VNĐ`, ""]}
                   />
                   <Legend />
-                  <Area type="monotone" dataKey="Đã thu" stroke="#6366f1" strokeWidth={2} fill="url(#gradPaid)" />
+                  <Area type="monotone" dataKey="Đã thu" stroke="#1d4ed8" strokeWidth={2} fill="url(#gradPaid)" />
                   <Area type="monotone" dataKey="Chờ thu" stroke="#f59e0b" strokeWidth={2} fill="url(#gradPending)" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -305,7 +305,7 @@ export default function ReportsPage() {
         <Card className="card shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-violet-500" />
+              <Activity className="w-5 h-5 text-blue-500" />
               Trạng thái bệnh nhân
             </CardTitle>
             <CardDescription>Phân bổ hiện tại</CardDescription>
@@ -377,7 +377,7 @@ export default function ReportsPage() {
                     contentStyle={{ borderRadius: "10px", border: "1px solid var(--border)", background: "var(--card)", color: "var(--card-foreground)" }}
                   />
                   <Legend />
-                  <Bar dataKey="Nhập viện" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={18} />
+                  <Bar dataKey="Nhập viện" fill="#1d4ed8" radius={[4, 4, 0, 0]} barSize={18} />
                   <Bar dataKey="Xuất viện" fill="#10b981" radius={[4, 4, 0, 0]} barSize={18} />
                 </BarChart>
               </ResponsiveContainer>
@@ -410,11 +410,11 @@ export default function ReportsPage() {
                           <span className="font-bold truncate max-w-36">{doc.name || "Bác sĩ " + (i + 1)}</span>
                           <Badge variant="secondary" className="text-[10px]">{doc.specialization}</Badge>
                         </div>
-                        <span className="font-bold text-indigo-600">{doc.patients} BN</span>
+                        <span className="font-bold text-blue-600">{doc.patients} BN</span>
                       </div>
                       <div className="w-full bg-muted rounded-full h-1.5">
                         <div
-                          className="h-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all"
+                          className="h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-blue-500 transition-all"
                           style={{ width: `${pct}%` }}
                         />
                       </div>

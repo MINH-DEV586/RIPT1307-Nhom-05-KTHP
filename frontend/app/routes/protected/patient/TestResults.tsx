@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { getPatientLabResults, explainLabResult } from "@/lib/api";
 import { printMedicalDoc } from "@/lib/print";
@@ -135,7 +135,7 @@ export default function TestResults() {
       case "analyzed":
         return <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/20">Đã phân tích</Badge>;
       case "reviewed":
-        return <Badge className="bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 border-indigo-500/20">Đã kiểm tra</Badge>;
+        return <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/20">Đã kiểm tra</Badge>;
       default:
         return <Badge variant="secondary">Đang chờ</Badge>;
     }
@@ -144,9 +144,9 @@ export default function TestResults() {
   const getIcon = (testType: string) => {
     const type = testType.toLowerCase();
     if (type.includes("x-ray") || type.includes("x quang")) return <ImageIcon className="w-8 h-8 text-blue-500" />;
-    if (type.includes("mri") || type.includes("ct")) return <ImageIcon className="w-8 h-8 text-purple-500" />;
+    if (type.includes("mri") || type.includes("ct")) return <ImageIcon className="w-8 h-8 text-sky-500" />;
     if (type.includes("máu") || type.includes("blood")) return <FlaskConical className="w-8 h-8 text-rose-500" />;
-    return <FileText className="w-8 h-8 text-indigo-500" />;
+    return <FileText className="w-8 h-8 text-blue-500" />;
   };
 
   if (loading) return <div className="h-[60vh] flex items-center justify-center"><Loader label="Đang tải kết quả..." /></div>;
@@ -217,7 +217,7 @@ export default function TestResults() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-500/10 gap-2 font-bold"
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-500/10 gap-2 font-bold"
                               onClick={() => handleExplain(result._id)}
                             >
                               <Sparkles className="w-4 h-4 animate-pulse" />
@@ -257,8 +257,8 @@ export default function TestResults() {
                         )}
 
                         {result.aiAnalysis && (
-                          <div className="p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
-                            <div className="flex items-center gap-2 text-indigo-600 font-bold mb-1 text-xs uppercase tracking-tighter">
+                          <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                            <div className="flex items-center gap-2 text-blue-600 font-bold mb-1 text-xs uppercase tracking-tighter">
                               <CheckCircle2 className="w-3 h-3" />
                               Phân tích AI
                             </div>
@@ -294,10 +294,10 @@ export default function TestResults() {
 
       {/* AI Explanation Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto bg-card/95 backdrop-blur-xl border-indigo-500/20">
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto bg-card/95 backdrop-blur-xl border-blue-500/20">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold flex items-center gap-3 text-indigo-600">
-              <div className="p-2 bg-indigo-500/10 rounded-lg">
+            <DialogTitle className="text-2xl font-bold flex items-center gap-3 text-blue-600">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
                 <Sparkles className="w-6 h-6" />
               </div>
               Trợ lý Sức khỏe AI
@@ -311,10 +311,10 @@ export default function TestResults() {
             {!explanation && explaining ? (
               <div className="flex flex-col items-center justify-center space-y-4 py-12">
                 <div className="relative">
-                  <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-                  <Sparkles className="w-6 h-6 text-indigo-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                  <div className="w-16 h-16 border-4 border-blue-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                  <Sparkles className="w-6 h-6 text-blue-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
                 </div>
-                <p className="text-indigo-600 font-medium animate-pulse">AI đang phân tích kết quả của bạn...</p>
+                <p className="text-blue-600 font-medium animate-pulse">AI đang phân tích kết quả của bạn...</p>
               </div>
             ) : (
               <div className="prose prose-indigo dark:prose-invert max-w-none prose-sm">
@@ -336,7 +336,7 @@ export default function TestResults() {
 
           <DialogFooter className="sm:justify-end gap-2">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Đóng</Button>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 gap-2">
+            <Button className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 gap-2">
               <MessageSquare className="w-4 h-4" />
               Hỏi thêm bác sĩ
             </Button>

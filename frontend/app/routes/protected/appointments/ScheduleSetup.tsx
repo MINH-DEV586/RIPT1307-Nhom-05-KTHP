@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getDoctorSchedule, updateDoctorSchedule } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
@@ -87,7 +87,7 @@ export default function ScheduleSetup() {
         </div>
         <Button 
           onClick={handleSave} 
-          className="h-11 px-8 text-base font-semibold bg-indigo-600 hover:bg-indigo-700 shadow-sm gap-2 whitespace-nowrap"
+          className="h-11 px-8 text-base font-semibold bg-blue-600 hover:bg-blue-700 shadow-sm gap-2 whitespace-nowrap"
           disabled={mutation.isPending}
         >
           <Save className="w-5 h-5" />
@@ -103,7 +103,7 @@ export default function ScheduleSetup() {
           <Card className="shadow-sm border border-slate-200 dark:border-slate-800 bg-card overflow-hidden">
             <CardHeader className="bg-slate-50/50 dark:bg-slate-900/10 border-b border-slate-100 dark:border-slate-800">
               <CardTitle className="flex items-center gap-2">
-                <CalendarDays className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <CalendarDays className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 Ngày làm việc trong tuần
               </CardTitle>
               <CardDescription>Chọn những ngày bạn sẵn sàng tiếp nhận bệnh nhân.</CardDescription>
@@ -117,7 +117,7 @@ export default function ScheduleSetup() {
                       key={day.id}
                       className={`flex items-center space-x-3 p-4 rounded-md border transition-colors ${
                         isSelected 
-                          ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20" 
+                          ? "border-blue-600 bg-blue-50/50 dark:bg-blue-900/20" 
                           : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50"
                       }`}
                     >
@@ -125,7 +125,7 @@ export default function ScheduleSetup() {
                         id={`day-${day.id}`}
                         checked={isSelected} 
                         onCheckedChange={() => toggleDay(day.id)}
-                        className={isSelected ? "data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600" : ""}
+                        className={isSelected ? "data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600" : ""}
                       />
                       <Label 
                         htmlFor={`day-${day.id}`}

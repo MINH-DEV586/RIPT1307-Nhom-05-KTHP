@@ -1,15 +1,15 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+﻿import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Sparkles } from "lucide-react";
 import type { User as UserType } from "@/types";
 
 export default function History({ user }: { user: UserType }) {
   return (
     <div className="space-y-4">
-      <Card className="bg-linear-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/20 dark:to-blue-950/20 border-indigo-100 dark:border-indigo-900 shadow-sm">
+      <Card className="bg-linear-to-br from-blue-50 to-blue-50 dark:from-blue-950/20 dark:to-blue-950/20 border-blue-100 dark:border-blue-900 shadow-sm">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-indigo-600" />
-            <CardTitle className="text-base text-indigo-900 dark:text-indigo-300">
+            <Sparkles className="h-5 w-5 text-blue-600" />
+            <CardTitle className="text-base text-blue-900 dark:text-blue-300">
               Tóm tắt y tế AI
             </CardTitle>
           </div>

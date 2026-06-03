@@ -1,4 +1,4 @@
-import {
+﻿import {
   CheckCircle2,
   Clock,
   Activity,
@@ -67,7 +67,7 @@ export function DetailsSheet({ user, isOpen, onClose }: DetailsSheetProps) {
           <div className="flex flex-col items-center text-center">
             <Avatar className="h-20 w-20 mb-4 border-2 border-slate-100 shadow-sm">
               <AvatarImage src={user.image ?? undefined} />
-              <AvatarFallback className="text-xl font-bold bg-indigo-50 text-indigo-600">
+              <AvatarFallback className="text-xl font-bold bg-blue-50 text-blue-600">
                 {user.name
                   .split(" ")
                   .map((n) => n[0])
@@ -145,9 +145,9 @@ export function DetailsSheet({ user, isOpen, onClose }: DetailsSheetProps) {
                 </div>
                 <InfoItem label="Tiền sử bệnh lý" value={user.medicalHistory || "Không có hồ sơ trước đó."} />
                 {user.triageReasoning && (
-                  <div className="p-3 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800">
-                    <span className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400">Phân loại AI</span>
-                    <p className="text-xs italic text-indigo-900 dark:text-indigo-300 mt-1 leading-relaxed">
+                  <div className="p-3 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                    <span className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400">Phân loại AI</span>
+                    <p className="text-xs italic text-blue-900 dark:text-blue-300 mt-1 leading-relaxed">
                       {user.triageReasoning}
                     </p>
                   </div>
@@ -164,7 +164,7 @@ export function DetailsSheet({ user, isOpen, onClose }: DetailsSheetProps) {
           </div>
           <Separator />
           <Button 
-            className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 mt-4" 
+            className="w-full gap-2 bg-blue-600 hover:bg-blue-700 mt-4" 
             onClick={() => {
               navigate(`/profile/${user._id}`);
               onClose();

@@ -154,7 +154,7 @@ export default function BookAppointment() {
           <Select value={selectedSpec} onValueChange={setSelectedSpec}>
             <SelectTrigger className="h-12 bg-background/50 border-none rounded-2xl">
               <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-indigo-500" />
+                <Filter className="w-4 h-4 text-blue-500" />
                 <SelectValue placeholder="Chuyên khoa" />
               </div>
             </SelectTrigger>
@@ -166,7 +166,7 @@ export default function BookAppointment() {
           </Select>
         </div>
         <div className="md:col-span-2">
-          <Button className="w-full h-12 rounded-2xl font-bold bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20">
+          <Button className="w-full h-12 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20">
             Tìm kiếm
           </Button>
         </div>
@@ -198,11 +198,11 @@ export default function BookAppointment() {
 
       {/* Booking Modal */}
       <Dialog open={bookingModalOpen} onOpenChange={setBookingModalOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-card/95 backdrop-blur-2xl border-indigo-500/20">
+        <DialogContent className="sm:max-w-[600px] bg-card/95 backdrop-blur-2xl border-blue-500/20">
           <DialogHeader>
             <DialogTitle className="text-2xl font-black">Đặt lịch khám bệnh</DialogTitle>
             <DialogDescription>
-              Bạn đang đặt lịch với <span className="font-bold text-indigo-600">{selectedDoctor?.name}</span>
+              Bạn đang đặt lịch với <span className="font-bold text-blue-600">{selectedDoctor?.name}</span>
             </DialogDescription>
           </DialogHeader>
 
@@ -255,11 +255,14 @@ export default function BookAppointment() {
               <div className="space-y-2">
                 <Label>Ngày khám</Label>
                 <div className="relative">
-                  <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" />
+                  <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500" />
                   <Input 
                     type="date" 
                     className="pl-10 bg-background/50"
-                    min={new Date().toISOString().split("T")[0]}
+                    min={(() => {
+                      const d = new Date();
+                      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    })()}
                     value={formData.date}
                     onChange={(e) => {
                       setFormData({...formData, date: e.target.value, timeSlot: ""});
@@ -276,7 +279,7 @@ export default function BookAppointment() {
                 >
                   <SelectTrigger className="bg-background/50">
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-indigo-500" />
+                      <Clock className="w-4 h-4 text-blue-500" />
                       <SelectValue placeholder={slotsLoading ? "Đang tải..." : (formData.date ? (slotsData?.available ? "Chọn giờ" : "Không có lịch") : "Chọn ngày trước")} />
                     </div>
                   </SelectTrigger>
@@ -323,7 +326,7 @@ export default function BookAppointment() {
               <Button type="button" variant="ghost" onClick={() => setBookingModalOpen(false)}>Hủy</Button>
               <Button 
                 type="submit" 
-                className="bg-indigo-600 hover:bg-indigo-700 font-bold px-8"
+                className="bg-blue-600 hover:bg-blue-700 font-bold px-8"
                 disabled={bookingMutation.isPending}
               >
                 {bookingMutation.isPending ? "Đang xử lý..." : "Xác nhận đặt lịch"}
@@ -346,7 +349,7 @@ export default function BookAppointment() {
             </DialogDescription>
           </DialogHeader>
           <div className="pt-8 space-y-3">
-            <Button className="w-full bg-indigo-600 font-bold py-6" onClick={() => navigate("/appointments")}>
+            <Button className="w-full bg-blue-600 font-bold py-6" onClick={() => navigate("/appointments")}>
               Xem danh sách lịch hẹn
             </Button>
             <Button variant="ghost" className="w-full" onClick={() => setSuccessModalOpen(false)}>

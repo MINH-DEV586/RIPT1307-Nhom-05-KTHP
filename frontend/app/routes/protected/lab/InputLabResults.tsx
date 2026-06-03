@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { getLabRequestById, createLabResult } from "@/lib/api";
+import { getLabRequestById, createLabResult, deleteFile } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Plus, Trash2, ClipboardCheck, User, FlaskConical } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, ClipboardCheck, User, FlaskConical, ImageIcon } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { UploadDropzone } from "@/lib/uploadthing";
+import { authClient } from "@/lib/auth-client";
 
 interface Indicator {
   name: string;
@@ -26,6 +28,8 @@ export default function EnterLabResults() {
     { name: "", value: "", unit: "", normalRange: "" }
   ]);
   const [note, setNote] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [bodyPart, setBodyPart] = useState("");
 
   useEffect(() => {
     if (id) fetchRequest();
@@ -69,7 +73,7 @@ export default function EnterLabResults() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const payload = {
+      const payload: any = {
         patientId: request.patientId,
         labRequestId: id,
         testType: request.testType,
@@ -79,6 +83,12 @@ export default function EnterLabResults() {
         })),
         note
       };
+
+      if (imageUrl) {
+        payload.imageUrl = imageUrl;
+        payload.bodyPart = bodyPart || "Toàn thân";
+        payload.aiAnalysis = "Đang xử lý phân tích AI...";
+      }
 
       await createLabResult(payload);
       toast.success("Đã lưu kết quả xét nghiệm thành công");
@@ -193,7 +203,7 @@ export default function EnterLabResults() {
               </Button>
 
               <div className="pt-4 space-y-2">
-                <Label htmlFor="note">Ghi chú của kỹ thuật viên</Label>
+                <Label htmlFor="note">Ghi chú của kỹ thuật viên / Bác sĩ</Label>
                 <Input 
                   id="note" 
                   value={note} 
@@ -201,6 +211,72 @@ export default function EnterLabResults() {
                   placeholder="Nhận xét về mẫu bệnh phẩm hoặc quá trình thực hiện..."
                   className="bg-background/50"
                 />
+              </div>
+
+              <div className="pt-6 space-y-4 border-t border-primary/5">
+                <Label className="text-sm font-bold flex items-center gap-2 text-primary">
+                  <ImageIcon className="w-4 h-4" /> Hình ảnh kết quả chẩn đoán (X-Quang, Nội soi, Siêu âm...)
+                </Label>
+                
+                {!imageUrl ? (
+                  <UploadDropzone
+                    endpoint="imageUploader"
+                    onClientUploadComplete={(res) => {
+                      if (res && res[0]) {
+                        setImageUrl(res[0].ufsUrl);
+                        toast.success("Tải ảnh kết quả thành công!");
+                      }
+                    }}
+                    headers={async () => {
+                      const session = await authClient.getSession();
+                      return {
+                        Authorization: `Bearer ${session.data?.session.token}`,
+                      };
+                    }}
+                    onUploadError={(error: Error) => {
+                      toast.error(`Lỗi tải ảnh: ${error.message}`);
+                    }}
+                    className="border-dashed border-slate-200 dark:border-slate-800 ut-label:text-blue-600 bg-background/20 rounded-2xl p-6"
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    <div className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                      <img
+                        src={imageUrl}
+                        alt="Kết quả chẩn đoán hình ảnh"
+                        className="h-full w-full object-contain"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-3 right-3 shadow-md"
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await deleteFile({ file: imageUrl });
+                            setImageUrl("");
+                            toast.success("Đã xóa hình ảnh");
+                          } catch (err: any) {
+                            toast.error("Lỗi khi xóa ảnh: " + err.message);
+                          }
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" /> Xóa ảnh
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bodyPart">Bộ phận chụp chiếu / khảo sát</Label>
+                      <Input
+                        id="bodyPart"
+                        value={bodyPart}
+                        onChange={(e) => setBodyPart(e.target.value)}
+                        placeholder="Ví dụ: Phổi thẳng, Ổ bụng tổng quát, Khớp cổ tay..."
+                        className="bg-background/50"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-3 pt-6 border-t border-primary/5">

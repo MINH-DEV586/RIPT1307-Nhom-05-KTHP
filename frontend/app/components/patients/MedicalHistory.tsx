@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { getPatientMedicalRecords, deleteMedicalRecord, updateMedicalRecord, getPrescriptionById } from "@/lib/api";
@@ -112,14 +112,14 @@ function RecordDetailDialog({
           {/* Danh sách đơn thuốc trong quá trình điều trị */}
           {prescriptions.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-bold text-purple-700 uppercase tracking-wider flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-purple-500" />
+              <p className="text-xs font-bold text-sky-700 uppercase tracking-wider flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-sky-500" />
                 Đơn thuốc trong điều trị ({prescriptions.length} đơn)
               </p>
               {prescriptions.map((rx: any, idx: number) => (
                 <div key={rx._id || idx} className="border rounded-lg overflow-hidden">
-                  <div className="bg-purple-50 dark:bg-purple-950/20 px-4 py-2 border-b flex items-center justify-between">
-                    <p className="text-xs font-semibold text-purple-700">
+                  <div className="bg-sky-50 dark:bg-sky-950/20 px-4 py-2 border-b flex items-center justify-between">
+                    <p className="text-xs font-semibold text-sky-700">
                       Đơn #{idx + 1} — {rx.items?.length || 0} loại thuốc
                     </p>
                     <Badge className={rx.status === "dispensed"
@@ -201,7 +201,7 @@ function EditRecordDialog({
       <DialogContent className="sm:max-w-[550px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Pencil className="w-5 h-5 text-indigo-600" />
+            <Pencil className="w-5 h-5 text-blue-600" />
             Cập nhật hồ sơ bệnh án
           </DialogTitle>
         </DialogHeader>
@@ -236,7 +236,7 @@ function EditRecordDialog({
           </div>
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Hủy</Button>
-            <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700" disabled={mutation.isPending}>
+            <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={mutation.isPending}>
               {mutation.isPending ? "Đang lưu..." : "Lưu thay đổi"}
             </Button>
           </div>
@@ -278,7 +278,7 @@ function RecordCard({ record, canEdit, canDelete, patientId }: { record: Medical
     <>
       <div className="overflow-hidden border border-border rounded-xl shadow-sm hover:shadow-md transition-all">
         {/* Card Header */}
-        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20 border-b">
+        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50/80 to-blue-50/50 dark:from-blue-950/30 dark:to-blue-950/20 border-b">
           <div className="flex-1 min-w-0">
             <p className="font-bold text-blue-900 dark:text-blue-100 truncate">{record.diagnosis}</p>
             <div className="flex flex-col gap-1 mt-1 text-xs text-muted-foreground">
@@ -294,7 +294,7 @@ function RecordCard({ record, canEdit, canDelete, patientId }: { record: Medical
                 {doctorSpec && (
                   <>
                     <span className="text-muted-foreground/60">Chuyên khoa</span>
-                    <span className="text-indigo-600 dark:text-indigo-400 font-medium">{doctorSpec}</span>
+                    <span className="text-blue-600 dark:text-blue-400 font-medium">{doctorSpec}</span>
                   </>
                 )}
               </span>
@@ -312,7 +312,7 @@ function RecordCard({ record, canEdit, canDelete, patientId }: { record: Medical
               <Eye className="w-4 h-4" />
             </Button>
             {canEdit && (
-              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-indigo-600"
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-blue-600"
                 onClick={() => setShowEdit(true)} title="Chỉnh sửa">
                 <Pencil className="w-4 h-4" />
               </Button>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate, useParams } from "react-router";
 import { Search, MessageCircle, Plus, Users, LayoutDashboard, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -112,24 +112,24 @@ export default function TelemedicineLayout() {
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-black tracking-tighter text-indigo-600 dark:text-indigo-400">MedChat</h1>
+              <h1 className="text-2xl font-black tracking-tighter text-blue-600 dark:text-blue-400">MedChat</h1>
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tư vấn trực tuyến</p>
             </div>
             <Button 
               size="icon" 
               variant="ghost" 
               onClick={() => navigate("/dashboard")}
-              className="rounded-lg hover:bg-indigo-50 text-indigo-600"
+              className="rounded-lg hover:bg-blue-50 text-blue-600"
             >
               <LayoutDashboard className="w-5 h-5" />
             </Button>
           </div>
           
           <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-indigo-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-blue-500" />
             <Input 
               placeholder="Tìm người hội thoại..." 
-              className="pl-10 h-10 bg-muted/50 border-none rounded-lg focus-visible:ring-2 focus-visible:ring-indigo-500/20 transition-all"
+              className="pl-10 h-10 bg-muted/50 border-none rounded-lg focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -161,14 +161,14 @@ export default function TelemedicineLayout() {
                     className={cn(
                       "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 group relative",
                       isActive 
-                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20" 
-                        : "hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                        ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" 
+                        : "hover:bg-blue-50 dark:hover:bg-blue-950/30"
                     )}
                   >
                     <div className="relative shrink-0">
                       <Avatar className="h-12 w-12 border-2 border-background/20 shadow-sm transition-transform group-hover:scale-105">
                         <AvatarImage src={other?.image} />
-                        <AvatarFallback className={cn("font-bold text-lg", isActive ? "bg-white/20" : "bg-indigo-100 text-indigo-700")}>
+                        <AvatarFallback className={cn("font-bold text-lg", isActive ? "bg-white/20" : "bg-blue-100 text-blue-700")}>
                           {other?.name?.[0] || "?"}
                         </AvatarFallback>
                       </Avatar>
@@ -212,7 +212,7 @@ export default function TelemedicineLayout() {
         {isPatient && (
           <div className="p-4 border-t bg-background/20">
             <Button 
-              className="w-full rounded-lg gap-2 font-semibold h-10 bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-all active:scale-95" 
+              className="w-full rounded-lg gap-2 font-semibold h-10 bg-blue-600 hover:bg-blue-700 shadow-sm transition-all active:scale-95" 
               onClick={() => navigate("/telemedicine")}
             >
               <Plus className="w-4 h-4" /> Tư vấn mới

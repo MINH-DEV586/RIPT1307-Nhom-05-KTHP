@@ -1,4 +1,4 @@
-import { authClient } from "@/lib/auth-client";
+﻿import { authClient } from "@/lib/auth-client";
 import type { Role, User, UserStatus } from "@/types";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -271,7 +271,7 @@ const UserManagement = ({ role, title, description }: UserManagementProps) => {
                             </AvatarFallback>
                           </Avatar>
                           <button 
-                            className="hover:text-indigo-600 hover:underline transition-colors text-left"
+                            className="hover:text-blue-600 hover:underline transition-colors text-left"
                             onClick={() => {
                               const id = typeof user._id === 'object' ? (user._id as any).toString() : user._id;
                               navigate(`/profile/${id}`);
