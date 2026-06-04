@@ -5,7 +5,7 @@ export const authClient = createAuthClient({
   baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:5001",
   plugins: [adminClient()],
   fetchOptions: {
-    // Disable automatic refetch on window focus to reduce noise in terminal
+    credentials: "include", // Required for cross-origin cookie support (FE & BE on different domains)
     onError: (ctx) => {
       console.error("[auth] fetch error:", ctx.error.message);
     },

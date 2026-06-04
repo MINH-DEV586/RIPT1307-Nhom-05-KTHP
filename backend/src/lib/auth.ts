@@ -11,11 +11,27 @@ if (!mongoUri) {
 const client = new MongoClient(mongoUri);
 const db = client.db();
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export const auth = betterAuth({
   database: mongodbAdapter(db),
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5001",
   trustedOrigins: [process.env.FRONTEND_URL || "http://localhost:5173"],
   emailAndPassword: { enabled: true },
+  advanced: {
+    useSecureCookies: isProduction,
+    crossSubdomainCookies: {
+      enabled: false,
+    },
+    defaultCookieAttributes: isProduction
+      ? {
+          sameSite: "none",
+          secure: true,
+          httpOnly: true,
+          partitioned: true,
+        }
+      : undefined,
+  },
   plugins: [
     admin({
       defaultRole: "patient",
