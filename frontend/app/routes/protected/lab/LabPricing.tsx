@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getLabTests, createLabTestRecord, updateLabTestRecord, deleteLabTestRecord } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -59,21 +59,49 @@ export default function LabPricing() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => updateLabTestRecord(id, data),
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ["lab-tests"] });
+      const prevData = queryClient.getQueryData(["lab-tests"]);
+      queryClient.setQueryData(["lab-tests"], (old: any) => {
+        if (!old) return old;
+        return old.map((t: any) => t._id === variables.id ? { ...t, ...variables.data } : t);
+      });
+      return { prevData };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lab-tests"] });
       toast.success("Đã cập nhật thành công");
       closeDialog();
     },
-    onError: () => toast.error("Lỗi khi cập nhật"),
+    onError: (err: any, variables, context) => {
+      if (context?.prevData) {
+        queryClient.setQueryData(["lab-tests"], context.prevData);
+      }
+      toast.error("Lỗi khi cập nhật");
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteLabTestRecord,
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["lab-tests"] });
+      const prevData = queryClient.getQueryData(["lab-tests"]);
+      queryClient.setQueryData(["lab-tests"], (old: any) => {
+        if (!old) return old;
+        return old.filter((t: any) => t._id !== id);
+      });
+      return { prevData };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lab-tests"] });
       toast.success("Đã xóa loại xét nghiệm");
     },
-    onError: () => toast.error("Lỗi khi xóa"),
+    onError: (err: any, variables, context) => {
+      if (context?.prevData) {
+        queryClient.setQueryData(["lab-tests"], context.prevData);
+      }
+      toast.error("Lỗi khi xóa");
+    },
   });
 
   const openCreate = () => {

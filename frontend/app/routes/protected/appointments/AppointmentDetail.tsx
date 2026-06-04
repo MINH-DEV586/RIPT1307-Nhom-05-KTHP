@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAppointmentById, updateAppointmentStatus } from "@/lib/api";
@@ -53,13 +53,25 @@ export default function AppointmentDetailPage() {
   const statusMutation = useMutation({
     mutationFn: ({ status, rejectionReason }: { status: string; rejectionReason?: string }) =>
       updateAppointmentStatus(id!, { status, rejectionReason }),
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ["appointment", id] });
+      await queryClient.cancelQueries({ queryKey: ["appointments"], exact: false });
+      const prevData = queryClient.getQueryData(["appointment", id]);
+      queryClient.setQueryData(["appointment", id], (old: any) => {
+        if (!old) return old;
+        return { ...old, status: variables.status, rejectionReason: variables.rejectionReason };
+      });
+      return { prevData };
+    },
     onSuccess: () => {
       toast.success("Cập nhật trạng thái lịch hẹn thành công");
       queryClient.invalidateQueries({ queryKey: ["appointment", id] });
       queryClient.invalidateQueries({ queryKey: ["appointments"], exact: false });
-      refetch();
     },
-    onError: (err: any) => {
+    onError: (err: any, variables, context) => {
+      if (context?.prevData) {
+        queryClient.setQueryData(["appointment", id], context.prevData);
+      }
       toast.error(err?.message || "Không thể cập nhật trạng thái lịch hẹn");
     },
   });

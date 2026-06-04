@@ -78,11 +78,26 @@ export default function AppointmentsPage() {
   const statusMutation = useMutation({
     mutationFn: ({ id, status, meetingLink, billing, rejectionReason }: { id: string; status: string; meetingLink?: string; billing?: any; rejectionReason?: string }) => 
       updateAppointmentStatus(id, { status, meetingLink, billing, rejectionReason }),
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: appointmentQueryKey, exact: true });
+      await queryClient.cancelQueries({ queryKey: ["appointments"], exact: false });
+      const prevData = queryClient.getQueryData(appointmentQueryKey);
+      queryClient.setQueryData(appointmentQueryKey, (old: any) => {
+        if (!old) return old;
+        return old.map((appt: any) => appt._id === variables.id ? { ...appt, status: variables.status, meetingLink: variables.meetingLink, rejectionReason: variables.rejectionReason } : appt);
+      });
+      return { prevData };
+    },
+    onError: (err, variables, context) => {
+      if (context?.prevData) {
+        queryClient.setQueryData(appointmentQueryKey, context.prevData);
+      }
+      toast.error(err.message || "Lỗi khi cập nhật trạng thái");
+    },
     onSuccess: () => {
       toast.success("Cập nhật trạng thái thành công");
       queryClient.invalidateQueries({ queryKey: appointmentQueryKey, exact: true });
       queryClient.invalidateQueries({ queryKey: ["appointments"], exact: false });
-      queryClient.refetchQueries({ queryKey: appointmentQueryKey, exact: true });
     }
   });
 

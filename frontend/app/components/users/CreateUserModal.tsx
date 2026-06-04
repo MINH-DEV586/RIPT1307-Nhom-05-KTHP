@@ -38,7 +38,7 @@ import {
 } from "./create-user-schema";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createActivityLog, createUser, triggerAdmission, updateUser } from "@/lib/api";
 import { socket } from "@/lib/socket";
 
@@ -62,6 +62,7 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
   const [open, setOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const { data: session } = authClient.useSession();
+  const queryClient = useQueryClient();
 
   const isEdit = !!user;
   const roleLabel = roleTranslations[role] || role;
@@ -126,25 +127,49 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
 
   const admitMutation = useMutation({
     mutationFn: triggerAdmission,
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ["users"] });
+      queryClient.setQueriesData({ queryKey: ["users"] }, (old: any) => {
+        if (!old || !old.res) return old;
+        return {
+          ...old,
+          res: old.res.map((u: any) => u._id === variables.patientId ? { ...u, status: "admitted" } : u)
+        };
+      });
+    },
     onSuccess: () => {
       toast.success("Bệnh nhân đã nhập viện thành công!");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       setOpen(false);
       form.reset();
     },
     onError: (error) => {
       toast.error(error.message || "Nhập viện thất bại");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: updateUser,
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ["users"] });
+      queryClient.setQueriesData({ queryKey: ["users"] }, (old: any) => {
+        if (!old || !old.res) return old;
+        return {
+          ...old,
+          res: old.res.map((u: any) => u._id === variables.userId ? { ...u, ...variables.userData } : u)
+        };
+      });
+    },
     onSuccess: () => {
       toast.success("Cập nhật người dùng thành công!");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       setOpen(false);
       form.reset();
     },
     onError: (error) => {
       toast.error(error.message || "Cập nhật người dùng thất bại");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
 

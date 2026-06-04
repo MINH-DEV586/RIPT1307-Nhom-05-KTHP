@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllBeds, getUsers, admitPatientToBed, dischargePatientFromBed, createBed } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
@@ -144,6 +144,15 @@ export default function BedManagementPage() {
 
   const admitMutation = useMutation({
     mutationFn: admitPatientToBed,
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ["beds", selectedDept] });
+      const prevBeds = queryClient.getQueryData(["beds", selectedDept]);
+      queryClient.setQueryData(["beds", selectedDept], (old: any) => {
+        if (!old) return old;
+        return old.map((bed: any) => bed._id === variables.bedId ? { ...bed, status: "occupied", patientId: variables.patientId } : bed);
+      });
+      return { prevBeds };
+    },
     onSuccess: () => {
       toast.success("Đã xếp giường cho bệnh nhân thành công");
       queryClient.invalidateQueries({ queryKey: ["beds"] });
@@ -153,7 +162,10 @@ export default function BedManagementPage() {
       setSelectedPatientId("");
       setAdmissionReason("");
     },
-    onError: (error: any) => {
+    onError: (error: any, variables, context) => {
+      if (context?.prevBeds) {
+        queryClient.setQueryData(["beds", selectedDept], context.prevBeds);
+      }
       toast.error(error.message || "Lỗi khi xếp giường");
     }
   });
@@ -178,11 +190,26 @@ export default function BedManagementPage() {
 
   const dischargeMutation = useMutation({
     mutationFn: dischargePatientFromBed,
+    onMutate: async (patientId) => {
+      await queryClient.cancelQueries({ queryKey: ["beds", selectedDept] });
+      const prevBeds = queryClient.getQueryData(["beds", selectedDept]);
+      queryClient.setQueryData(["beds", selectedDept], (old: any) => {
+        if (!old) return old;
+        return old.map((bed: any) => bed.patientId === patientId ? { ...bed, status: "available", patientId: undefined } : bed);
+      });
+      return { prevBeds };
+    },
     onSuccess: () => {
       toast.success("Bệnh nhân đã xuất viện hoặc trả giường thành công");
       queryClient.invalidateQueries({ queryKey: ["beds"] });
       queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
+    onError: (error: any, variables, context) => {
+      if (context?.prevBeds) {
+        queryClient.setQueryData(["beds", selectedDept], context.prevBeds);
+      }
+      toast.error(error.message || "Lỗi khi xuất viện");
+    }
   });
 
   const handleAdmitClick = (bed: Bed) => {
