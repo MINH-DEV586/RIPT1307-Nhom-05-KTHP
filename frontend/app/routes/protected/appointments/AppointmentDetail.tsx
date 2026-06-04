@@ -104,6 +104,12 @@ export default function AppointmentDetailPage() {
 
   const status = STATUS_MAP[appointment.status] || STATUS_MAP.pending;
   const isOnline = appointment.type === "online";
+  
+  const isConfirmed = appointment.status === "confirmed";
+  
+  const modalTitle = isPendingApproval ? "Từ chối lịch hẹn" : "Hủy lịch hẹn";
+  const modalDesc = isPendingApproval ? "Vui lòng cho biết lý do bạn từ chối lịch hẹn này để bệnh nhân được rõ." : "Vui lòng cho biết lý do bạn hủy lịch hẹn này.";
+  const modalLabel = isPendingApproval ? "Lý do từ chối" : "Lý do hủy";
 
   return (
     <div className="space-y-6 pb-10">
@@ -147,6 +153,19 @@ export default function AppointmentDetailPage() {
                     Từ chối
                   </Button>
                 </div>
+              )}
+              {((isDoctor && isConfirmed) || (!isDoctor && (isPendingApproval || isConfirmed))) && (
+                <Button
+                  variant="destructive"
+                  className="border-rose-500 text-rose-600 hover:bg-rose-50"
+                  onClick={() => {
+                    setRejectionReason("");
+                    setRejectionModalOpen(true);
+                  }}
+                  disabled={statusMutation.isLoading}
+                >
+                  Hủy lịch hẹn
+                </Button>
               )}
             </div>
           </CardTitle>
@@ -218,20 +237,20 @@ export default function AppointmentDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Rejection Reason Dialog (Doctor) */}
+      {/* Rejection/Cancel Modal */}
       <Dialog open={rejectionModalOpen} onOpenChange={setRejectionModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black text-rose-600">Từ chối lịch hẹn</DialogTitle>
+            <DialogTitle className="text-xl font-black text-rose-600">{modalTitle}</DialogTitle>
             <DialogDescription>
-              Vui lòng cho biết lý do bạn từ chối lịch hẹn này để bệnh nhân được rõ.
+              {modalDesc}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Label htmlFor="detail-reason" className="text-sm font-bold">Lý do từ chối</Label>
+            <Label htmlFor="detail-reason" className="text-sm font-bold">{modalLabel}</Label>
             <Textarea
               id="detail-reason"
-              placeholder="Ví dụ: Bác sĩ có ca phẫu thuật đột xuất, vui lòng chọn giờ khác..."
+              placeholder="Ví dụ: Bác sĩ có việc bận đột xuất, vui lòng chọn giờ khác..."
               className="mt-2 bg-muted/50"
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
@@ -243,14 +262,14 @@ export default function AppointmentDetailPage() {
               className="bg-rose-600 hover:bg-rose-700 font-bold"
               onClick={() => {
                 if (!rejectionReason.trim()) {
-                  toast.error("Vui lòng nhập lý do từ chối");
+                  toast.error(`Vui lòng nhập ${modalLabel.toLowerCase()}`);
                   return;
                 }
                 handleStatusChange("cancelled", rejectionReason);
                 setRejectionModalOpen(false);
               }}
             >
-              Xác nhận từ chối
+              Xác nhận
             </Button>
           </DialogFooter>
         </DialogContent>
