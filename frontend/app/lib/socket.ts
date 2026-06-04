@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const SOCKET_URL = "http://localhost:5001";
+const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5001";
 
 export const socket = io(SOCKET_URL, {
   withCredentials: true, // Important if you need to send cookies

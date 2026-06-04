@@ -2,7 +2,7 @@ import { createAuthClient } from "better-auth/react";
 import { adminClient } from "better-auth/client/plugins";
 
 export const authClient = createAuthClient({
-  baseURL: "http://localhost:5001",
+  baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:5001",
   plugins: [adminClient()],
   fetchOptions: {
     // Disable automatic refetch on window focus to reduce noise in terminal
