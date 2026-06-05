@@ -71,20 +71,7 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [gender, setGender] = useState("");
   const navigate = useNavigate();
-  
-  const [session, setSession] = useState<any>(null);
-  const [isPending, setIsPending] = useState(true);
-
-  useEffect(() => {
-    authClient.getSession().then(({ data }) => {
-      if (data?.session) {
-        setSession(data);
-      }
-      setIsPending(false);
-    }).catch(() => {
-      setIsPending(false);
-    });
-  }, []);
+  const { data: session, isPending } = authClient.useSession();
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
