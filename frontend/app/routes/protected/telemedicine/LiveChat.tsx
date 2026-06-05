@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { socket } from "@/lib/socket";
 import { getChatHistory, getTelemedicineSessions } from "@/lib/api";
@@ -35,66 +35,70 @@ export default function EmbeddedChat() {
   const currentUser = session?.user;
 
   useEffect(() => {
-    if (sessionId && currentUser) {
-      initChat();
-    }
-    return () => {
-      socket.off("receive_message");
-      socket.off("online_users");
+    if (!sessionId || !currentUser?.id) return;
+
+    const handleReceive = (msg: any) => {
+      if (msg.sessionId === sessionId) {
+        setMessages((prev) => {
+          if (prev.find((m) => m._id === msg._id)) return prev;
+          return [...prev, msg];
+        });
+      }
     };
-  }, [sessionId, currentUser]);
+
+    const handleOnlineUsers = (users: string[]) => setOnlineUsers(users);
+
+    const initChat = async () => {
+      try {
+        setLoading(true);
+        const allSessions = await getTelemedicineSessions();
+        const current = allSessions.find((s: any) => s._id === sessionId || String(s._id) === sessionId);
+        
+        if (!current) {
+          toast.error("Không tìm thấy phiên khám.");
+          navigate("/telemedicine");
+          return;
+        }
+        setConsultation(current);
+
+        const history = await getChatHistory(sessionId!);
+        
+        // Tự động thêm tin nhắn chào mừng nếu là cuộc hội thoại mới và là bệnh nhân
+        if (history.length === 0 && currentUser?.role === "patient") {
+          const welcomeMsg = {
+            _id: "welcome-system",
+            senderId: current.doctorId,
+            content: `Chào bạn, tôi là bác sĩ ${current.otherUser?.name}. Tôi đã nhận được yêu cầu tư vấn của bạn. Vui lòng mô tả triệu chứng hoặc gửi câu hỏi, tôi sẽ phản hồi bạn sớm nhất có thể!`,
+            createdAt: new Date().toISOString(),
+            isSystem: true
+          };
+          setMessages([welcomeMsg]);
+        } else {
+          setMessages(history);
+        }
+
+        socket.on("receive_message", handleReceive);
+        socket.on("online_users", handleOnlineUsers);
+        socket.emit("join_session", sessionId);
+        
+      } catch (error) {
+        toast.error("Lỗi khi kết nối Messenger");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initChat();
+
+    return () => {
+      socket.off("receive_message", handleReceive);
+      socket.off("online_users", handleOnlineUsers);
+    };
+  }, [sessionId, currentUser?.id, currentUser?.role, navigate]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const initChat = async () => {
-    try {
-      setLoading(true);
-      const allSessions = await getTelemedicineSessions();
-      const current = allSessions.find((s: any) => s._id === sessionId || String(s._id) === sessionId);
-      
-      if (!current) {
-        toast.error("Không tìm thấy phiên khám.");
-        navigate("/telemedicine");
-        return;
-      }
-      setConsultation(current);
-
-      const history = await getChatHistory(sessionId!);
-      
-      // Tự động thêm tin nhắn chào mừng nếu là cuộc hội thoại mới và là bệnh nhân
-      if (history.length === 0 && currentUser?.role === "patient") {
-        const welcomeMsg = {
-          _id: "welcome-system",
-          senderId: current.doctorId,
-          content: `Chào bạn, tôi là bác sĩ ${current.otherUser?.name}. Tôi đã nhận được yêu cầu tư vấn của bạn. Vui lòng mô tả triệu chứng hoặc gửi câu hỏi, tôi sẽ phản hồi bạn sớm nhất có thể!`,
-          createdAt: new Date().toISOString(),
-          isSystem: true
-        };
-        setMessages([welcomeMsg]);
-      } else {
-        setMessages(history);
-      }
-
-      socket.on("receive_message", (msg) => {
-        if (msg.sessionId === sessionId) {
-          setMessages((prev) => {
-            if (prev.find((m) => m._id === msg._id)) return prev;
-            return [...prev, msg];
-          });
-        }
-      });
-
-      socket.on("online_users", (users) => setOnlineUsers(users));
-      socket.emit("join_session", sessionId);
-      
-    } catch (error) {
-      toast.error("Lỗi khi kết nối Messenger");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const scrollToBottom = () => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
