@@ -1,0 +1,50 @@
+services:
+  # 1. Backend Web Service
+  - type: web
+    name: hospital-backend
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: "cd backend && npm install"
+    startCommand: "cd backend && npm start"
+    envVars:
+      - key: PORT
+        value: 5001
+      - key: MONGO_URI
+        sync: false # Bạn sẽ nhập chuỗi kết nối MongoDB Atlas trong Render Dashboard
+      - key: FRONTEND_URL
+        value: https://hospital-frontend.onrender.com
+      - key: BETTER_AUTH_URL
+        value: https://hospital-backend.onrender.com
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: UPLOADTHING_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: VNPAY_TMN_CODE
+        sync: false
+      - key: VNPAY_HASH_SECRET
+        sync: false
+
+  # 2. Frontend Web Service
+  - type: web
+    name: hospital-frontend
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: "cd frontend && npm install && npm run build"
+    startCommand: "cd frontend && npm start"
+    envVars:
+      - key: VITE_API_URL
+        value: https://hospital-backend.onrender.com
+      - key: UPLOADTHING_TOKEN
+        sync: false
