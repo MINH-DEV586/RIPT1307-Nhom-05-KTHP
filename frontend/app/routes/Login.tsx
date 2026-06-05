@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { Link, useNavigate, Navigate } from "react-router";
 import { loginSchema } from "@/components/auth/login.schema";
-import Loader from "@/components/global/Loader";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -34,15 +33,8 @@ const Login = () => {
     defaultValues: { email: "", password: "", rememberMe: false },
   });
 
-  if (isPending) {
-    return (
-      <div className="min-h-screen flex justify-center items-center">
-        <Loader label="Đang tải..." />
-      </div>
-    );
-  }
-
-  if (session) {
+  // Nếu đã có session (đã đăng nhập) → redirect luôn
+  if (!isPending && session) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -70,6 +62,16 @@ const Login = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
+      {/* Overlay loading khi đang kiểm tra session – giữ form mounted, tránh chớp */}
+      {isPending && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-700 rounded-full animate-spin" />
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Đang tải...</span>
+          </div>
+        </div>
+      )}
+
       <Card className="rounded-lg shadow-2xl card backdrop-blur-xl">
         <CardContent className="p-10 min-w-100 md:min-w-140.5">
           <div className="flex flex-col items-center mb-8">
@@ -131,7 +133,7 @@ const Login = () => {
             </div>
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isPending}
               className="w-full bg-blue-700 hover:bg-blue-800 dark:bg-blue-700 dark:hover:bg-blue-800 text-white rounded-2xl py-6 font-bold text-base shadow-md transition-all active:scale-[0.98] group"
             >
               {isLoading ? (
