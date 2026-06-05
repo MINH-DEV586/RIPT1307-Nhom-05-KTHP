@@ -246,6 +246,7 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
         }
         socket.emit("notify_user_created");
         toast.success(`Đã tạo ${roleLabel} thành công!`);
+        queryClient.invalidateQueries({ queryKey: ["users"] });
         activityMutation.mutate({
           userId: (session?.user as any).id,
           action: "create",
