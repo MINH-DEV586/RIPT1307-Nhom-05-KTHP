@@ -42,6 +42,7 @@ import {
   BedIcon,
   Camera,
   X,
+  Sparkles,
 } from "lucide-react";
 import InvoiceDetailDialog from "@/components/global/InvoiceDetailDialog";
 import { toast } from "sonner";
@@ -171,13 +172,23 @@ const Profile = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="col-span-1 card shadow-sm h-min">
           <CardContent className="p-6 flex flex-col items-center text-center">
-            <Avatar className="h-24 w-24 mb-4 border-4 border-white dark:border-slate-800 shadow-sm">
-              <AvatarImage src={profileUser.image} />
-              <AvatarFallback className="text-2xl bg-blue-100 text-blue-700">
-                {profileUser.name?.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-            <h2 className="text-xl font-bold">{profileUser.name}</h2>
+            <div className="relative mb-4">
+              <Avatar className="h-24 w-24 border-4 border-white dark:border-slate-800 shadow-sm">
+                <AvatarImage src={profileUser.image} />
+                <AvatarFallback className="text-2xl bg-blue-100 text-blue-700">
+                  {profileUser.name?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              {profileUser.membership === "pro" && (
+                <div className="absolute -bottom-2 right-0 bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded shadow-md border-2 border-white dark:border-slate-800 flex items-center gap-1 z-10">
+                  <Sparkles className="w-3 h-3" /> PRO
+                </div>
+              )}
+            </div>
+            <h2 className="text-xl font-bold flex items-center gap-2 justify-center">
+              {profileUser.name}
+              {profileUser.membership === "pro" && <Sparkles className="w-5 h-5 text-amber-500" />}
+            </h2>
             <p className="text-sm text-slate-500 mb-4">{profileUser.email}</p>
             <div className="flex flex-wrap gap-2 justify-center">
               <Badge variant="secondary" className="capitalize">

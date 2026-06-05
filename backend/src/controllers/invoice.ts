@@ -346,6 +346,20 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
     inv.status = "paid";
     await inv.save();
 
+    // Check if upgrading to pro
+    const hasProUpgrade = inv.items.some((item: any) => item.description === "Nâng cấp tài khoản Pro");
+    if (hasProUpgrade) {
+      const userCollection = mongoose.connection.collection("user");
+      let queryId: any = inv.patientId;
+      if (mongoose.Types.ObjectId.isValid(inv.patientId)) {
+        queryId = new mongoose.Types.ObjectId(inv.patientId);
+      }
+      await userCollection.updateOne(
+        { $or: [{ _id: queryId }, { _id: inv.patientId as any }] },
+        { $set: { membership: "pro" } }
+      );
+    }
+
     await logActivity(
       (req as any).user.id,
       "Thanh toán hóa đơn",
@@ -436,6 +450,20 @@ export const confirmVNPayPayment = async (req: Request, res: Response) => {
     inv.status = "paid";
     await inv.save();
 
+    // Check if upgrading to pro
+    const hasProUpgrade = inv.items.some((item: any) => item.description === "Nâng cấp tài khoản Pro");
+    if (hasProUpgrade) {
+      const userCollection = mongoose.connection.collection("user");
+      let queryId: any = inv.patientId;
+      if (mongoose.Types.ObjectId.isValid(inv.patientId)) {
+        queryId = new mongoose.Types.ObjectId(inv.patientId);
+      }
+      await userCollection.updateOne(
+        { $or: [{ _id: queryId }, { _id: inv.patientId as any }] },
+        { $set: { membership: "pro" } }
+      );
+    }
+
     await logActivity(
       (req as any).user.id,
       "Thanh toán VNPay QR",
@@ -514,6 +542,50 @@ export const confirmVNPayPayment = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error confirming VNPay payment:", error);
+    res.status(500).json({ message: "Lỗi hệ thống" });
+  }
+};
+
+export const addProUpgradeInvoice = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Look for pending invoice
+    let inv = await invoice
+      .findOne({ patientId: userId, status: { $in: ["draft", "pending_payment"] } })
+      .sort({ createdAt: -1 });
+
+    const proItem = {
+      description: "Nâng cấp tài khoản Pro",
+      quantity: 1,
+      unitPrice: 500000,
+      totalPrice: 500000,
+      isEstimated: false,
+    };
+
+    if (!inv) {
+      inv = new invoice({
+        patientId: userId,
+        status: "pending_payment",
+        items: [proItem],
+        totalAmount: proItem.totalPrice,
+      });
+      await inv.save();
+    } else {
+      const hasPro = inv.items.some((i: any) => i.description === proItem.description);
+      if (!hasPro) {
+        inv.items.push(proItem);
+        inv.totalAmount = (inv.totalAmount || 0) + proItem.totalPrice;
+        await inv.save();
+      }
+    }
+
+    res.json({ message: "Đã thêm gói Pro vào hóa đơn", invoice: inv });
+  } catch (error) {
+    console.error("Error adding pro upgrade:", error);
     res.status(500).json({ message: "Lỗi hệ thống" });
   }
 };

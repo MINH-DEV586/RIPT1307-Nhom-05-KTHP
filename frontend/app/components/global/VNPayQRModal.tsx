@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { socket } from "@/lib/socket";
 import { confirmVNPayPayment } from "@/lib/api";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -98,17 +99,29 @@ export default function VNPayQRModal({
   }, [open, invoiceId]);
 
   // ── Thành công ───────────────────────────────────────────────
-  const handleSuccess = () => {
+  const handleSuccess = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setStatus("success");
     toast.success("Thanh toán thành công!", {
       description: `Giao dịch #${txnRef.slice(0, 8)} đã được xác nhận.`,
     });
+    
+    // Cập nhật lại dữ liệu hoá đơn và người dùng
     queryClient.invalidateQueries({ queryKey: ["active-invoice", patientId] });
     queryClient.invalidateQueries({ queryKey: ["billing-history", patientId] });
+    queryClient.invalidateQueries({ queryKey: ["user", patientId] });
+    
+    // Cập nhật session (để header / avatar tự refresh trạng thái Pro)
+    try {
+      await authClient.getSession({ query: { disableCookieCache: true } } as any);
+    } catch (e) {
+      // Bỏ qua lỗi nếu có
+    }
+
     setTimeout(() => {
       onClose();
-      navigate("/patient/invoices");
+      // Force reload trang hóa đơn nếu cần
+      window.location.href = "/patient/invoices";
     }, 2500);
   };
 
