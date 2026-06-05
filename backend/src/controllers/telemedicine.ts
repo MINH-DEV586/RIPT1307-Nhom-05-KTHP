@@ -214,9 +214,20 @@ export const deleteSession = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
     const userRole = (req as any).user.role;
 
-    const session = await TelemedicineSession.findById(id);
+    // Thử tìm trong TelemedicineSession trước
+    let session: any = await TelemedicineSession.findById(id);
+    let isAppointmentSession = false;
+
     if (!session) {
-      return res.status(404).json({ message: "Không tìm thấy phiên khám" });
+      // Nếu không tìm thấy, thử tìm trong Appointment (chỉ admin mới được xóa loại này)
+      if (userRole !== "admin") {
+        return res.status(404).json({ message: "Không tìm thấy phiên khám" });
+      }
+      session = await Appointment.findById(id);
+      if (!session) {
+        return res.status(404).json({ message: "Không tìm thấy phiên khám" });
+      }
+      isAppointmentSession = true;
     }
 
     // Admin được phép xóa bất kỳ phiên khám nào
@@ -225,8 +236,14 @@ export const deleteSession = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Bạn không có quyền xóa phiên khám này" });
     }
 
-    await TelemedicineSession.findByIdAndDelete(id);
-    await Message.deleteMany({ sessionId: id });
+    if (isAppointmentSession) {
+      // Xóa Appointment và toàn bộ tin nhắn liên quan
+      await Appointment.findByIdAndDelete(id);
+      await Message.deleteMany({ sessionId: id });
+    } else {
+      await TelemedicineSession.findByIdAndDelete(id);
+      await Message.deleteMany({ sessionId: id });
+    }
 
     // Thông báo cho bên còn lại qua socket
     try {
@@ -243,3 +260,4 @@ export const deleteSession = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Lỗi khi xóa phiên khám" });
   }
 };
+

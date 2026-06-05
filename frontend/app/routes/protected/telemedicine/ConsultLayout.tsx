@@ -208,7 +208,7 @@ export default function TelemedicineLayout() {
                       </p>
                     </div>
 
-                    {!s.isAppointment && (
+                    {(!s.isAppointment || isAdmin) && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -263,7 +263,7 @@ export default function TelemedicineLayout() {
               </div>
             </div>
           </DialogHeader>
-          <DialogFooter className="bg-slate-50 dark:bg-slate-900/50 p-4 gap-3">
+          <DialogFooter className="bg-slate-50 dark:bg-slate-900/50 p-4 gap-3 flex-row justify-end">
             <Button 
               variant="ghost" 
               onClick={() => setSessionToDelete(null)}
@@ -273,10 +273,9 @@ export default function TelemedicineLayout() {
               Hủy bỏ
             </Button>
             <Button 
-              variant="destructive" 
               onClick={handleDeleteSession}
               disabled={isDeleting}
-              className="rounded-lg font-semibold h-10 px-6 shadow-sm bg-red-500 hover:bg-red-600 border-none transition-all active:scale-95"
+              className="rounded-lg font-semibold h-10 px-6 shadow-sm bg-red-500 hover:bg-red-600 text-white border-none transition-all active:scale-95"
             >
               {isDeleting ? "Đang xóa..." : "Xác nhận xóa"}
             </Button>
