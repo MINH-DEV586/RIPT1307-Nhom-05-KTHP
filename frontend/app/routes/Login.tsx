@@ -1,4 +1,4 @@
-﻿import type { Route } from "../+types/root";
+import type { Route } from "../+types/root";
 import { Activity, Lock, Mail, ChevronRight, AlertCircle } from "lucide-react";
 import { CustomInput } from "@/components/global/CustomInput";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,20 @@ const Login = () => {
   const [globalError, setGlobalError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { data: session, isPending } = authClient.useSession();
+  
+  const [session, setSession] = useState<any>(null);
+  const [isPending, setIsPending] = useState(true);
+
+  useEffect(() => {
+    authClient.getSession().then(({ data }) => {
+      if (data?.session) {
+        setSession(data);
+      }
+      setIsPending(false);
+    }).catch(() => {
+      setIsPending(false);
+    });
+  }, []);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
