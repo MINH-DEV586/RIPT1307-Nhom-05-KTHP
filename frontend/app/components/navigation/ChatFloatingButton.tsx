@@ -19,25 +19,29 @@ export default function ChatFloatingButton() {
   const [lastNotification, setLastNotification] = useState<any>(null);
 
   useEffect(() => {
-    if (session?.user) {
-      socket.connect();
-      
-      socket.on("connect", () => {
-        socket.emit("identify", session.user.id);
-      });
-      
-      socket.on("new_chat_notification", (data) => {
-        setUnreadCount(prev => prev + 1);
-        setLastNotification(data);
-        // Tự động đóng notification sau 5 giây
-        setTimeout(() => setLastNotification(null), 5000);
-      });
+    if (!session?.user?.id) return;
+    
+    socket.connect();
+    
+    const handleConnect = () => {
+      socket.emit("identify", session.user.id);
+    };
 
-      return () => {
-        socket.off("new_chat_notification");
-      };
-    }
-  }, [session]);
+    const handleNewChatNotification = (data: any) => {
+      setUnreadCount(prev => prev + 1);
+      setLastNotification(data);
+      // Tự động đóng notification sau 5 giây
+      setTimeout(() => setLastNotification(null), 5000);
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("new_chat_notification", handleNewChatNotification);
+
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("new_chat_notification", handleNewChatNotification);
+    };
+  }, [session?.user?.id]);
 
   if (!session?.user) return null;
 

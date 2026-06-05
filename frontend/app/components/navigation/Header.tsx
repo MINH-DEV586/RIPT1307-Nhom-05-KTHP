@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import Notifications from "./Notifications";
+import { Sparkles } from "lucide-react";
 import type { Role } from "@/types";
 
 const roleTranslations: Record<Role, string> = {
@@ -109,21 +110,31 @@ const Header = () => {
               }) + " flex items-center gap-2 rounded-lg px-2 py-6"
             }
           >
-            <Avatar className="h-8 w-8 rounded-lg">
-              <AvatarImage
-                src={session?.user.image || ""}
-                alt={session?.user.name}
-              />
-              <AvatarFallback className="rounded-lg text-primary">
-                {session?.user.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-8 w-8 rounded-lg">
+                <AvatarImage
+                  src={session?.user.image || ""}
+                  alt={session?.user.name}
+                />
+                <AvatarFallback className="rounded-lg text-primary">
+                  {session?.user.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </AvatarFallback>
+              </Avatar>
+              {(session?.user as any)?.membership === "pro" && (
+                <div className="absolute -bottom-1 -right-1 bg-amber-500 text-white text-[8px] font-bold px-1 rounded shadow-sm border border-white dark:border-background">
+                  PRO
+                </div>
+              )}
+            </div>
 
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-bold">{session?.user.name}</span>
+              <span className="truncate font-bold flex items-center gap-1">
+                {session?.user.name}
+                {(session?.user as any)?.membership === "pro" && <Sparkles className="w-3 h-3 text-amber-500" />}
+              </span>
               <span className="truncate text-xs text-muted-foreground capitalize">
                 {roleTranslations[session?.user.role as Role] ||
                   session?.user.role}

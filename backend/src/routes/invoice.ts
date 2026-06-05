@@ -7,6 +7,7 @@ import {
   getAllInvoices,
   createVNPayCheckout,
   confirmVNPayPayment,
+  addProUpgradeInvoice,
 } from "../controllers/invoice";
 import { checkRole } from "../middleware/checkRole";
 
@@ -22,6 +23,7 @@ invoiceRouter.get(
 invoiceRouter.get("/", requireAuth, checkRole(["admin", "doctor"]), getAllInvoices);
 invoiceRouter.get("/history/:id", requireAuth, getBillingHistory);
 invoiceRouter.post("/:id/checkout", requireAuth, createCheckoutSession);
+invoiceRouter.post("/add-pro-upgrade", requireAuth, checkRole(["patient"]), addProUpgradeInvoice);
 
 // VNPay QR Payment routes
 invoiceRouter.post("/:id/vnpay-checkout", requireAuth, createVNPayCheckout);

@@ -9,7 +9,7 @@ import type {
   appointment,
 } from "@/types";
 
-export const API_URL = "http://localhost:5001/api";
+export const API_URL = import.meta.env.VITE_BACKEND_URL ? `${import.meta.env.VITE_BACKEND_URL}/api` : "http://localhost:5001/api";
 
 export const getUsers = async (params: {
   role: Role;
@@ -303,6 +303,15 @@ export const getAllInvoices = async (data?: {
   return res.json();
 };
 
+
+export const addProUpgradeInvoice = async () => {
+  const res = await fetch(`${API_URL}/invoices/add-pro-upgrade`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to add pro upgrade invoice");
+  return res.json();
+};
 
 export const fetchNotifications = async () => {
   const res = await fetch(`${API_URL}/notifications`, {

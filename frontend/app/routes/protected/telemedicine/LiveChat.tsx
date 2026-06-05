@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { socket } from "@/lib/socket";
 import { getChatHistory, getTelemedicineSessions } from "@/lib/api";
@@ -33,68 +33,78 @@ export default function EmbeddedChat() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const currentUser = session?.user;
+  const isAdmin = currentUser?.role === "admin";
 
   useEffect(() => {
-    if (sessionId && currentUser) {
-      initChat();
-    }
-    return () => {
-      socket.off("receive_message");
-      socket.off("online_users");
+    if (!sessionId || !currentUser?.id) return;
+
+    const handleReceive = (msg: any) => {
+      if (msg.sessionId === sessionId) {
+        setMessages((prev) => {
+          if (prev.find((m) => m._id === msg._id)) return prev;
+          return [...prev, msg];
+        });
+      }
     };
-  }, [sessionId, currentUser]);
+
+    const handleOnlineUsers = (users: string[]) => setOnlineUsers(users);
+
+    const initChat = async () => {
+      try {
+        setLoading(true);
+        const allSessions = await getTelemedicineSessions();
+        const current = allSessions.find((s: any) => s._id === sessionId || String(s._id) === sessionId);
+        
+        if (!current) {
+          toast.error("Không tìm thấy phiên khám.");
+          navigate("/telemedicine");
+          return;
+        }
+        setConsultation(current);
+
+        const history = await getChatHistory(sessionId!);
+        
+        // Tự động thêm tin nhắn chào mừng nếu là cuộc hội thoại mới và là bệnh nhân
+        if (history.length === 0 && currentUser?.role === "patient") {
+          const welcomeMsg = {
+            _id: "welcome-system",
+            senderId: current.doctorId,
+            content: `Chào bạn, tôi là bác sĩ ${current.otherUser?.name}. Tôi đã nhận được yêu cầu tư vấn của bạn. Vui lòng mô tả triệu chứng hoặc gửi câu hỏi, tôi sẽ phản hồi bạn sớm nhất có thể!`,
+            createdAt: new Date().toISOString(),
+            isSystem: true
+          };
+          setMessages([welcomeMsg]);
+        } else {
+          setMessages(history);
+        }
+
+        // Admin chỉ xem, không join socket để không làm ảnh hưởng cuộc hội thoại
+        if (!isAdmin) {
+          socket.on("receive_message", handleReceive);
+          socket.on("online_users", handleOnlineUsers);
+          socket.emit("join_session", sessionId);
+        }
+        
+      } catch (error) {
+        toast.error("Lỗi khi kết nối Messenger");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initChat();
+
+    return () => {
+      if (!isAdmin) {
+        socket.off("receive_message", handleReceive);
+        socket.off("online_users", handleOnlineUsers);
+      }
+    };
+  }, [sessionId, currentUser?.id, currentUser?.role, isAdmin, navigate]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const initChat = async () => {
-    try {
-      setLoading(true);
-      const allSessions = await getTelemedicineSessions();
-      const current = allSessions.find((s: any) => s._id === sessionId || String(s._id) === sessionId);
-      
-      if (!current) {
-        toast.error("Không tìm thấy phiên khám.");
-        navigate("/telemedicine");
-        return;
-      }
-      setConsultation(current);
-
-      const history = await getChatHistory(sessionId!);
-      
-      // Tự động thêm tin nhắn chào mừng nếu là cuộc hội thoại mới và là bệnh nhân
-      if (history.length === 0 && currentUser?.role === "patient") {
-        const welcomeMsg = {
-          _id: "welcome-system",
-          senderId: current.doctorId,
-          content: `Chào bạn, tôi là bác sĩ ${current.otherUser?.name}. Tôi đã nhận được yêu cầu tư vấn của bạn. Vui lòng mô tả triệu chứng hoặc gửi câu hỏi, tôi sẽ phản hồi bạn sớm nhất có thể!`,
-          createdAt: new Date().toISOString(),
-          isSystem: true
-        };
-        setMessages([welcomeMsg]);
-      } else {
-        setMessages(history);
-      }
-
-      socket.on("receive_message", (msg) => {
-        if (msg.sessionId === sessionId) {
-          setMessages((prev) => {
-            if (prev.find((m) => m._id === msg._id)) return prev;
-            return [...prev, msg];
-          });
-        }
-      });
-
-      socket.on("online_users", (users) => setOnlineUsers(users));
-      socket.emit("join_session", sessionId);
-      
-    } catch (error) {
-      toast.error("Lỗi khi kết nối Messenger");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const scrollToBottom = () => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -140,16 +150,33 @@ export default function EmbeddedChat() {
             )}
           </div>
           <div>
-            <h2 className="font-black text-lg leading-tight tracking-tight">
-              {consultation?.otherUser?.name}
-            </h2>
-            <div className="flex items-center gap-2 mt-0.5">
-               <span className={cn("text-[10px] font-black uppercase tracking-widest", isOtherUserOnline ? "text-emerald-500" : "text-muted-foreground")}>
-                {isOtherUserOnline ? "Đang trực tuyến" : "Ngoại tuyến"}
-              </span>
-              <span className="w-1 h-1 rounded-full bg-slate-300" />
-              <span className="text-[10px] font-bold text-muted-foreground uppercase">{consultation?.otherUser?.specialization || "Thành viên"}</span>
-            </div>
+            {isAdmin ? (
+              <>
+                <h2 className="font-black text-lg leading-tight tracking-tight">
+                  👨‍⚕️ {consultation?.doctorUser?.name || "Bác sĩ"}
+                  <span className="mx-2 text-muted-foreground font-normal">↔</span>
+                  👤 {consultation?.patientUser?.name || "Bệnh nhân"}
+                </h2>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[10px] font-black uppercase tracking-widest bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                    Chế độ xem - Không thể nhắn tin
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="font-black text-lg leading-tight tracking-tight">
+                  {consultation?.otherUser?.name}
+                </h2>
+                <div className="flex items-center gap-2 mt-0.5">
+                   <span className={cn("text-[10px] font-black uppercase tracking-widest", isOtherUserOnline ? "text-emerald-500" : "text-muted-foreground")}>
+                    {isOtherUserOnline ? "Đang trực tuyến" : "Ngoại tuyến"}
+                  </span>
+                  <span className="w-1 h-1 rounded-full bg-slate-300" />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase">{consultation?.otherUser?.specialization || "Thành viên"}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
         
@@ -192,6 +219,37 @@ export default function EmbeddedChat() {
 
           <div className="flex flex-col gap-5">
             {messages.map((msg, index) => {
+              // Chế độ admin: bác sĩ bên phải, bệnh nhân bên trái
+              if (isAdmin) {
+                const isDoctor = msg.senderId === consultation?.doctorId || String(msg.senderId) === String(consultation?.doctorId);
+                const senderUser = isDoctor ? consultation?.doctorUser : consultation?.patientUser;
+                const senderLabel = isDoctor ? `👨‍⚕️ ${senderUser?.name || "Bác sĩ"}` : `👤 ${senderUser?.name || "Bệnh nhân"}`;
+
+                return (
+                  <div
+                    key={msg._id || index}
+                    className={cn("flex flex-col group animate-fade-up", isDoctor ? "items-end" : "items-start")}
+                    style={{ animationDelay: `${index * 5}ms` }}
+                  >
+                    <span className="text-[10px] font-bold text-muted-foreground px-2 mb-1">{senderLabel}</span>
+                    <div className={cn(
+                      "max-w-[75%] px-4 py-2.5 rounded-2xl text-sm shadow-sm transition-all duration-300",
+                      isDoctor
+                        ? "bg-blue-600 text-white rounded-tr-none hover:bg-blue-700"
+                        : "bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100 rounded-tl-none hover:border-emerald-300"
+                    )}>
+                      {msg.content}
+                    </div>
+                    <div className={cn("flex items-center gap-1.5 mt-1.5 px-2", isDoctor ? "flex-row-reverse" : "flex-row")}>
+                      <span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-tighter">
+                        {new Date(msg.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Chế độ bình thường (bác sĩ / bệnh nhân)
               const isMe = msg.senderId === currentUser?.id;
               return (
                 <div
@@ -217,29 +275,41 @@ export default function EmbeddedChat() {
               );
             })}
           </div>
+
           <div ref={scrollRef} className="h-4" />
         </div>
       </ScrollArea>
 
-      {/* Input */}
-      <div className="p-6 bg-background/60 backdrop-blur-md border-t">
-        <form onSubmit={handleSendMessage} className="flex gap-4 items-center">
-          <Input
-            placeholder="Nhập nội dung trao đổi y khoa..."
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            className="flex-1 bg-muted/50 border-none focus-visible:ring-2 focus-visible:ring-blue-500/20 shadow-inner rounded-lg h-12 px-5 text-sm"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!inputText.trim()}
-            className="h-12 w-12 rounded-lg bg-blue-600 hover:bg-blue-700 shadow-sm shrink-0 transition-all active:scale-95"
-          >
-            <Send className="w-5 h-5" />
-          </Button>
-        </form>
-      </div>
+      {/* Input - Ẩn với admin */}
+      {isAdmin ? (
+        <div className="p-4 bg-amber-50/80 dark:bg-amber-950/30 border-t border-amber-200 dark:border-amber-800 flex items-center gap-3">
+          <div className="flex-1 flex items-center gap-3 bg-amber-100/60 dark:bg-amber-900/30 rounded-lg px-4 py-3 border border-amber-200 dark:border-amber-700">
+            <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+              Bạn đang xem cuộc hội thoại với vai trò Quản trị viên. Không được phép gửi tin nhắn.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="p-6 bg-background/60 backdrop-blur-md border-t">
+          <form onSubmit={handleSendMessage} className="flex gap-4 items-center">
+            <Input
+              placeholder="Nhập nội dung trao đổi y khoa..."
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              className="flex-1 bg-muted/50 border-none focus-visible:ring-2 focus-visible:ring-blue-500/20 shadow-inner rounded-lg h-12 px-5 text-sm"
+            />
+            <Button
+              type="submit"
+              size="icon"
+              disabled={!inputText.trim()}
+              className="h-12 w-12 rounded-lg bg-blue-600 hover:bg-blue-700 shadow-sm shrink-0 transition-all active:scale-95"
+            >
+              <Send className="w-5 h-5" />
+            </Button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

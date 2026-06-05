@@ -20,37 +20,41 @@ const Layout = () => {
   const userRole = (session?.user?.role as Role) || "patient";
 
   useEffect(() => {
-    if (session?.user) {
-      if (!socket.connected) {
-        socket.connect();
-      }
+    if (!session?.user?.id) return;
 
-      socket.emit("identify", session.user.id);
-      socket.on(`new_notification_${session.user.id}`, () => {
-        queryClient.invalidateQueries({ queryKey: ["appointments"], exact: false });
-        queryClient.invalidateQueries({ queryKey: ["appointments", session.user.role, session.user.id], exact: true });
-        queryClient.invalidateQueries({ queryKey: ["notifications", session.user.id] });
-        queryClient.refetchQueries({ queryKey: ["appointments"], exact: false });
-        queryClient.refetchQueries({ queryKey: ["appointments", session.user.role, session.user.id], exact: true });
-      });
-      socket.on("notification_received", () => {
-        queryClient.invalidateQueries({ queryKey: ["notifications", session.user?.id] });
-      });
+    if (!socket.connected) {
+      socket.connect();
     }
 
-    return () => {
-      if (session?.user) {
-        socket.off(`new_notification_${session.user.id}`);
-        socket.off("notification_received");
-      }
+    socket.emit("identify", session.user.id);
+
+    const handleNewNotification = () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["appointments", session.user.role, session.user.id], exact: true });
+      queryClient.invalidateQueries({ queryKey: ["notifications", session.user.id] });
+      queryClient.refetchQueries({ queryKey: ["appointments"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["appointments", session.user.role, session.user.id], exact: true });
     };
-  }, [queryClient, session?.user]);
+
+    const handleNotificationReceived = () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications", session.user.id] });
+    };
+
+    const notifEventName = `new_notification_${session.user.id}`;
+    socket.on(notifEventName, handleNewNotification);
+    socket.on("notification_received", handleNotificationReceived);
+
+    return () => {
+      socket.off(notifEventName, handleNewNotification);
+      socket.off("notification_received", handleNotificationReceived);
+    };
+  }, [queryClient, session?.user?.id, session?.user?.role]);
 
   useEffect(() => {
     if (isPending) return;
 
     // These routes are accessible to all authenticated users
-    const openRoutes = ["/profile", "/appointments", "/bed-management", "/reports"];
+    const openRoutes = ["/profile", "/appointments", "/bed-management", "/reports", "/telemedicine"];
     const isOpenRoute = openRoutes.some((r) => pathname.startsWith(r));
     if (isOpenRoute) return;
 

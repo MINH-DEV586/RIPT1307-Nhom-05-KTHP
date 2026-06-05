@@ -36,7 +36,7 @@ export const navConfig: {
       title: "Bảng điều khiển",
       url: "/dashboard",
       icon: LayoutDashboard,
-      allowedRoles: ["admin", "doctor", "nurse", "pharmacist", "lab_tech"],
+      allowedRoles: ["admin", "doctor", "nurse", "pharmacist", "lab_tech", "patient"],
       items: [
         { title: "Tổng quan", url: "/dashboard" },
         { title: "Nhật ký hoạt động", url: "/activities-log", allowedRoles: ["admin"] },
