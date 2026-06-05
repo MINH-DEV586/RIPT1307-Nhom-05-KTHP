@@ -89,14 +89,15 @@ export const updateUser = async (req: Request, res: Response) => {
       if (currentUser.id !== id) {
         return res.status(403).json({ message: "Bạn không có quyền cập nhật hồ sơ của người khác" });
       }
-      // Patients can ONLY update name, email, birthday, phoneNumber, address, and insuranceId
+      // Patients can ONLY update name, email, birthday, phoneNumber, address, insuranceId, and image (avatar)
       role = undefined;
       password = undefined;
       customFields = { 
         birthday: customFields.birthday, 
         phoneNumber: customFields.phoneNumber, 
         address: customFields.address, 
-        insuranceId: customFields.insuranceId 
+        insuranceId: customFields.insuranceId,
+        image: customFields.image,
       }; 
     }
 

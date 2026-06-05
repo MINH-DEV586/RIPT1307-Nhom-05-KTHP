@@ -22,6 +22,8 @@ import {
   MapPin,
   Calendar,
   ShieldCheck,
+  Camera,
+  X,
 } from "lucide-react";
 import { CustomInput } from "@/components/global/CustomInput";
 import { CustomSelect } from "@/components/global/CustomSelect";
@@ -41,6 +43,9 @@ import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createActivityLog, createUser, triggerAdmission, updateUser } from "@/lib/api";
 import { socket } from "@/lib/socket";
+import { UploadButton } from "@/lib/uploadthing";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Label } from "@/components/ui/label";
 
 interface UserModalProps {
   role: Role;
@@ -61,6 +66,8 @@ const roleTranslations: Record<string, string> = {
 const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
   const [open, setOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(user?.image || "");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const { data: session } = authClient.useSession();
   const queryClient = useQueryClient();
 
@@ -90,6 +97,7 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
   useEffect(() => {
     if (open) {
       if (user) {
+        setAvatarUrl(user.image || "");
         form.reset({
           name: user.name,
           email: user.email,
@@ -106,6 +114,7 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
           insuranceId: user.insuranceId || "",
         });
       } else {
+        setAvatarUrl("");
         form.reset({
            name: "",
            email: "",
@@ -207,6 +216,9 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
       if (data.password) {
         payload.password = data.password;
       }
+      if (avatarUrl) {
+        payload.image = avatarUrl;
+      }
 
       updateMutation.mutate({
         userId: user._id,
@@ -220,6 +232,7 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
           email: data.email,
           password: data.password!,
           role: role,
+          image: avatarUrl || undefined,
           ...payload,
         });
         
@@ -252,6 +265,7 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
   const isLoading =
     loading ||
     isCreating ||
+    uploadingAvatar ||
     admitMutation.isPending ||
     updateMutation.isPending ||
     activityMutation.isPending;
@@ -281,6 +295,62 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          {/* Avatar Upload Section */}
+          <div className="flex flex-col items-center gap-3 pb-4 border-b">
+            <div className="relative">
+              <Avatar className="h-20 w-20 border-4 border-white dark:border-slate-800 shadow-md">
+                <AvatarImage src={avatarUrl} />
+                <AvatarFallback className="text-xl bg-blue-100 text-blue-700">
+                  {form.watch("name")?.charAt(0) || user?.name?.charAt(0) || "?"}
+                </AvatarFallback>
+              </Avatar>
+              {avatarUrl && (
+                <button
+                  type="button"
+                  onClick={() => setAvatarUrl("")}
+                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <Label className="text-xs text-slate-500">Ảnh đại diện (tùy chọn)</Label>
+              <UploadButton
+                endpoint="imageUploader"
+                onUploadBegin={() => setUploadingAvatar(true)}
+                onClientUploadComplete={(res) => {
+                  setUploadingAvatar(false);
+                  if (res && res[0]) {
+                    setAvatarUrl(res[0].ufsUrl);
+                    toast.success("Tải ảnh thành công!");
+                  }
+                }}
+                headers={async () => {
+                  const session = await authClient.getSession();
+                  return {
+                    Authorization: `Bearer ${session.data?.session.token}`,
+                  };
+                }}
+                onUploadError={(error: Error) => {
+                  setUploadingAvatar(false);
+                  toast.error(`Lỗi tải ảnh: ${error.message}`);
+                }}
+                appearance={{
+                  button: "bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-md flex items-center gap-1.5 h-auto",
+                  allowedContent: "hidden",
+                }}
+                content={{
+                  button: (
+                    <span className="flex items-center gap-1.5">
+                      <Camera className="w-3.5 h-3.5" />
+                      {uploadingAvatar ? "Đang tải..." : (avatarUrl ? "Đổi ảnh" : "Tải ảnh lên")}
+                    </span>
+                  ),
+                }}
+              />
+            </div>
+          </div>
           <CustomInput
             control={form.control}
             name="name"

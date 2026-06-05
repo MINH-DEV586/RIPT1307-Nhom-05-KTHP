@@ -1,4 +1,4 @@
-﻿import { useParams, Link } from "react-router";
+import { useParams, Link } from "react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
 import {
@@ -8,6 +8,7 @@ import {
   getBillingHistory,
   updateUser,
   getAllBeds,
+  deleteFile,
 } from "@/lib/api";
 import {
   Card,
@@ -39,6 +40,8 @@ import {
   BedDouble,
   Eye,
   BedIcon,
+  Camera,
+  X,
 } from "lucide-react";
 import InvoiceDetailDialog from "@/components/global/InvoiceDetailDialog";
 import { toast } from "sonner";
@@ -62,6 +65,7 @@ import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import VNPayQRModal from "@/components/global/VNPayQRModal";
+import { UploadButton } from "@/lib/uploadthing";
 
 export function meta() {
   return [{ title: "Hồ sơ người dùng" }];
@@ -536,11 +540,12 @@ function EditProfileModal({ user, viewerRole }: { user: any, viewerRole?: string
   const [insuranceId, setInsuranceId] = useState(user.insuranceId || "");
   const [bloodgroup, setBloodgroup] = useState(user.bloodgroup || "");
   const [medicalHistory, setMedicalHistory] = useState(user.medicalHistory || "");
+  const [avatarUrl, setAvatarUrl] = useState(user.image || "");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const queryClient = useQueryClient();
 
   const isPatient = user.role === "patient";
   const canEditMedical = viewerRole === "admin" || viewerRole === "doctor";
-  const isSelf = viewerRole === user.role; // This is a bit simplistic but works for determining self-edit fields
 
   useEffect(() => {
     setName(user.name || "");
@@ -551,6 +556,7 @@ function EditProfileModal({ user, viewerRole }: { user: any, viewerRole?: string
     setInsuranceId(user.insuranceId || "");
     setBloodgroup(user.bloodgroup || "");
     setMedicalHistory(user.medicalHistory || "");
+    setAvatarUrl(user.image || "");
   }, [user, open]);
 
   const updateMutation = useMutation({
@@ -565,6 +571,17 @@ function EditProfileModal({ user, viewerRole }: { user: any, viewerRole?: string
     },
   });
 
+  const handleRemoveAvatar = async () => {
+    if (!avatarUrl) return;
+    try {
+      await deleteFile({ file: avatarUrl });
+      setAvatarUrl("");
+      toast.success("Đã xóa ảnh đại diện");
+    } catch {
+      setAvatarUrl("");
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const data: any = { 
@@ -573,7 +590,8 @@ function EditProfileModal({ user, viewerRole }: { user: any, viewerRole?: string
       birthday, 
       phoneNumber, 
       address, 
-      insuranceId 
+      insuranceId,
+      image: avatarUrl || undefined,
     };
     if (canEditMedical && isPatient) {
       data.bloodgroup = bloodgroup;
@@ -600,7 +618,64 @@ function EditProfileModal({ user, viewerRole }: { user: any, viewerRole?: string
               Cập nhật thông tin {isPatient ? "bệnh nhân" : "cá nhân"} tại đây.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
+          <div className="grid gap-4 py-4 max-h-[65vh] overflow-y-auto pr-2">
+            {/* Avatar Upload Section */}
+            <div className="flex flex-col items-center gap-3 pb-2 border-b">
+              <div className="relative">
+                <Avatar className="h-20 w-20 border-4 border-white dark:border-slate-800 shadow-md">
+                  <AvatarImage src={avatarUrl} />
+                  <AvatarFallback className="text-xl bg-blue-100 text-blue-700">
+                    {name?.charAt(0) || user.name?.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                {avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveAvatar}
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <Label className="text-xs text-slate-500">Ảnh đại diện</Label>
+                <UploadButton
+                  endpoint="imageUploader"
+                  onUploadBegin={() => setUploadingAvatar(true)}
+                  onClientUploadComplete={(res) => {
+                    setUploadingAvatar(false);
+                    if (res && res[0]) {
+                      setAvatarUrl(res[0].ufsUrl);
+                      toast.success("Tải ảnh thành công!");
+                    }
+                  }}
+                  headers={async () => {
+                    const session = await authClient.getSession();
+                    return {
+                      Authorization: `Bearer ${session.data?.session.token}`,
+                    };
+                  }}
+                  onUploadError={(error: Error) => {
+                    setUploadingAvatar(false);
+                    toast.error(`Lỗi tải ảnh: ${error.message}`);
+                  }}
+                  appearance={{
+                    button: "bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-md flex items-center gap-1.5 h-auto",
+                    allowedContent: "hidden",
+                  }}
+                  content={{
+                    button: (
+                      <span className="flex items-center gap-1.5">
+                        <Camera className="w-3.5 h-3.5" />
+                        {uploadingAvatar ? "Đang tải..." : (avatarUrl ? "Đổi ảnh" : "Tải ảnh lên")}
+                      </span>
+                    ),
+                  }}
+                />
+              </div>
+            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="name">Họ và tên</Label>
               <Input
@@ -703,14 +778,14 @@ function EditProfileModal({ user, viewerRole }: { user: any, viewerRole?: string
               type="button" 
               variant="outline" 
               onClick={() => setOpen(false)}
-              disabled={updateMutation.isPending}
+              disabled={updateMutation.isPending || uploadingAvatar}
             >
               Hủy
             </Button>
             <Button 
               type="submit" 
               className="bg-blue-600 hover:bg-blue-700 text-white"
-              disabled={updateMutation.isPending}
+              disabled={updateMutation.isPending || uploadingAvatar}
             >
               {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Lưu thay đổi
