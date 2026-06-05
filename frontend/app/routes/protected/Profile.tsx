@@ -564,6 +564,9 @@ function EditProfileModal({ user, viewerRole }: { user: any, viewerRole?: string
     onSuccess: () => {
       toast.success("Cập nhật hồ sơ thành công");
       queryClient.invalidateQueries({ queryKey: ["user", user._id] });
+      queryClient.invalidateQueries({ queryKey: ["user", user.id] });
+      // Also refresh session so avatar updates in header/sidebar
+      authClient.getSession({ query: { disableCookieCache: true } } as any).catch(() => {});
       setOpen(false);
     },
     onError: (error: any) => {
@@ -598,7 +601,7 @@ function EditProfileModal({ user, viewerRole }: { user: any, viewerRole?: string
       data.medicalHistory = medicalHistory;
     }
     updateMutation.mutate({
-      userId: user._id,
+      userId: user.id || user._id?.toString?.() || user._id,
       userData: data,
     });
   };
