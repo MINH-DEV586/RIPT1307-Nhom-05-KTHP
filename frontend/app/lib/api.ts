@@ -304,6 +304,15 @@ export const getAllInvoices = async (data?: {
 };
 
 
+export const addProUpgradeInvoice = async () => {
+  const res = await fetch(`${API_URL}/invoices/add-pro-upgrade`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to add pro upgrade invoice");
+  return res.json();
+};
+
 export const fetchNotifications = async () => {
   const res = await fetch(`${API_URL}/notifications`, {
     credentials: "include",

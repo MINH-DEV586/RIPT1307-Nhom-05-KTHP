@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate, useParams } from "react-router";
 import { Search, MessageCircle, Plus, Users, LayoutDashboard, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,7 @@ export default function TelemedicineLayout() {
   const { data: session } = authClient.useSession();
   const currentUser = session?.user;
   const isPatient = currentUser?.role === "patient";
+  const isAdmin = currentUser?.role === "admin";
 
   const [sessions, setSessions] = useState<any[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
@@ -101,9 +102,12 @@ export default function TelemedicineLayout() {
     }
   };
 
-  const filteredSessions = sessions.filter(s => 
-    s.otherUser?.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSessions = sessions.filter(s => {
+    const nameToSearch = isAdmin
+      ? `${s.doctorUser?.name || ""} ${s.patientUser?.name || ""}`.toLowerCase()
+      : (s.otherUser?.name || "").toLowerCase();
+    return nameToSearch.includes(searchTerm.toLowerCase());
+  });
 
   return (
     <div className="flex h-[calc(100vh-100px)] w-full overflow-hidden rounded-xl border bg-card/30 backdrop-blur-md shadow-md animate-page-in">
@@ -115,14 +119,19 @@ export default function TelemedicineLayout() {
               <h1 className="text-2xl font-black tracking-tighter text-blue-600 dark:text-blue-400">MedChat</h1>
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tư vấn trực tuyến</p>
             </div>
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              onClick={() => navigate("/dashboard")}
-              className="rounded-lg hover:bg-blue-50 text-blue-600"
-            >
-              <LayoutDashboard className="w-5 h-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <span className="text-[9px] font-black uppercase tracking-widest bg-amber-100 text-amber-700 px-2 py-1 rounded-full border border-amber-200">Admin</span>
+              )}
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                onClick={() => navigate("/dashboard")}
+                className="rounded-lg hover:bg-blue-50 text-blue-600"
+              >
+                <LayoutDashboard className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
           
           <div className="relative group">
@@ -178,8 +187,19 @@ export default function TelemedicineLayout() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-baseline mb-0.5">
-                        <h4 className="text-sm font-black truncate tracking-tight">{other?.name || "Người dùng"}</h4>
-                        <span className={cn("text-[9px] font-bold opacity-60", isActive ? "text-white" : "text-muted-foreground")}>
+                        {isAdmin ? (
+                          <div className="flex flex-col min-w-0">
+                            <h4 className="text-[11px] font-black truncate tracking-tight">
+                              👨‍⚕️ {s.doctorUser?.name || "Bác sĩ"}
+                            </h4>
+                            <h4 className="text-[11px] font-black truncate tracking-tight">
+                              👤 {s.patientUser?.name || "Bệnh nhân"}
+                            </h4>
+                          </div>
+                        ) : (
+                          <h4 className="text-sm font-black truncate tracking-tight">{other?.name || "Người dùng"}</h4>
+                        )}
+                        <span className={cn("text-[9px] font-bold opacity-60 shrink-0", isActive ? "text-white" : "text-muted-foreground")}>
                           {new Date(s.updatedAt || s.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
@@ -188,7 +208,7 @@ export default function TelemedicineLayout() {
                       </p>
                     </div>
 
-                    {!s.isAppointment && (
+                    {(!s.isAppointment || isAdmin) && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -243,7 +263,7 @@ export default function TelemedicineLayout() {
               </div>
             </div>
           </DialogHeader>
-          <DialogFooter className="bg-slate-50 dark:bg-slate-900/50 p-4 gap-3">
+          <DialogFooter className="bg-slate-50 dark:bg-slate-900/50 p-4 gap-3 flex-row justify-end">
             <Button 
               variant="ghost" 
               onClick={() => setSessionToDelete(null)}
@@ -253,10 +273,9 @@ export default function TelemedicineLayout() {
               Hủy bỏ
             </Button>
             <Button 
-              variant="destructive" 
               onClick={handleDeleteSession}
               disabled={isDeleting}
-              className="rounded-lg font-semibold h-10 px-6 shadow-sm bg-red-500 hover:bg-red-600 border-none transition-all active:scale-95"
+              className="rounded-lg font-semibold h-10 px-6 shadow-sm bg-red-500 hover:bg-red-600 text-white border-none transition-all active:scale-95"
             >
               {isDeleting ? "Đang xóa..." : "Xác nhận xóa"}
             </Button>

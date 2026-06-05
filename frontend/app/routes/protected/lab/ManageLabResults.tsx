@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardList, Search, Activity, Calendar, Eye, Edit2, Trash2, Save, Plus } from "lucide-react";
+import { ClipboardList, Search, Activity, Calendar, Eye, Edit2, Trash2, Save, Plus, Camera, Loader2, ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { UploadDropzone } from "@/lib/uploadthing";
+import { UploadButton } from "@/lib/uploadthing";
 import { authClient } from "@/lib/auth-client";
 
 export default function ManageLabResults() {
@@ -40,6 +40,7 @@ export default function ManageLabResults() {
   const [editIndicators, setEditIndicators] = useState<any[]>([]);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     fetchResults();
@@ -359,25 +360,56 @@ export default function ManageLabResults() {
               <div className="space-y-3">
                 <Label className="font-bold text-sm">Hình ảnh chẩn đoán hình ảnh</Label>
                 {!editImageUrl ? (
-                  <UploadDropzone
-                    endpoint="imageUploader"
-                    onClientUploadComplete={(res) => {
-                      if (res && res[0]) {
-                        setEditImageUrl(res[0].ufsUrl);
-                        toast.success("Tải ảnh kết quả thành công!");
-                      }
-                    }}
-                    headers={async () => {
-                      const session = await authClient.getSession();
-                      return {
-                        Authorization: `Bearer ${session.data?.session.token}`,
-                      };
-                    }}
-                    onUploadError={(error: Error) => {
-                      toast.error(`Lỗi tải ảnh: ${error.message}`);
-                    }}
-                    className="border-dashed border-slate-200 dark:border-slate-800 bg-background/20 rounded-xl p-4"
-                  />
+                  <div className="flex flex-col items-center gap-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-6 bg-background/20">
+                    <div className="flex flex-col items-center gap-2 text-center">
+                      <div className="p-3 rounded-full bg-blue-50 dark:bg-blue-900/20">
+                        <ImageIcon className="w-5 h-5 text-blue-500" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">Chọn ảnh chẩn đoán (X-Quang, CT, MRI...)</p>
+                      <p className="text-xs text-muted-foreground/70">PNG, JPG, WEBP — tối đa 4MB</p>
+                    </div>
+                    <UploadButton
+                      endpoint="imageUploader"
+                      onUploadBegin={() => setUploadingImage(true)}
+                      onClientUploadComplete={(res) => {
+                        setUploadingImage(false);
+                        const url = res?.[0]?.ufsUrl || (res?.[0] as any)?.url;
+                        if (url) {
+                          setEditImageUrl(url);
+                          toast.success("Tải ảnh kết quả thành công!");
+                        } else {
+                          toast.error("Không lấy được URL ảnh.");
+                        }
+                      }}
+                      headers={async () => {
+                        const session = await authClient.getSession();
+                        const token = session.data?.session?.token;
+                        return {
+                          Authorization: token ? `Bearer ${token}` : "",
+                        };
+                      }}
+                      onUploadError={(error: Error) => {
+                        setUploadingImage(false);
+                        console.error("[Upload] Error:", error);
+                        toast.error(`Lỗi tải ảnh: ${error.message}`);
+                      }}
+                      appearance={{
+                        button: "bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg flex items-center gap-2 h-auto text-sm",
+                        allowedContent: "hidden",
+                      }}
+                      content={{
+                        button: uploadingImage ? (
+                          <span className="flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" /> Đang tải...
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            <Camera className="w-4 h-4" /> Chọn ảnh
+                          </span>
+                        ),
+                      }}
+                    />
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     <div className="relative aspect-video bg-black rounded-xl overflow-hidden border">

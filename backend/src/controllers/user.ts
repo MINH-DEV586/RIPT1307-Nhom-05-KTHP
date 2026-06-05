@@ -55,7 +55,7 @@ export const getUserById = async (req: Request, res: Response) => {
     const { id } = req.params;
     const currentUser = (req as any).user;
 
-    if (currentUser.id !== id && currentUser.role === "patient") {
+    if (currentUser.id?.toString() !== id?.toString() && currentUser.role === "patient") {
       return res.status(403).json({ message: "Không có quyền truy cập" });
     }
 
@@ -86,17 +86,19 @@ export const updateUser = async (req: Request, res: Response) => {
 
     // Security check: Patients can only update their own profile
     if (currentUser.role === "patient") {
-      if (currentUser.id !== id) {
+      // Compare as strings to handle both ObjectId and string ID formats
+      if (currentUser.id?.toString() !== id?.toString()) {
         return res.status(403).json({ message: "Bạn không có quyền cập nhật hồ sơ của người khác" });
       }
-      // Patients can ONLY update name, email, birthday, phoneNumber, address, and insuranceId
+      // Patients can ONLY update name, email, birthday, phoneNumber, address, insuranceId, and image (avatar)
       role = undefined;
       password = undefined;
       customFields = { 
         birthday: customFields.birthday, 
         phoneNumber: customFields.phoneNumber, 
         address: customFields.address, 
-        insuranceId: customFields.insuranceId 
+        insuranceId: customFields.insuranceId,
+        image: customFields.image,
       }; 
     }
 

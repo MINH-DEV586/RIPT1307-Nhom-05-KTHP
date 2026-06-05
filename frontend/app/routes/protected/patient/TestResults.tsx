@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { getPatientLabResults, explainLabResult } from "@/lib/api";
 import { printMedicalDoc } from "@/lib/print";
@@ -76,15 +76,28 @@ export default function TestResults() {
     }
   };
 
-  const handleDownloadOrPrint = (result: any) => {
+  const handleDownloadOrPrint = async (result: any) => {
     if (result.imageUrl) {
-      const a = document.createElement("a");
-      a.href = result.imageUrl;
-      a.target = "_blank";
-      a.download = `KetQua_${result.testType}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const toastId = toast.loading("Đang tải ảnh về máy...");
+      try {
+        const response = await fetch(result.imageUrl);
+        if (!response.ok) throw new Error("Fetch failed");
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = `KetQua_${result.testType}_${new Date().toISOString().slice(0,10)}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+        toast.success("Đã tải ảnh thành công!", { id: toastId });
+      } catch {
+        // Fallback: open in new tab if fetch fails (e.g., CORS issue)
+        toast.dismiss(toastId);
+        toast.info("Đang mở ảnh để bạn lưu thủ công (chuột phải → Lưu ảnh)");
+        window.open(result.imageUrl, "_blank");
+      }
     } else if (result.indicators && result.indicators.length > 0) {
       const dateStr = format(new Date(result.createdAt), "dd/MM/yyyy", { locale: vi });
       
