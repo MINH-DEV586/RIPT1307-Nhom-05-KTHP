@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { getUsers, createTelemedicineSession, getTelemedicineSessions } from "@/lib/api";
 import { Card } from "@/components/ui/card";
@@ -20,6 +20,7 @@ export default function TelemedicineHome() {
   const [doctors, setDoctors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const isAdmin = currentUser?.role === "admin";
 
   useEffect(() => {
     if (isPatient) {
@@ -63,6 +64,34 @@ export default function TelemedicineHome() {
       toast.error("Lỗi khi bắt đầu tư vấn");
     }
   };
+
+  if (isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center p-12 space-y-8 animate-page-in">
+        <div className="relative">
+          <div className="w-32 h-32 bg-amber-100 dark:bg-amber-950/50 rounded-full flex items-center justify-center">
+            <ShieldCheck className="w-16 h-16 text-amber-600" />
+          </div>
+        </div>
+        <div className="space-y-3 max-w-md">
+          <h2 className="text-3xl font-black tracking-tighter">Xin chào, Quản trị viên!</h2>
+          <p className="text-muted-foreground font-medium text-sm leading-relaxed">
+            Bạn đang xem tất cả các cuộc hội thoại giữa bác sĩ và bệnh nhân. Chọn một cuộc hội thoại từ danh sách bên trái để xem nội dung. Bạn có thể xóa các cuộc hội thoại nhưng không được nhắn tin.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
+          <div className="p-5 rounded-xl bg-amber-50/50 border border-amber-100 flex flex-col items-center gap-2">
+            <ShieldCheck className="w-6 h-6 text-amber-600" />
+            <span className="text-[11px] font-semibold tracking-wide text-amber-700">Giám sát</span>
+          </div>
+          <div className="p-5 rounded-xl bg-red-50/50 border border-red-100 flex flex-col items-center gap-2">
+            <HeartPulse className="w-6 h-6 text-red-500" />
+            <span className="text-[11px] font-semibold tracking-wide text-red-600">Quản lý</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isPatient) {
     return (

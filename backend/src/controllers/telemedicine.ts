@@ -88,19 +88,29 @@ export const bookSession = async (req: Request, res: Response) => {
   }
 };
 
-// Lấy danh sách phiên khám của người dùng (Bác sĩ hoặc Bệnh nhân)
+// Lấy danh sách phiên khám của người dùng (Bác sĩ hoặc Bệnh nhân) hoặc tất cả (Admin)
 export const getSessions = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
     const role = (req as any).user.role;
 
-    const filter = role === "doctor" ? { doctorId: userId } : { patientId: userId };
+    // Admin xem tất cả sessions, doctor/patient chỉ xem sessions của mình
+    let sessionFilter: any = {};
+    let appointmentFilter: any = { status: "confirmed" };
+    if (role === "doctor") {
+      sessionFilter = { doctorId: userId };
+      appointmentFilter = { doctorId: userId, status: "confirmed" };
+    } else if (role === "patient") {
+      sessionFilter = { patientId: userId };
+      appointmentFilter = { patientId: userId, status: "confirmed" };
+    }
+    // admin: không filter -> lấy tất cả
     
     // 1. Fetch from TelemedicineSession
-    const sessions = await TelemedicineSession.find(filter).sort({ startTime: 1 }).lean();
+    const sessions = await TelemedicineSession.find(sessionFilter).sort({ startTime: 1 }).lean();
     
     // 2. Fetch from Appointment (Confirmed only)
-    const appointments = await Appointment.find({ ...filter, status: "confirmed" }).lean();
+    const appointments = await Appointment.find(appointmentFilter).lean();
     const mappedAppointments = appointments.map(a => ({
       ...a,
       startTime: a.date,
@@ -115,6 +125,29 @@ export const getSessions = async (req: Request, res: Response) => {
 
     const detailedSessions = await Promise.all(
       combined.map(async (s: any) => {
+        // Với admin, lấy thông tin cả 2 phía (doctor + patient)
+        if (role === "admin") {
+          const lookupId = (id: string) => {
+            try {
+              if (mongoose.Types.ObjectId.isValid(id)) return new mongoose.Types.ObjectId(id);
+            } catch (e) {}
+            return id as any;
+          };
+          const [doctorUser, patientUser] = await Promise.all([
+            userCollection.findOne({ _id: lookupId(s.doctorId) }, { projection: { name: 1, image: 1, specialization: 1 } }),
+            userCollection.findOne({ _id: lookupId(s.patientId) }, { projection: { name: 1, image: 1, specialization: 1 } }),
+          ]);
+          const lastMsg = await Message.findOne({ sessionId: s._id }).sort({ createdAt: -1 });
+          return {
+            ...s,
+            otherUser: patientUser, // Hiển thị bệnh nhân trong sidebar
+            doctorUser,
+            patientUser,
+            lastMessage: lastMsg?.content || s.notes,
+            updatedAt: lastMsg?.createdAt || s.updatedAt || s.startTime
+          };
+        }
+
         const otherId = role === "doctor" ? s.patientId : s.doctorId;
         let queryId: any = otherId;
         try {
@@ -179,14 +212,16 @@ export const deleteSession = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = (req as any).user.id;
+    const userRole = (req as any).user.role;
 
     const session = await TelemedicineSession.findById(id);
     if (!session) {
       return res.status(404).json({ message: "Không tìm thấy phiên khám" });
     }
 
-    // Chỉ cho phép bệnh nhân hoặc bác sĩ trong cuộc hội thoại xóa
-    if (session.patientId !== userId && session.doctorId !== userId) {
+    // Admin được phép xóa bất kỳ phiên khám nào
+    // Bác sĩ hoặc bệnh nhân chỉ được xóa phiên khám của mình
+    if (userRole !== "admin" && session.patientId !== userId && session.doctorId !== userId) {
       return res.status(403).json({ message: "Bạn không có quyền xóa phiên khám này" });
     }
 

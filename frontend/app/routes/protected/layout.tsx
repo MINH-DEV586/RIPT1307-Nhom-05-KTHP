@@ -54,7 +54,7 @@ const Layout = () => {
     if (isPending) return;
 
     // These routes are accessible to all authenticated users
-    const openRoutes = ["/profile", "/appointments", "/bed-management", "/reports"];
+    const openRoutes = ["/profile", "/appointments", "/bed-management", "/reports", "/telemedicine"];
     const isOpenRoute = openRoutes.some((r) => pathname.startsWith(r));
     if (isOpenRoute) return;
 
