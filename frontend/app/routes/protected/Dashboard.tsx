@@ -1,4 +1,4 @@
-﻿import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
 import { getUsers } from "@/lib/api";
 import Loader from "@/components/global/Loader";
@@ -29,7 +29,7 @@ import {
 } from "@/lib/api";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { FlaskConical, ClipboardList, Pill, Video, FileText, CheckCircle2, User as UserIcon } from "lucide-react";
+import { FlaskConical, ClipboardList, Pill, FileText, CheckCircle2, User as UserIcon } from "lucide-react";
 import { getDoctorSchedule } from "@/lib/api";
 import { ScheduleOverview } from "@/components/appointments/ScheduleOverview";
 
@@ -236,13 +236,13 @@ function PatientDashboardView({ user }: { user: any }) {
           </div>
           <div className="flex flex-wrap gap-4 justify-center">
             <Button size="lg" className="gap-2 shadow-lg shadow-primary/20 font-bold" asChild>
-              <Link to="/telemedicine/sessions/book">
-                <Video className="w-5 h-5" />
+              <Link to="/appointments">
+                <CalendarDays className="w-5 h-5" />
                 Đặt lịch khám mới
               </Link>
             </Button>
             <Button variant="outline" size="lg" className="gap-2 font-bold bg-background/50 backdrop-blur-sm" asChild>
-              <Link to="/profile">
+              <Link to="/patient/medical-records">
                 <UserIcon className="w-5 h-5" />
                 Hồ sơ sức khỏe
               </Link>

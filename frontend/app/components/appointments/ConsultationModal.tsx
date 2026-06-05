@@ -82,11 +82,6 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
   const [prescribedItems, setPrescribedItems] = useState<Partial<PrescriptionItem>[]>([]);
   const [selectedMedId, setSelectedMedId] = useState("");
 
-  const hasStockError = prescribedItems.some((item) => {
-    const med = medicines.find(m => m._id === item.medicineId);
-    return med && (item.quantity || 0) > med.stock;
-  });
-
   // Data Queries
   const { data: beds = [] } = useQuery({
     queryKey: ["beds", "available"],
@@ -98,6 +93,12 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
     queryKey: ["medicines"],
     queryFn: getAllMedicines,
     enabled: isOpen,
+  });
+
+  // Phải đặt sau khi medicines được khai báo
+  const hasStockError = prescribedItems.some((item) => {
+    const med = medicines.find(m => m._id === item.medicineId);
+    return med && (item.quantity || 0) > med.stock;
   });
 
   const { data: history = [] } = useQuery<MedicalRecord[]>({
@@ -817,10 +818,18 @@ export function ConsultationModal({ appointment, isOpen, onClose, onComplete }: 
             <Button
               className="bg-emerald-600 hover:bg-emerald-700 rounded-xl h-11 px-8 font-black gap-2 shadow-lg shadow-emerald-500/20"
               onClick={handleFinalize}
-              disabled={medicalRecordMutation.isPending || hasStockError}
+              disabled={
+                medicalRecordMutation.isPending ||
+                examHistoryMutation.isPending ||
+                prescriptionMutation.isPending ||
+                labRequestMutation.isPending ||
+                hasStockError
+              }
             >
               <CheckCircle2 className="w-5 h-5" />
-              {medicalRecordMutation.isPending ? "Đang lưu..." : "HOÀN THÀNH CA KHÁM"}
+              {(medicalRecordMutation.isPending || examHistoryMutation.isPending || prescriptionMutation.isPending || labRequestMutation.isPending)
+                ? "Đang lưu..."
+                : "HOÀN THÀNH CA KHÁM"}
             </Button>
           </div>
         </DialogFooter>

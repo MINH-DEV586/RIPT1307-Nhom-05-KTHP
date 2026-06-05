@@ -4,7 +4,7 @@ import DoctorSchedule from "../models/doctorSchedule";
 import mongoose from "mongoose";
 import { logActivity } from "../lib/activity";
 import { format, parseISO } from "date-fns";
-import { sendMail, getAppointmentConfirmedTemplate, getAppointmentRejectedTemplate } from "../lib/mailer";
+import { sendMail, getAppointmentConfirmedTemplate, getAppointmentRejectedTemplate, getAppointmentBookedTemplate, getConsultationCompletedTemplate } from "../lib/mailer";
 import Notification from "../models/notification";
 import { getIO } from "../lib/socket";
 import Invoice from "../models/invoice";
@@ -91,7 +91,35 @@ export const bookAppointment = async (req: Request, res: Response) => {
       console.error("Failed to create notification for doctor on booking:", notifyErr);
     }
 
-    // Không gửi email khi đặt lịch (trạng thái pending), chỉ gửi khi bác sĩ duyệt hoặc từ chối
+    // Gửi email xác nhận đặt lịch cho bệnh nhân
+    try {
+      const userCollection = mongoose.connection.collection("user");
+      let patientQueryId: any = patientId;
+      if (mongoose.Types.ObjectId.isValid(patientId)) patientQueryId = new mongoose.Types.ObjectId(patientId);
+      let doctorQueryId: any = doctorId;
+      if (mongoose.Types.ObjectId.isValid(doctorId)) doctorQueryId = new mongoose.Types.ObjectId(doctorId);
+
+      const patientObj = await userCollection.findOne({ _id: patientQueryId });
+      const doctorObj  = await userCollection.findOne({ _id: doctorQueryId });
+
+      if (patientObj?.email) {
+        const emailHtml = getAppointmentBookedTemplate(
+          patientObj.name || patientName || "Bệnh nhân",
+          doctorObj?.name || "Bác sĩ",
+          parsedDate,
+          timeSlot,
+          type,
+          symptoms
+        );
+        sendMail(
+          patientObj.email,
+          "📅 Đặt lịch hẹn khám thành công — MedFlow AI",
+          emailHtml
+        ).catch(err => console.error("Failed to send booking email:", err));
+      }
+    } catch (emailErr) {
+      console.error("Failed to send booking confirmation email:", emailErr);
+    }
 
     res.status(201).json(appointment);
   } catch (error: any) {
@@ -432,6 +460,22 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
               link: `/appointments`,
             });
             try { getIO().emit(`new_notification_${appointment.patientId}`); } catch (e) { /* ignore */ }
+            
+            // Gửi email thông báo hoàn thành ca khám
+            if (patientUser?.email) {
+              const emailHtml = getConsultationCompletedTemplate(
+                patientUser.name || "Bệnh nhân",
+                doctor?.name || "Bác sĩ",
+                billing?.diagnosis || "Khám tổng quát",
+                (billing?.prescriptionFee || 0) > 0,
+                (billing?.labFee || 0) > 0
+              );
+              sendMail(
+                patientUser.email,
+                "✅ Ca khám của bạn đã hoàn thành — MedFlow AI",
+                emailHtml
+              ).catch(err => console.error("Failed to send consultation completed email:", err));
+            }
             
           } catch (err) {
             console.error("Failed to generate invoice or notification for completed appointment:", err);

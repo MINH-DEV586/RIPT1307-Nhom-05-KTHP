@@ -307,3 +307,82 @@ export const getLabResultsTemplate = (
     </div>
   `;
 };
+
+// ========== APPOINTMENT BOOKING CONFIRMATION ==========
+
+export const getAppointmentBookedTemplate = (
+  patientName: string,
+  doctorName: string,
+  appointmentDate: Date,
+  timeSlot: string,
+  type: string,
+  symptoms?: string
+): string => {
+  const formattedDate = format(new Date(appointmentDate), "dd/MM/yyyy");
+  const appointmentType = type === "online" ? "Khám trực tuyến" : "Khám trực tiếp tại phòng khám";
+
+  return `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 20px; border-radius: 12px;">
+      <div style="background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid #3b82f6;">
+        <h2 style="color: #1f2937; margin-top: 0; font-size: 24px;">📅 Đặt lịch hẹn thành công</h2>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.5;">Xin chào <strong style="color: #111827;">${patientName}</strong>,</p>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.5;">Bạn đã đặt lịch hẹn khám thành công. Lịch hẹn đang chờ xác nhận từ bác sĩ. Dưới đây là thông tin chi tiết:</p>
+        
+        <div style="background-color: #eff6ff; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #bfdbfe;">
+          <p style="margin: 0 0 10px 0; color: #374151; font-size: 15px;"><strong>👨‍⚕️ Bác sĩ:</strong> ${doctorName}</p>
+          <p style="margin: 0 0 10px 0; color: #374151; font-size: 15px;"><strong>📅 Ngày khám:</strong> ${formattedDate}</p>
+          <p style="margin: 0 0 10px 0; color: #374151; font-size: 15px;"><strong>⏰ Khung giờ:</strong> ${timeSlot}</p>
+          <p style="margin: 0 0 10px 0; color: #374151; font-size: 15px;"><strong>🏥 Hình thức:</strong> ${appointmentType}</p>
+          ${symptoms ? `<p style="margin: 0; color: #374151; font-size: 15px;"><strong>🩺 Triệu chứng:</strong> ${symptoms}</p>` : ""}
+        </div>
+
+        <div style="background-color: #fef9c3; padding: 14px 18px; border-left: 4px solid #f59e0b; border-radius: 4px; margin-bottom: 20px;">
+          <p style="margin: 0; color: #92400e; font-size: 14px;">⏳ Lịch hẹn đang chờ xác nhận từ bác sĩ. Bạn sẽ nhận được email thông báo sau khi được duyệt.</p>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+          <a href="${process.env.FRONTEND_URL || "http://localhost:5173"}/appointments" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Xem lịch hẹn của tôi</a>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
+        <p style="color: #9ca3af; font-size: 13px; text-align: center; margin: 0;">Trân trọng,<br><strong>Đội ngũ MedFlow AI</strong></p>
+      </div>
+    </div>
+  `;
+};
+
+// ========== CONSULTATION COMPLETION EMAIL ==========
+
+export const getConsultationCompletedTemplate = (
+  patientName: string,
+  doctorName: string,
+  diagnosis: string,
+  hasPrescription: boolean,
+  hasLabRequests: boolean
+): string => {
+  return `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 20px; border-radius: 12px;">
+      <div style="background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid #10b981;">
+        <h2 style="color: #1f2937; margin-top: 0; font-size: 24px;">✅ Ca khám của bạn đã hoàn thành</h2>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.5;">Xin chào <strong style="color: #111827;">${patientName}</strong>,</p>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.5;">Bác sĩ <strong>${doctorName}</strong> đã hoàn thành ca khám cho bạn. Dưới đây là tóm tắt kết quả:</p>
+
+        <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #bbf7d0;">
+          <p style="margin: 0 0 10px 0; color: #374151; font-size: 15px;"><strong>🩺 Chẩn đoán:</strong> ${diagnosis}</p>
+          <p style="margin: 0 0 10px 0; color: #374151; font-size: 15px;"><strong>💊 Đơn thuốc:</strong> ${hasPrescription ? "✅ Đã kê đơn thuốc" : "Không có"}</p>
+          <p style="margin: 0; color: #374151; font-size: 15px;"><strong>🔬 Xét nghiệm:</strong> ${hasLabRequests ? "✅ Có chỉ định xét nghiệm" : "Không có"}</p>
+        </div>
+
+        <p style="color: #4b5563; font-size: 15px; line-height: 1.6;">Vui lòng đăng nhập vào hệ thống để xem chi tiết kết quả khám, đơn thuốc và thực hiện thanh toán hóa đơn.</p>
+
+        <div style="margin-top: 30px; text-align: center; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <a href="${process.env.FRONTEND_URL || "http://localhost:5173"}/patient/prescriptions" style="background-color: #10b981; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; margin: 4px;">💊 Xem đơn thuốc</a>
+          <a href="${process.env.FRONTEND_URL || "http://localhost:5173"}/patient/invoices" style="background-color: #3b82f6; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; margin: 4px;">💳 Thanh toán hóa đơn</a>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
+        <p style="color: #9ca3af; font-size: 13px; text-align: center; margin: 0;">Trân trọng,<br><strong>Đội ngũ MedFlow AI</strong></p>
+      </div>
+    </div>
+  `;
+};
