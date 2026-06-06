@@ -38,7 +38,6 @@ import appointmentRouter from "./routes/appointment";
 import bedRouter from "./routes/bed";
 import examHistoryRouter from "./routes/examHistory";
 import labTestRouter from "./routes/labTest";
-import { seedLabTests } from "./controllers/labTest";
 
 // Initialize Express application
 const app: Application = express();
@@ -135,8 +134,6 @@ app.use((err: any, req: Request, res: Response, next: any) => {
 // Start the server
 connectDB()
   .then(async () => {
-    // Tự động seed dữ liệu xét nghiệm mẫu nếu DB trống
-    await seedLabTests();
     httpServer.listen(PORT, () => {
       console.log(
         `🚀 Server + Socket.IO running in ${process.env.NODE_ENV} mode on port ${PORT}`,

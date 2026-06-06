@@ -37,7 +37,7 @@ import {
   PATIENT_STATUS_OPTIONS,
   STAFF_STATUS_OPTIONS,
   userSchema,
-} from "./create-user-schema";
+} from "@/lib/schemas/create-user-schema";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";

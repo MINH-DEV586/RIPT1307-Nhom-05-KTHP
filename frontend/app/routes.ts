@@ -6,10 +6,10 @@ import {
 } from "@react-router/dev/routes";
 
 export default [
-  index("routes/home.tsx"),
+  index("routes/Home.tsx"),
   route("login", "routes/Login.tsx"),
   route("register", "routes/Register.tsx"),
-  route("*", "routes/not-found.tsx"),
+  route("*", "routes/NotFound.tsx"),
   // you can use index or layout for nested routes
   layout("routes/protected/layout.tsx", [
     route("dashboard", "routes/protected/Dashboard.tsx"),

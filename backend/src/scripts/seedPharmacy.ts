@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import Medicine from "./models/medicine";
-import Prescription from "./models/prescription";
-import { connectDB } from "./config/db";
+import Medicine from "../models/medicine";
+import Prescription from "../models/prescription";
+import { connectDB } from "../config/db";
 import * as dotenv from "dotenv";
 
 dotenv.config();
