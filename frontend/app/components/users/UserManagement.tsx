@@ -1,4 +1,4 @@
-﻿import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import type { Role, User, UserStatus } from "@/types";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -359,12 +359,24 @@ const UserManagement = ({ role, title, description }: UserManagementProps) => {
                       </TableCell>
                       <TableCell className="float-right">
                         <div className="flex justify-end gap-2">
-                          <CreateUserModal
-                            role={role}
-                            user={user}
-                            loading={loading}
-                          />
-                          {session?.user.role === "admin" && (
+                          {(() => {
+                            const currentUserId = session?.user.id || (session?.user as any)?._id;
+                            const targetUserId = user._id || (user as any).id;
+                            const isSelf = currentUserId === targetUserId;
+                            const isDoctorViewingOtherDoctor = session?.user.role === "doctor" && (user.role === "doctor" || role === "doctor") && !isSelf;
+                            
+                            if (isDoctorViewingOtherDoctor) {
+                              return null;
+                            }
+                            return (
+                              <CreateUserModal
+                                role={role}
+                                user={user}
+                                loading={loading}
+                              />
+                            );
+                          })()}
+                          {session?.user.role === "admin" && (user.role !== "admin" && role !== "admin") && (
                             <>
                               <Button
                                 onClick={() => banUser(user?.banned, user._id)}

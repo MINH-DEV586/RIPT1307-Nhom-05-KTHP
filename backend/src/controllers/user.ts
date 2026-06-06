@@ -113,6 +113,11 @@ export const updateUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
     }
 
+    // Security check: Doctors cannot update other doctors
+    if (currentUser.role === "doctor" && existingUser.role === "doctor" && currentUser.id?.toString() !== id?.toString()) {
+      return res.status(403).json({ message: "Bạn không có quyền cập nhật hồ sơ của bác sĩ khác" });
+    }
+
     const updatePayload: any = {
       name,
       email,
