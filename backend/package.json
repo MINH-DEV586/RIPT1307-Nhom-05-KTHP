@@ -9,7 +9,8 @@
     "start:ngrok": "ngrok http 5001",
     "start:inngest": "npx inngest-cli@latest dev -u http://localhost:5001/api/inngest",
     "dev": "concurrently -c \"blue,cyan\" -n \"SERVER,INNGEST\" \"npm run start:server\" \"npm run start:inngest\"",
-    "seed": "node --env-file=.env --import tsx/esm src/seed.ts"
+    "seed": "node --env-file=.env --import tsx/esm src/scripts/seed.ts",
+    "seed:new": "node --env-file=.env --import tsx/esm src/scripts/seedNewDataset.ts"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

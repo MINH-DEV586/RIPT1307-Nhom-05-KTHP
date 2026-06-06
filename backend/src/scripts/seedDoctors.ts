@@ -1,5 +1,5 @@
 import { MongoClient } from "mongodb";
-import { auth } from "./lib/auth";
+import { auth } from "../lib/auth";
 
 const DOCTORS = [
   {
