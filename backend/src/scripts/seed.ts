@@ -3,7 +3,7 @@
  * Run with: node --env-file=.env --import tsx/esm src/seed.ts
  */
 import { MongoClient } from "mongodb";
-import { auth } from "./lib/auth.js";
+import { auth } from "../lib/auth.js";
 
 const ADMIN_NAME = "Admin";
 const ADMIN_EMAIL = "admin@hospital.com";

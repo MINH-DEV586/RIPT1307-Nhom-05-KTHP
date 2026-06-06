@@ -37,7 +37,7 @@ import {
   PATIENT_STATUS_OPTIONS,
   STAFF_STATUS_OPTIONS,
   userSchema,
-} from "./create-user-schema";
+} from "@/lib/schemas/create-user-schema";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -86,7 +86,7 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
       gender: "",
       bloodgroup: "",
       medicalHistory: "",
-      status: role === "patient" ? "admitted" : "active",
+      status: role === "patient" ? "follow_up" : "active",
       birthday: "",
       phoneNumber: "",
       address: "",
@@ -119,7 +119,7 @@ const CreateUserModal = ({ role, user, loading }: UserModalProps) => {
            name: "",
            email: "",
            password: "",
-           status: role === "patient" ? "admitted" : "active",
+           status: role === "patient" ? "follow_up" : "active",
            specialization: "",
            department: "",
            gender: "",

@@ -105,6 +105,9 @@ export default function Register() {
         email: data.email,
         password: data.password,
         name: data.name,
+        gender: data.gender,
+        age: data.age,
+        status: "follow_up",
         // Better Auth admin plugin sets defaultRole = "patient"
       },
       {
